@@ -46,10 +46,14 @@ def process_faith_sms_vacated_contract_data(file_path):
         today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         df = df[df['入金予定日'].isna() | (df['入金予定日'] < today)]
         
-        # Filter 3: 入金予定金額 (Exclude specific amounts)
-        payment_amount_exclude = ["1円", "2円", "3円", "5円"]
-        df['入金予定金額'] = df['入金予定金額'].astype(str)
-        df = df[~df['入金予定金額'].isin(payment_amount_exclude)]
+        # Filter 3: 入金予定金額 (Exclude specific amounts: 2, 3, 5 as numeric or string values)
+        payment_amount_exclude_numeric = [2, 3, 5]
+        payment_amount_exclude_string = ["2", "3", "5"]
+        df['入金予定金額_numeric'] = pd.to_numeric(df['入金予定金額'], errors='coerce')
+        df['入金予定金額_string'] = df['入金予定金額'].astype(str)
+        df = df[~(df['入金予定金額_numeric'].isin(payment_amount_exclude_numeric) | 
+                  df['入金予定金額_string'].isin(payment_amount_exclude_string))]
+        df = df.drop(['入金予定金額_numeric', '入金予定金額_string'], axis=1)
         
         # Filter 4: 回収ランク (Exclude specific ranks)
         collection_rank_exclude = ["弁護士介入", "破産決定", "死亡決定"]
