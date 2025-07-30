@@ -17,57 +17,205 @@ def main():
     st.set_page_config(
         page_title="Business Data Processor",
         page_icon="📊",
-        layout="wide"
+        layout="wide",
+        initial_sidebar_state="expanded"
     )
+    
+    # サイドバー幅の拡張とタイトル余白調整（CSS）
+    st.markdown("""
+    <style>
+    /* サイドバー幅設定 */
+    .css-1d391kg {
+        width: 400px !important;
+    }
+    .css-1lcbmhc {
+        width: 400px !important;
+    }
+    section[data-testid="stSidebar"] {
+        width: 400px !important;
+        min-width: 400px !important;
+    }
+    section[data-testid="stSidebar"] > div {
+        width: 400px !important;
+        min-width: 400px !important;
+    }
+    .stSelectbox > div > div {
+        min-width: 350px !important;
+    }
+    
+    /* タイトル部分の余白を極限まで削減 */
+    .main .block-container {
+        padding-top: 0rem !important;
+        margin-top: 0 !important;
+        padding-bottom: 0 !important;
+    }
+    .main .block-container h1 {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+        margin-bottom: 1rem !important;
+    }
+    .stApp > header {
+        background-color: transparent;
+        height: 0rem !important;
+        display: none !important;
+    }
+    .stApp {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+    /* Streamlit の各種要素の余白削除 */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    .stApp > div:first-child {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+    div[data-testid="stVerticalBlock"] > div:first-child > div {
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+    }
+    .element-container:first-child {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+    
+    /* サイドバーボタンの余白を極小に */
+    .stSidebar .stButton > button {
+        margin-bottom: 0.1rem !important;
+        margin-top: 0.1rem !important;
+        padding: 0.2rem 0.5rem !important;
+    }
+    .stSidebar .element-container {
+        margin-bottom: 0.05rem !important;
+        margin-top: 0.05rem !important;
+    }
+    .stSidebar .stMarkdown {
+        margin-bottom: 0.15rem !important;
+        margin-top: 0.15rem !important;
+    }
+    section[data-testid="stSidebar"] .element-container {
+        margin-bottom: 0.05rem !important;
+        margin-top: 0.05rem !important;
+    }
+    /* ボタンコンテナの余白も削減 */
+    .stSidebar div[data-testid="column"] {
+        gap: 0.05rem !important;
+    }
+    
+    /* サイドバーを常時表示に固定 */
+    section[data-testid="stSidebar"] {
+        transform: none !important;
+        visibility: visible !important;
+    }
+    /* サイドバー折りたたみボタンを非表示 */
+    button[kind="header"] {
+        display: none !important;
+    }
+    .css-1kyxreq {
+        display: none !important;
+    }
+    /* サイドバーの閉じるボタンを無効化 */
+    .css-1v0mbdj button {
+        display: none !important;
+    }
+    
+    /* タイトル部分を固定表示 */
+    .main .block-container > div:first-child {
+        position: sticky !important;
+        top: 0 !important;
+        background-color: white !important;
+        z-index: 999 !important;
+        padding-bottom: 1rem !important;
+        margin-bottom: 1rem !important;
+        border-bottom: 1px solid #e0e0e0 !important;
+    }
+    
+    /* メインコンテンツエリアの調整 */
+    .main .block-container {
+        padding-top: 0rem !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
     
     # ヘッダー
     st.title("📊 Business Data Processor")
     st.markdown("**統合データ処理システム** - CSVデータの自動変換・フィルタリングツール")
+    st.info("👈 左側のメニューから処理したい業務を選択してください")
     
-    # サイドバーで処理種別選択（フラット構造）
-    st.sidebar.header("🔧 処理種別選択")
-    processor_type = st.sidebar.selectbox(
-        "処理種別を選択してください",
-        [
-            "選択してください",
-            "─── 📞 オートコール処理 ───",
-            "🏢 ミライル契約者（without10k）",
-            "🏢 ミライル契約者（with10k）",
-            "👥 ミライル保証人（without10k）",
-            "👥 ミライル保証人（with10k）",
-            "🚨 ミライル緊急連絡人（without10k）",
-            "🚨 ミライル緊急連絡人（with10k）",
-            "📱 フェイス契約者",
-            "👥 フェイス保証人", 
-            "🚨 フェイス緊急連絡人",
-            "🏪 プラザ契約者",
-            "👥 プラザ保証人", 
-            "🚨 プラザ緊急連絡人",
-            "─── 📱 SMS処理 ───",
-            "📱 フェイスSMS退去済み契約者",
-            "🔔 フェイスSMS（準備中）",
-            "─── 📋 データ変換 ───",
-            "📋 アーク新規登録"
-        ]
-    )
+    # サイドバーメニュー（シンプル構成）
+    # セッション状態の初期化
+    if 'selected_processor' not in st.session_state:
+        st.session_state.selected_processor = "🏠 トップ"
     
-    # 区切り線項目は選択不可にして、ウェルカム画面を表示
+    # オートコールカテゴリ
+    st.sidebar.markdown("### 📞 オートコール用CSV加工")
+    
+    # ミライル
+    st.sidebar.markdown("**ミライル用オートコール**")
+    if st.sidebar.button("契約者（10,000円を除外するパターン）", key="mirail_contract_without10k", use_container_width=True):
+        st.session_state.selected_processor = "🏢 ミライル契約者（10,000円を除外するパターン）"
+    if st.sidebar.button("契約者（10,000円を除外しないパターン）", key="mirail_contract_with10k", use_container_width=True):
+        st.session_state.selected_processor = "🏢 ミライル契約者（10,000円を除外しないパターン）"
+    if st.sidebar.button("保証人（10,000円を除外するパターン）", key="mirail_guarantor_without10k", use_container_width=True):
+        st.session_state.selected_processor = "👥 ミライル保証人（10,000円を除外するパターン）"
+    if st.sidebar.button("保証人（10,000円を除外しないパターン）", key="mirail_guarantor_with10k", use_container_width=True):
+        st.session_state.selected_processor = "👥 ミライル保証人（10,000円を除外しないパターン）"
+    if st.sidebar.button("緊急連絡人（10,000円を除外するパターン）", key="mirail_emergency_without10k", use_container_width=True):
+        st.session_state.selected_processor = "🚨 ミライル緊急連絡人（10,000円を除外するパターン）"
+    if st.sidebar.button("緊急連絡人（10,000円を除外しないパターン）", key="mirail_emergency_with10k", use_container_width=True):
+        st.session_state.selected_processor = "🚨 ミライル緊急連絡人（10,000円を除外しないパターン）"
+    
+    # フェイス
+    st.sidebar.markdown("**フェイス用オートコール**")
+    if st.sidebar.button("契約者", key="faith_contract", use_container_width=True):
+        st.session_state.selected_processor = "📱 フェイス契約者"
+    if st.sidebar.button("保証人", key="faith_guarantor", use_container_width=True):
+        st.session_state.selected_processor = "👥 フェイス保証人"
+    if st.sidebar.button("緊急連絡人", key="faith_emergency", use_container_width=True):
+        st.session_state.selected_processor = "🚨 フェイス緊急連絡人"
+    
+    # プラザ
+    st.sidebar.markdown("**プラザ用オートコール**")
+    if st.sidebar.button("契約者", key="plaza_contract", use_container_width=True):
+        st.session_state.selected_processor = "🏪 プラザ契約者"
+    if st.sidebar.button("保証人", key="plaza_guarantor", use_container_width=True):
+        st.session_state.selected_processor = "👥 プラザ保証人"
+    if st.sidebar.button("緊急連絡人", key="plaza_emergency", use_container_width=True):
+        st.session_state.selected_processor = "🚨 プラザ緊急連絡人"
+    
+    st.sidebar.markdown("---")
+    
+    # SMSカテゴリ
+    st.sidebar.markdown("### 📱 SMS送信用CSV加工")
+    if st.sidebar.button("フェイス_契約者_退去済みSMS用", key="faith_sms", use_container_width=True):
+        st.session_state.selected_processor = "📱 フェイス_契約者_退去済みSMS用"
+    
+    st.sidebar.markdown("---")
+    
+    # 新規登録カテゴリ
+    st.sidebar.markdown("### 📋 新規登録用CSV加工")
+    if st.sidebar.button("アーク新規登録", key="ark_registration", use_container_width=True):
+        st.session_state.selected_processor = "📋 アーク新規登録"
+    
+    # 選択されたプロセッサーを取得
+    processor_type = st.session_state.selected_processor
+    
+    # 選択された処理に応じて画面を表示
     if (processor_type is None or 
-        processor_type == "選択してください" or 
-        processor_type.startswith("───")):
+        processor_type == "🏠 トップ"):
         # ウェルカム画面
         show_welcome_screen()
-    elif processor_type == "🏢 ミライル契約者（without10k）":
+    elif processor_type == "🏢 ミライル契約者（10,000円を除外するパターン）":
         show_mirail_contract_without10k_processor()
-    elif processor_type == "🏢 ミライル契約者（with10k）":
+    elif processor_type == "🏢 ミライル契約者（10,000円を除外しないパターン）":
         show_mirail_contract_with10k_processor()
-    elif processor_type == "👥 ミライル保証人（without10k）":
+    elif processor_type == "👥 ミライル保証人（10,000円を除外するパターン）":
         show_mirail_guarantor_without10k_processor()
-    elif processor_type == "👥 ミライル保証人（with10k）":
+    elif processor_type == "👥 ミライル保証人（10,000円を除外しないパターン）":
         show_mirail_guarantor_with10k_processor()
-    elif processor_type == "🚨 ミライル緊急連絡人（without10k）":
+    elif processor_type == "🚨 ミライル緊急連絡人（10,000円を除外するパターン）":
         show_mirail_emergencycontact_without10k_processor()
-    elif processor_type == "🚨 ミライル緊急連絡人（with10k）":
+    elif processor_type == "🚨 ミライル緊急連絡人（10,000円を除外しないパターン）":
         show_mirail_emergencycontact_with10k_processor()
     elif processor_type == "📱 フェイス契約者":
         show_faith_contract_processor()
@@ -81,10 +229,8 @@ def main():
         show_plaza_guarantor_processor()
     elif processor_type == "🚨 プラザ緊急連絡人":
         show_plaza_contact_processor()
-    elif processor_type == "📱 フェイスSMS退去済み契約者":
+    elif processor_type == "📱 フェイス_契約者_退去済みSMS用":
         show_faith_sms_vacated_contract_processor()
-    elif processor_type == "🔔 フェイスSMS（準備中）":
-        show_faith_sms_processor()
     elif processor_type == "📋 アーク新規登録":
         show_ark_processor()
 
@@ -97,7 +243,7 @@ def show_welcome_screen():
     
     with col1:
         st.markdown("""
-        ### 📞 オートコール処理
+        ### 📞 オートコール
         **対応システム:**
         - 🏢 ミライル（契約者/保証人/緊急連絡人 × without10k/with10k）
         - 📱 フェイス
@@ -111,19 +257,22 @@ def show_welcome_screen():
     
     with col2:
         st.markdown("""
-        ### 📱 SMS処理
+        ### 📱 SMS
         **対応システム:**
-        - 🔔 フェイスSMS（準備中）
+        - 📱 フェイス_契約者_退去済みSMS用
         
         **機能:**
-        - SMS送信用データ処理
-        - 電話番号の正規化
-        - SMS用テンプレート生成
+        - 退去済み契約者SMS送信用データ処理
+        - 電話番号の正規化・フィルタリング
+        - SMS用CSVファイル生成
         """)
     
     with col3:
         st.markdown("""
-        ### 📋 アーク新規登録
+        ### 📋 新規登録
+        **対応システム:**
+        - 📋 アーク新規登録
+        
         **機能:**
         - 案件取込用レポートとContractListの統合
         - 住所分割・保証人判定を自動実行
@@ -131,7 +280,6 @@ def show_welcome_screen():
         - 重複チェック・データ変換
         """)
     
-    st.info("👈 左側のメニューから業務カテゴリを選択してください")
 
 def show_mirail_contract_without10k_processor():
     """ミライル契約者処理画面"""
@@ -1387,11 +1535,6 @@ def show_faith_sms_vacated_contract_processor():
                     st.error(f"❌ エラーが発生しました: {str(e)}")
                     st.info("💡 ファイル形式やエンコーディングを確認してください")
 
-def show_faith_sms_processor():
-    """フェイスSMS処理画面（準備中）"""
-    st.markdown("## 🔔 フェイスSMS処理")
-    st.warning("⚠️ フェイスSMS機能は準備中です")
-    st.info("📝 この機能は将来のアップデートで追加予定です")
 
 if __name__ == "__main__":
     main()
