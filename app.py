@@ -44,6 +44,7 @@ def main():
             "👥 プラザ保証人", 
             "🚨 プラザ緊急連絡人",
             "─── 📱 SMS処理 ───",
+            "📱 フェイスSMS退去済み契約者",
             "🔔 フェイスSMS（準備中）",
             "─── 📋 データ変換 ───",
             "📋 アーク新規登録"
@@ -80,6 +81,8 @@ def main():
         show_plaza_guarantor_processor()
     elif processor_type == "🚨 プラザ緊急連絡人":
         show_plaza_contact_processor()
+    elif processor_type == "📱 フェイスSMS退去済み契約者":
+        show_faith_sms_vacated_contract_processor()
     elif processor_type == "🔔 フェイスSMS（準備中）":
         show_faith_sms_processor()
     elif processor_type == "📋 アーク新規登録":
@@ -1331,6 +1334,58 @@ def show_plaza_contact_processor():
                     st.error(f"❌ エラーが発生しました: {e}")
                     with st.expander("エラー詳細"):
                         st.exception(e)
+
+def show_faith_sms_vacated_contract_processor():
+    """フェイスSMS退去済み契約者処理画面"""
+    st.markdown("## 📱 フェイスSMS退去済み契約者処理")
+    st.markdown("**ContractList*.csv** から退去済み契約者のSMS送信用データを生成します")
+    
+    uploaded_file = st.file_uploader(
+        "ContractList*.csv ファイルをアップロードしてください",
+        type="csv",
+        help="フェイス退去済み契約者データファイルを選択してください"
+    )
+    
+    if uploaded_file is not None:
+        if st.button("🚀 データ処理を開始", type="primary"):
+            with st.spinner("データを処理中..."):
+                try:
+                    from processors.faith_sms.vacated_contract import process_faith_sms_vacated_contract_data
+                    
+                    file_content = uploaded_file.getvalue()
+                    
+                    with open("/tmp/temp_contractlist.csv", "wb") as f:
+                        f.write(file_content)
+                    
+                    processed_df, output_filename, initial_rows, final_rows = process_faith_sms_vacated_contract_data("/tmp/temp_contractlist.csv")
+                    
+                    st.success(f"✅ 処理完了: {initial_rows}行 → {final_rows}行")
+                    
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        st.markdown("### 📊 処理統計")
+                        st.write(f"- 入力行数: {initial_rows:,}行")
+                        st.write(f"- 出力行数: {final_rows:,}行")
+                        st.write(f"- 除外行数: {initial_rows - final_rows:,}行")
+                        st.write(f"- 出力列数: {len(processed_df.columns)}列")
+                    
+                    with col2:
+                        st.markdown("### 🔍 データプレビュー")
+                        st.dataframe(processed_df.head(3), use_container_width=True)
+                    
+                    csv_data = processed_df.to_csv(index=False, encoding='cp932')
+                    
+                    st.download_button(
+                        label=f"📥 {output_filename} をダウンロード",
+                        data=csv_data.encode('cp932'),
+                        file_name=output_filename,
+                        mime="text/csv"
+                    )
+                    
+                except Exception as e:
+                    st.error(f"❌ エラーが発生しました: {str(e)}")
+                    st.info("💡 ファイル形式やエンコーディングを確認してください")
 
 def show_faith_sms_processor():
     """フェイスSMS処理画面（準備中）"""

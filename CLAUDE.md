@@ -4,7 +4,7 @@
 
 ## 🌟 プロジェクト概要
 
-**Business Data Processor v2.1.0-docker** - Docker化統合データ処理システム（権限問題解決済み）
+**Business Data Processor v2.2.0** - フェイスSMS退去済み契約者実装完了版
 
 不動産管理業務における契約データの変換・統合処理を自動化するStreamlit製のWebアプリケーション。
 複数の業務システム（オートコール、SMS、新規登録）を統合し、非エンジニア向けの直感的なUIを提供。
@@ -68,8 +68,9 @@ business-data-processor/
 │   │       ├── __init__.py       # モジュール初期化
 │   │       └── standard.py       # 2ファイル処理（ContractList + Excel報告書）
 │   │
-│   ├── faith_sms/                # 🔔 フェイスSMS処理（準備中）
+│   ├── faith_sms/                # 📱 フェイスSMS処理
 │   │   ├── __init__.py           # モジュール初期化
+│   │   ├── vacated_contract.py   # 退去済み契約者SMS処理（実装済み）
 │   │   └── standard.py           # 標準版（将来実装予定）
 │   │
 │   └── ark_registration.py       # 📋 アーク新規登録データ変換
@@ -122,8 +123,9 @@ processors/
 ### 📱 SMS処理
 ```
 processors/
-└── faith_sms/                    # フェイスSMS（準備中）
-    └── standard.py               # 将来実装
+└── faith_sms/                    # フェイスSMS処理
+    ├── vacated_contract.py       # 退去済み契約者SMS（実装済み）
+    └── standard.py               # 標準版（将来実装予定）
 ```
 
 ### 📋 データ変換処理
@@ -183,6 +185,9 @@ from processors.plaza_autocall.main.standard import process_plaza_main_data
 from processors.plaza_autocall.guarantor.standard import process_plaza_guarantor_data
 from processors.plaza_autocall.contact.standard import process_plaza_contact_data
 
+# フェイスSMS（1種類）
+from processors.faith_sms.vacated_contract import process_faith_sms_vacated_contract_data
+
 # その他
 from processors.ark_registration import process_ark_data
 
@@ -222,6 +227,7 @@ start.bat  # Windows環境
 - `hotfix/*`: 緊急修正用
 
 ### バージョン管理
+- v2.2.0: フェイスSMS退去済み契約者実装完了
 - v2.1.0: プラザオートコール3種類実装完了
 - v2.0.0: 業務カテゴリ別階層構造
 - v1.1.0: ミライル（残債含む）追加
