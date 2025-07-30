@@ -1,0 +1,69 @@
+# Docker無視ファイル - 最適化版
+# ビルド時に不要なファイルを除外してイメージサイズを削減
+
+# Git関連
+.git/
+.gitignore
+.github/
+
+# Python関連
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+.env
+
+# テストファイル
+*_test.py
+ui_test.py
+simple_ui_test.py
+debug_ui_test.py
+test_*.py
+
+# スクリーンショット
+screenshots/
+
+# 開発用フォルダ
+shared/
+templates/
+
+# OS生成ファイル
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDEファイル
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ログファイル
+*.log
+*.tmp
+*.temp
+logs/
+
+# データフォルダ（ローカルで作成される）
+data/
+downloads/
+
+# Docker関連
+Dockerfile
+docker-compose.yml
+docker-compose.override.yml
+.dockerignore
+
+# バッチファイル（配布時に別途用意）
+*.bat
+
+# ドキュメント（必要最小限のみコピー）
+DOCKER移植ガイド.md
+SOW.md
+使い方.txt

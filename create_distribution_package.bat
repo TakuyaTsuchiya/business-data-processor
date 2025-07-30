@@ -41,13 +41,13 @@ copy "requirements.txt" "%DIST_PATH%\" > nul
 copy "app.py" "%DIST_PATH%\" > nul
 
 :: バッチファイル
-copy "🚀起動.bat" "%DIST_PATH%\" > nul
-copy "🛑停止.bat" "%DIST_PATH%\" > nul
-copy "🔄再起動.bat" "%DIST_PATH%\" > nul
-copy "📊ログ確認.bat" "%DIST_PATH%\" > nul
+copy "起動.bat" "%DIST_PATH%\" > nul
+copy "停止.bat" "%DIST_PATH%\" > nul
+copy "再起動.bat" "%DIST_PATH%\" > nul
+copy "ログ確認.bat" "%DIST_PATH%\" > nul
 
 :: ドキュメント
-copy "📋Docker版使い方.txt" "%DIST_PATH%\" > nul
+copy "Docker使い方.txt" "%DIST_PATH%\" > nul
 copy "README_Docker版.md" "%DIST_PATH%\README.md" > nul
 copy "CLAUDE.md" "%DIST_PATH%\" > nul
 copy "DOCKER移植ガイド.md" "%DIST_PATH%\" > nul
@@ -102,27 +102,20 @@ echo.
 echo ================================================
 echo.
 
-:: ZIP圧縮するか確認
-echo ZIP圧縮を実行しますか？ (Y/N)
-choice /c YN /n
-if errorlevel 2 goto end
-if errorlevel 1 goto compress
-
-:compress
-echo.
-echo ZIP圧縮を実行しています...
+:: 自動ZIP圧縮実行
+echo 📦 ZIP圧縮を自動実行しています...
 powershell -command "Compress-Archive -Path '%DIST_PATH%' -DestinationPath '%DIST_NAME%.zip' -Force"
 
 if exist "%DIST_NAME%.zip" (
     echo.
     echo ✅ ZIP圧縮が完了しました: %DIST_NAME%.zip
-    echo ファイルサイズ: 
-    powershell -command "(Get-Item '%DIST_NAME%.zip').Length / 1MB" | findstr /r "[0-9]"
-    echo MB
+    echo 📊 ファイルサイズ: 
+    powershell -command "'{0:N1} MB' -f ((Get-Item '%DIST_NAME%.zip').Length / 1MB)"
+    echo.
+    echo 🚀 Slackでの共有準備完了！
+    echo 📁 配布ファイル: %DIST_NAME%.zip
 ) else (
     echo ❌ ZIP圧縮に失敗しました
 )
-
-:end
 echo.
 pause

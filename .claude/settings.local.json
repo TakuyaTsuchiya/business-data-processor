@@ -3,7 +3,17 @@
     "allow": [
       "WebFetch(domain:github.com)",
       "Bash(mkdir:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)",
+      "Bash(powershell.exe:*)",
+      "Bash(read:*)",
+      "Bash(echo:*)",
+      "Bash(create_distribution_package.bat)",
+      "Bash(cmd.exe:*)",
+      "Bash(move \"🚀起動.bat\" \"起動.bat\")",
+      "Bash(powershell.exe:*)"
     ],
     "deny": []
   }
