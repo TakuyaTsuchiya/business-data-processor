@@ -15,7 +15,10 @@
       "Bash(move \"🚀起動.bat\" \"起動.bat\")",
       "Bash(powershell.exe:*)",
       "Bash(powershell:*)",
-      "Bash(del /f /q \"business-data-processor-docker-v2.1.0.zip\")"
+      "Bash(del /f /q \"business-data-processor-docker-v2.1.0.zip\")",
+      "Bash(find:*)",
+      "Bash(cmd:*)",
+      "Bash(git reset:*)"
     ],
     "deny": []
   }

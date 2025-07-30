@@ -1,0 +1,34 @@
+========================================
+Business Data Processor v2.1.0 Docker
+Quick Start Guide
+========================================
+
+PREREQUISITES:
+- Windows 10/11 (64-bit)
+- Docker Desktop installed
+
+FIRST TIME SETUP:
+1. Extract ZIP file to Desktop
+2. Open extracted folder
+3. Double-click "startup.bat"
+4. Wait 2-5 minutes (first run only)
+5. Browser opens automatically
+
+DAILY USE:
+- Start: Double-click "startup.bat"
+- Stop: Double-click "shutdown.bat"
+- Restart: Double-click "restart.bat"
+- View logs: Double-click "logs.bat"
+
+ACCESS:
+Open browser and go to:
+http://localhost:8501
+
+TROUBLESHOOTING:
+If startup.bat shows errors:
+1. Make sure Docker Desktop is running
+2. Check that app.py exists in same folder
+3. Try restart.bat
+
+SUPPORT:
+See docs folder for detailed guides

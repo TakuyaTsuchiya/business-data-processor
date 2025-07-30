@@ -18,14 +18,13 @@ services:
       - "8501:8501"
     
     # ボリュームマウント設定（データ永続化）
-    # 注意: これらのパスは起動バッチファイルで動的に置換されます
     volumes:
       # アップロードファイル保存用
-      - PLACEHOLDER_DATA_PATH:/app/data:rw
+      - ./data:/app/data:rw
       # ダウンロードファイル保存用  
-      - PLACEHOLDER_DOWNLOADS_PATH:/app/downloads:rw
-      # ログファイル保存用（追加）
-      - PLACEHOLDER_LOGS_PATH:/app/logs:rw
+      - ./downloads:/app/downloads:rw
+      # ログファイル保存用
+      - ./logs:/app/logs:rw
     
     # 環境変数設定（日本語環境・最適化）
     environment:
