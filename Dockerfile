@@ -7,11 +7,17 @@ FROM python:3.11-slim as builder
 # 作業ディレクトリ設定
 WORKDIR /app
 
+# streamlitユーザーを作成（ビルド段階）
+RUN useradd -m -u 1000 streamlit
+
+# streamlitユーザーに切り替え
+USER streamlit
+
 # 依存関係ファイルをコピー
 COPY requirements.txt .
 
-# Python依存関係を事前ビルド（キャッシュ効率化）
-RUN pip install --no-cache-dir --upgrade pip \
+# Python依存関係を事前ビルド（streamlitユーザーでインストール）
+RUN pip install --no-cache-dir --upgrade pip --user \
     && pip install --no-cache-dir --user -r requirements.txt
 
 # ステージ2: 実行環境
@@ -45,9 +51,14 @@ ENV LANG=ja_JP.UTF-8 \
     STREAMLIT_SERVER_ADDRESS=0.0.0.0 \
     STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
 
-# ビルドステージから依存関係をコピー
-COPY --from=builder /root/.local /root/.local
-ENV PATH=/root/.local/bin:$PATH
+# streamlitユーザーを作成（実行環境）
+RUN useradd -m -u 1000 streamlit
+
+# ビルドステージから依存関係をコピー（streamlitユーザーのホームディレクトリへ）
+COPY --from=builder /home/streamlit/.local /home/streamlit/.local
+
+# streamlitユーザーのPATHを設定
+ENV PATH=/home/streamlit/.local/bin:$PATH
 
 # アプリケーションファイルをコピー
 COPY app.py .
@@ -56,11 +67,11 @@ COPY processors/ ./processors/
 # 必要なディレクトリを作成
 RUN mkdir -p /app/data /app/downloads /app/logs
 
-# 非rootユーザー作成（セキュリティ向上）
-RUN useradd -m -u 1000 streamlit \
-    && chown -R streamlit:streamlit /app \
+# アプリケーションディレクトリの権限設定
+RUN chown -R streamlit:streamlit /app \
     && chmod -R 755 /app \
-    && chmod -R 777 /app/data /app/downloads /app/logs
+    && chmod -R 777 /app/data /app/downloads /app/logs \
+    && chown -R streamlit:streamlit /home/streamlit/.local
 
 # ポート公開
 EXPOSE 8501
