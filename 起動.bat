@@ -11,7 +11,14 @@ echo ================================================
 echo.
 
 :: Docker Desktop起動確認
-echo [1/4] Docker Desktop の起動を確認しています...
+:: 既存のコンテナ・イメージをクリーンアップ（権限エラー対策）
+echo [1/5] 既存のコンテナをクリーンアップしています...
+docker stop business-data-processor > nul 2>&1
+docker rm business-data-processor > nul 2>&1
+echo ✅ クリーンアップが完了しました
+
+echo.
+echo [2/5] Docker Desktop の起動を確認しています...
 docker version > nul 2>&1
 if errorlevel 1 (
     echo.
@@ -34,7 +41,7 @@ echo ✅ Docker Desktop が起動しています
 
 :: 必要ファイルの存在確認
 echo.
-echo [2/5] 必要ファイルの存在を確認しています...
+echo [3/6] 必要ファイルの存在を確認しています...
 if not exist "app.py" (
     echo ❌ エラー: 必要ファイル（app.py）が見つかりません
     echo.
@@ -56,7 +63,7 @@ echo ✅ 必要ファイルが確認できました
 
 :: 必要なフォルダ作成
 echo.
-echo [3/5] 必要なフォルダを作成しています...
+echo [4/6] 必要なフォルダを作成しています...
 if not exist "data" mkdir data
 if not exist "downloads" mkdir downloads
 if not exist "logs" mkdir logs
@@ -64,7 +71,7 @@ echo ✅ フォルダの準備が完了しました
 
 :: Docker Compose設定の動的生成
 echo.
-echo [4/5] Docker設定を準備しています...
+echo [5/6] Docker設定を準備しています...
 powershell -Command "$PSDefaultParameterValues['Out-File:Encoding']='utf8'; $currentPath = (Get-Location).Path; (Get-Content 'docker-compose.yml' -Encoding UTF8) -replace 'PLACEHOLDER_DATA_PATH', ($currentPath + '\data') -replace 'PLACEHOLDER_DOWNLOADS_PATH', ($currentPath + '\downloads') -replace 'PLACEHOLDER_LOGS_PATH', ($currentPath + '\logs') | Set-Content 'docker-compose.tmp.yml' -Encoding UTF8"
 if not exist "docker-compose.tmp.yml" (
     echo ⚠️ 動的設定生成に失敗。標準設定を使用します...
@@ -74,7 +81,7 @@ echo ✅ Docker設定の準備が完了しました
 
 :: Docker イメージのビルド・起動
 echo.
-echo [5/5] アプリケーションを起動しています...
+echo [6/6] アプリケーションを起動しています...
 echo 初回起動時は数分かかる場合があります。お待ちください...
 echo.
 

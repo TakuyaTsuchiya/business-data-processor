@@ -4,7 +4,7 @@
 
 ## 🌟 プロジェクト概要
 
-**Business Data Processor v2.0.0** - 業務カテゴリ別階層構造による統合データ処理システム
+**Business Data Processor v2.1.0-docker** - Docker化統合データ処理システム（権限問題解決済み）
 
 不動産管理業務における契約データの変換・統合処理を自動化するStreamlit製のWebアプリケーション。
 複数の業務システム（オートコール、SMS、新規登録）を統合し、非エンジニア向けの直感的なUIを提供。
@@ -16,9 +16,17 @@ business-data-processor/
 ├── README.md                     # プロジェクト概要・使用方法
 ├── CLAUDE.md                     # このファイル - Claude作業指示
 ├── app.py                        # メインStreamlitアプリケーション
-├── start.bat                     # ワンクリック起動用バッチファイル
+├── Dockerfile                    # Docker化イメージ設定（権限問題解決済み）
+├── docker-compose.yml            # Docker Compose設定
 ├── requirements.txt              # Python依存パッケージ定義
-├── 使い方.txt                    # 非エンジニア向け簡易マニュアル
+├── Docker使い方.txt              # 非エンジニア向けDocker簡易マニュアル
+├── SOW.md                        # 作業範囲明細書（完全版）
+├── DOCKER移植ガイド.md           # Docker移植・配布完全ガイド
+│
+├── 起動.bat                      # Docker版ワンクリック起動（6段階）
+├── 停止.bat                      # Docker版安全停止
+├── 再起動.bat                    # Docker版再起動（180秒タイムアウト）
+├── ログ確認.bat                  # Docker版ログ確認（5種類）
 │
 ├── processors/                   # 業務別データ処理モジュール
 │   ├── mirail_autocall/          # 🏢 ミライルオートコール処理
@@ -38,7 +46,15 @@ business-data-processor/
 │   │
 │   ├── faith_autocall/           # 📱 フェイスオートコール処理
 │   │   ├── __init__.py           # モジュール初期化
-│   │   └── standard.py           # 標準版（委託先法人ID 1-4）
+│   │   ├── contract/             # 契約者オートコール
+│   │   │   ├── __init__.py       # モジュール初期化
+│   │   │   └── standard.py       # 標準版（委託先法人ID 1-4）
+│   │   ├── guarantor/            # 保証人オートコール
+│   │   │   ├── __init__.py       # モジュール初期化
+│   │   │   └── standard.py       # 保証人データ処理
+│   │   └── emergency_contact/    # 緊急連絡人オートコール
+│   │       ├── __init__.py       # モジュール初期化
+│   │       └── standard.py       # 緊急連絡人データ処理
 │   │
 │   ├── plaza_autocall/           # 🏪 プラザオートコール処理
 │   │   ├── __init__.py           # モジュール初期化

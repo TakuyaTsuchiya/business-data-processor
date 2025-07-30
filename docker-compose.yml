@@ -10,6 +10,9 @@ services:
     container_name: business-data-processor
     hostname: bdp-app
     
+    # 起動コマンドの明示的指定（権限問題対策）
+    command: ["python", "-m", "streamlit", "run", "app.py", "--server.maxUploadSize", "200"]
+    
     # ポート設定
     ports:
       - "8501:8501"
