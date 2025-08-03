@@ -196,6 +196,8 @@ def main():
     st.sidebar.markdown("### 📋 新規登録用CSV加工")
     if st.sidebar.button("アーク新規登録", key="ark_registration", use_container_width=True):
         st.session_state.selected_processor = "📋 アーク新規登録"
+    if st.sidebar.button("カプコ新規登録", key="capco_registration", use_container_width=True):
+        st.session_state.selected_processor = "📋 カプコ新規登録"
     
     # 選択されたプロセッサーを取得
     processor_type = st.session_state.selected_processor
@@ -233,6 +235,8 @@ def main():
         show_faith_sms_vacated_contract_processor()
     elif processor_type == "📋 アーク新規登録":
         show_ark_processor()
+    elif processor_type == "📋 カプコ新規登録":
+        show_capco_processor()
 
 def show_welcome_screen():
     """ウェルカム画面の表示"""
@@ -272,11 +276,12 @@ def show_welcome_screen():
         ### 📋 新規登録
         **対応システム:**
         - 📋 アーク新規登録
+        - 📋 カプコ新規登録
         
         **機能:**
         - 案件取込用レポートとContractListの統合
         - 住所分割・保証人判定を自動実行
-        - 111列の統合CSVを生成
+        - 統合CSVを生成
         - 重複チェック・データ変換
         """)
     
@@ -1534,6 +1539,136 @@ def show_faith_sms_vacated_contract_processor():
                 except Exception as e:
                     st.error(f"❌ エラーが発生しました: {str(e)}")
                     st.info("💡 ファイル形式やエンコーディングを確認してください")
+
+
+def show_capco_processor():
+    """カプコ新規登録処理画面"""
+    st.markdown("## 📋 カプコ新規登録データ変換")
+    st.markdown("カプコレポートファイルとContractListを統合し、カプコ新規登録用のCSVを生成します")
+    
+    # 処理条件の表示
+    with st.expander("📋 主な処理機能"):
+        st.markdown("""
+        - **重複チェック**: ContractListとの照合により既存データを自動除外
+        - **管理番号生成**: CAP-プレフィックス付きの管理番号を自動生成
+        - **住所分割**: 都道府県、市区町村、残り住所に自動分割
+        - **電話番号処理**: 正規化とフォーマット統一
+        - **金額計算**: 処理費用の自動計算（最低50,000円保証）
+        - **カプコ仕様**: カプコシステム特有のデータ形式に対応
+        """)
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("### 📄 カプコレポートファイル")
+        report_file = st.file_uploader(
+            "カプコレポート*.csv",
+            type=['csv'],
+            key="capco_report"
+        )
+        if report_file:
+            st.info(f"ファイルサイズ: {len(report_file.getvalue()):,} bytes")
+    
+    with col2:
+        st.markdown("### 📋 ContractList")
+        contract_file = st.file_uploader(
+            "ContractList_*.csv",
+            type=['csv'],
+            key="capco_contract"
+        )
+        if contract_file:
+            st.info(f"ファイルサイズ: {len(contract_file.getvalue()):,} bytes")
+    
+    if report_file is not None and contract_file is not None:
+        st.success("✅ 両方のファイルアップロード完了")
+        
+        # 処理ボタン
+        if st.button("🚀 処理開始", key="capco_process", type="primary"):
+            with st.spinner("データを統合・変換中..."):
+                try:
+                    # カプコプロセッサーをインポート
+                    from processors.capco_import_new_data import process_capco_import_new_data
+                    
+                    # ファイル内容を取得
+                    report_content = report_file.getvalue()
+                    contract_content = contract_file.getvalue()
+                    
+                    # データ処理実行
+                    df_output, logs, output_filename = process_capco_import_new_data(report_content, contract_content)
+                    
+                    # 処理結果表示
+                    st.success("✅ 処理が完了しました！")
+                    
+                    # 処理ログ表示
+                    with st.expander("📊 処理ログ"):
+                        for log in logs:
+                            st.text(log)
+                    
+                    # 結果統計
+                    if len(df_output) > 0:
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            st.metric("出力件数", len(df_output))
+                        with col2:
+                            phone_count = sum([
+                                df_output["契約者電話番号"].notna().sum(),
+                                df_output["契約者携帯番号"].notna().sum()
+                            ])
+                            st.metric("電話番号件数", phone_count)
+                        with col3:
+                            room_count = df_output["部屋番号"].notna().sum()
+                            st.metric("部屋番号あり", room_count)
+                        
+                        # データプレビュー表示
+                        st.markdown("### 📋 出力データプレビュー（上位10件）")
+                        # 表示用に列を選択
+                        preview_columns = [
+                            "管理番号", "契約者名", "契約者カナ", 
+                            "契約者携帯番号", "物件名称", "部屋番号",
+                            "月額家賃", "処理費用"
+                        ]
+                        available_columns = [col for col in preview_columns if col in df_output.columns]
+                        st.dataframe(df_output[available_columns].head(10), use_container_width=True)
+                        
+                        # CSVダウンロード
+                        csv_data = df_output.to_csv(index=False, encoding='cp932')
+                        st.download_button(
+                            label="📥 CSVファイルをダウンロード",
+                            data=csv_data.encode('cp932'),
+                            file_name=output_filename,
+                            mime="text/csv",
+                            type="primary"
+                        )
+                        
+                        # 詳細統計情報
+                        with st.expander("📈 詳細統計情報"):
+                            st.markdown("#### データ品質統計")
+                            
+                            # 電話番号統計
+                            home_tel_count = df_output["契約者電話番号"].notna().sum()
+                            mobile_tel_count = df_output["契約者携帯番号"].notna().sum()
+                            st.text(f"契約者電話番号: {home_tel_count}件")
+                            st.text(f"契約者携帯番号: {mobile_tel_count}件")
+                            
+                            # 住所統計
+                            if "契約者住所1" in df_output.columns:
+                                addr1_count = df_output["契約者住所1"].notna().sum()
+                                st.text(f"都道府県あり: {addr1_count}件")
+                            
+                            # 金額統計
+                            if "月額家賃" in df_output.columns:
+                                rent_avg = pd.to_numeric(df_output["月額家賃"], errors='coerce').mean()
+                                if pd.notna(rent_avg):
+                                    st.text(f"平均家賃: {rent_avg:,.0f}円")
+                    else:
+                        st.warning("⚠️ 処理対象データがありませんでした")
+                        
+                except ImportError as e:
+                    st.error(f"モジュールインポートエラー: {e}")
+                except Exception as e:
+                    st.error(f"❌ エラーが発生しました: {e}")
+                    with st.expander("エラー詳細"):
+                        st.exception(e)
 
 
 if __name__ == "__main__":
