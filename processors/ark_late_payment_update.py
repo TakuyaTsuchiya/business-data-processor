@@ -16,27 +16,69 @@ try:
 except ImportError:
     HAS_STREAMLIT = False
 
+# エンコーディング候補リスト（GitHubコードから踏襲）
+ENCODING_CANDIDATES = ['cp932', 'shift_jis', 'utf-8-sig', 'utf-8']
+
 
 def detect_encoding(file_content: Union[bytes, str]) -> str:
     """ファイルのエンコーディングを検出する"""
     if isinstance(file_content, str):
         # ファイルパスの場合
-        with open(file_content, 'rb') as f:
+        file_path = file_content
+        with open(file_path, 'rb') as f:
             raw_data = f.read(10000)
     else:
         # バイトデータの場合
         raw_data = file_content[:10000] if len(file_content) > 10000 else file_content
+        file_path = None
     
+    # chardetで検出
     result = chardet.detect(raw_data)
-    encoding = result['encoding']
+    detected_encoding = result['encoding']
+    confidence = result.get('confidence', 0)
+    
+    if HAS_STREAMLIT:
+        st.info(f"📊 エンコーディング検出: {detected_encoding} (信頼度: {confidence:.2f})")
+    
+    # 信頼度が低い場合は代替エンコーディングを試す
+    if confidence < 0.7:
+        if HAS_STREAMLIT:
+            st.warning(f"⚠️ エンコーディング信頼度が低いため、代替エンコーディングを試します")
+        
+        # ファイルパスがある場合のみ実際の読み込みテストが可能
+        if file_path:
+            for encoding in ENCODING_CANDIDATES:
+                try:
+                    with open(file_path, 'r', encoding=encoding) as f:
+                        f.read(1000)  # テスト読み込み
+                    if HAS_STREAMLIT:
+                        st.success(f"✅ エンコーディング '{encoding}' で読み込み成功")
+                    return encoding
+                except UnicodeDecodeError:
+                    continue
+        else:
+            # バイトデータの場合は候補から選択
+            for encoding in ENCODING_CANDIDATES:
+                try:
+                    raw_data.decode(encoding)
+                    if HAS_STREAMLIT:
+                        st.success(f"✅ エンコーディング '{encoding}' でデコード成功")
+                    return encoding
+                except UnicodeDecodeError:
+                    continue
     
     # よくあるエンコーディングの修正
-    if encoding in ['CP932', 'SHIFT_JIS', 'SHIFT-JIS']:
+    if detected_encoding in ['CP932', 'SHIFT_JIS', 'SHIFT-JIS']:
         return 'cp932'
-    elif encoding in ['UTF-8-SIG']:
+    elif detected_encoding in ['UTF-8-SIG']:
         return 'utf-8-sig'
+    elif detected_encoding:
+        return detected_encoding
     else:
-        return encoding or 'utf-8'
+        # フォールバック
+        if HAS_STREAMLIT:
+            st.warning("⚠️ エンコーディングを検出できません。cp932を使用します")
+        return 'cp932'
 
 
 def normalize_key_column(df: pd.DataFrame, column_name: str) -> pd.DataFrame:
@@ -98,6 +140,10 @@ def process_ark_late_payment_data(arc_file, contract_file) -> Optional[Tuple[pd.
             
             if HAS_STREAMLIT:
                 st.success(f"✅ アーク残債CSV読み込み完了: {len(arc_df):,}行")
+                # デバッグ情報：カラム名を表示
+                with st.expander("🔍 アーク残債CSVカラム一覧"):
+                    st.write(f"カラム数: {len(arc_df.columns)}")
+                    st.write(f"カラム名: {list(arc_df.columns)}")
         except Exception as e:
             if HAS_STREAMLIT:
                 st.error(f"❌ アーク残債CSVファイルの読み込みに失敗しました: {str(e)}")
@@ -121,6 +167,10 @@ def process_ark_late_payment_data(arc_file, contract_file) -> Optional[Tuple[pd.
             
             if HAS_STREAMLIT:
                 st.success(f"✅ ContractList読み込み完了: {len(contract_df):,}行")
+                # デバッグ情報：カラム名を表示
+                with st.expander("🔍 ContractListカラム一覧"):
+                    st.write(f"カラム数: {len(contract_df.columns)}")
+                    st.write(f"カラム名: {list(contract_df.columns)}")
         except Exception as e:
             if HAS_STREAMLIT:
                 st.error(f"❌ ContractListファイルの読み込みに失敗しました: {str(e)}")
