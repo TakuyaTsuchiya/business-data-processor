@@ -51,11 +51,11 @@ def apply_mirail_guarantor_without10k_filters(df: pd.DataFrame) -> Tuple[pd.Data
     df = df[df["クライアントCD"] == 1]
     logs.append(f"クライアントCD=1フィルタ後: {len(df)}件")
     
-    # 5. 残債のフィルタリング（10,000円・11,000円除外）
+    # 5. 滞納残債のフィルタリング（10,000円・11,000円除外）
     exclude_debts = [10000, 11000]
-    df["残債"] = pd.to_numeric(df["残債"], errors='coerce')
-    df = df[~df["残債"].isin(exclude_debts)]
-    logs.append(f"残債除外フィルタ後: {len(df)}件")
+    df["滞納残債"] = pd.to_numeric(df["滞納残債"].astype(str).str.replace(',', ''), errors='coerce')
+    df = df[~df["滞納残債"].isin(exclude_debts)]
+    logs.append(f"滞納残債除外フィルタ後: {len(df)}件")
     
     # 6. TEL携帯.1のフィルタリング（保証人電話番号が必須）
     df = df[
