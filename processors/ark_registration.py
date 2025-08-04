@@ -1,11 +1,12 @@
 """
-アーク新規登録データ処理プロセッサー（シンプル版）
-統合アプリ用に移植・簡略化
+アーク新規登録データ処理プロセッサー
+GitHubの動作実績コードを完全踏襲
 """
 
 import pandas as pd
 import io
 import re
+import unicodedata
 from datetime import datetime
 from typing import Tuple, Optional, Dict, List
 
@@ -70,17 +71,23 @@ def add_leading_zero(value: str) -> str:
 
 
 def normalize_phone_number(value: str) -> str:
-    """電話番号の正規化"""
+    """電話番号の正規化（GitHubコード踏襲）"""
     if pd.isna(value) or str(value).strip() == "":
         return ""
     
     phone = str(value).strip()
-    # ハイフンを除去
-    phone = re.sub(r'[-−ー]', '', phone)
-    # 数字以外を除去
-    phone = re.sub(r'[^\d]', '', phone)
     
-    return phone if len(phone) >= 10 else ""
+    # 全角数字を半角に変換
+    phone = unicodedata.normalize('NFKC', phone)
+    
+    # 記号を統一
+    phone = phone.replace("－", "-").replace("ー", "-").replace("‐", "-")
+    phone = phone.replace("（", "(").replace("）", ")")
+    
+    # 不要な文字を除去
+    phone = re.sub(r"[^\d\-\(\)]", "", phone)
+    
+    return phone
 
 
 def normalize_room_number(value: str) -> str:
@@ -99,12 +106,43 @@ def normalize_room_number(value: str) -> str:
     return room
 
 
-def split_address(address: str) -> Dict[str, str]:
-    """住所を都道府県、市区町村、残り住所に分割"""
+def extract_postal_code(address: str) -> Tuple[str, str]:
+    """住所から郵便番号を抽出"""
     if pd.isna(address) or str(address).strip() == "":
-        return {"prefecture": "", "city": "", "remaining": ""}
+        return "", address
     
     addr = str(address).strip()
+    
+    # 郵便番号パターン（〒マーク有無、ハイフン有無に対応）
+    postal_patterns = [
+        r'〒?\s*(\d{3})-?(\d{4})',
+        r'〒?\s*(\d{7})'
+    ]
+    
+    for pattern in postal_patterns:
+        match = re.search(pattern, addr)
+        if match:
+            if len(match.groups()) == 2:
+                postal = f"{match.group(1)}-{match.group(2)}"
+            else:
+                postal = match.group(1)
+                if len(postal) == 7:
+                    postal = f"{postal[:3]}-{postal[3:]}"
+            
+            # 郵便番号部分を削除
+            addr = re.sub(pattern, '', addr).strip()
+            return postal, addr
+    
+    return "", addr
+
+
+def split_address(address: str) -> Dict[str, str]:
+    """住所を郵便番号、都道府県、市区町村、残り住所に分割（GitHubコード踏襲）"""
+    if pd.isna(address) or str(address).strip() == "":
+        return {"postal_code": "", "prefecture": "", "city": "", "remaining": ""}
+    
+    # 郵便番号を抽出
+    postal_code, addr = extract_postal_code(address)
     
     # 都道府県を検索
     prefecture = ""
@@ -114,17 +152,39 @@ def split_address(address: str) -> Dict[str, str]:
             addr = addr[len(pref):]
             break
     
-    # 市区町村を抽出（簡易版）
+    # 市区町村を抽出（改善版）
     city = ""
-    city_patterns = ['市', '区', '町', '村']
-    for pattern in city_patterns:
-        match = re.search(f'([^{pattern}]*{pattern})', addr)
-        if match:
-            city = match.group(1)
-            addr = addr[len(city):]
-            break
+    
+    # 東京23区の特別処理
+    if prefecture == "東京都":
+        tokyo_wards = [
+            "千代田区", "中央区", "港区", "新宿区", "文京区", "台東区", "墨田区", "江東区",
+            "品川区", "目黒区", "大田区", "世田谷区", "渋谷区", "中野区", "杉並区", "豊島区",
+            "北区", "荒川区", "板橋区", "練馬区", "足立区", "葛飾区", "江戸川区"
+        ]
+        for ward in tokyo_wards:
+            if addr.startswith(ward):
+                city = ward
+                addr = addr[len(ward):]
+                break
+    
+    # 一般的な市区町村パターン
+    if not city:
+        city_patterns = [
+            r'^([^市区町村]+?[市])',
+            r'^([^市区町村]+?[区])',
+            r'^([^市区町村]+?[町])',
+            r'^([^市区町村]+?[村])'
+        ]
+        for pattern in city_patterns:
+            match = re.match(pattern, addr)
+            if match:
+                city = match.group(1)
+                addr = addr[len(city):]
+                break
     
     return {
+        "postal_code": postal_code,
         "prefecture": prefecture,
         "city": city,
         "remaining": addr
@@ -155,6 +215,35 @@ def extract_room_from_property_name(property_name: str) -> Tuple[str, str]:
     return prop_name, ""
 
 
+def generate_takeover_info(move_in_date: str) -> str:
+    """引継情報を生成（GitHubコード踏襲）"""
+    # 日付フォーマット
+    if pd.isna(move_in_date) or str(move_in_date).strip() == "":
+        formatted_date = ""
+    else:
+        try:
+            # 日付文字列をパース
+            date_str = str(move_in_date).strip()
+            # YYYY/MM/DD形式に統一
+            formatted_date = date_str
+        except:
+            formatted_date = str(move_in_date).strip()
+    
+    return f"●20日～25日頃に督促手数料2,750円or2,970円が加算されることあり。案内注意！！　●入居日：{formatted_date}"
+
+
+def process_phone_numbers(home_tel: str, mobile_tel: str) -> Dict[str, str]:
+    """電話番号処理（自宅TELのみの場合は携帯TELに移動）"""
+    home = normalize_phone_number(home_tel)
+    mobile = normalize_phone_number(mobile_tel)
+    
+    # 自宅TELのみの場合、携帯TELに移動
+    if home and not mobile:
+        return {"home": "", "mobile": home}
+    
+    return {"home": home, "mobile": mobile}
+
+
 def calculate_exit_procedure_fee(rent: str, management_fee: str, parking_fee: str, other_fee: str) -> int:
     """退去手続き費用計算（最低70,000円）"""
     try:
@@ -169,6 +258,57 @@ def calculate_exit_procedure_fee(rent: str, management_fee: str, parking_fee: st
         return max(total, 70000)
     except:
         return 70000
+
+
+def process_guarantor_emergency(row: pd.Series) -> Dict[str, Dict[str, str]]:
+    """保証人・緊急連絡人判定（GitHubコード踏襲）"""
+    result = {
+        "guarantor1": {},
+        "emergency1": {}
+    }
+    
+    # 種別／続柄２で判定
+    relationship_type = str(row.get("種別／続柄２", "")).strip() if pd.notna(row.get("種別／続柄２", "")) else ""
+    
+    # 名前、電話番号、住所などの共通処理
+    name2 = str(row.get("名前2", "")).strip() if pd.notna(row.get("名前2", "")) else ""
+    name2_kana = str(row.get("名前2（カナ）", "")).strip() if pd.notna(row.get("名前2（カナ）", "")) else ""
+    
+    # スペース除去
+    name2 = name2.replace(" ", "").replace("　", "")
+    name2_kana = name2_kana.replace(" ", "").replace("　", "")
+    
+    # 電話番号処理
+    phone_result = process_phone_numbers(
+        row.get("自宅TEL2", ""),
+        row.get("携帯TEL2", "")
+    )
+    
+    # 住所処理
+    address2 = str(row.get("住所2", "")).strip() if pd.notna(row.get("住所2", "")) else ""
+    addr_parts = split_address(address2)
+    
+    # 共通データ
+    common_data = {
+        "氏名": name2,
+        "カナ": name2_kana,
+        "自宅TEL": phone_result["home"],
+        "携帯TEL": phone_result["mobile"],
+        "郵便番号": addr_parts.get("postal_code", ""),
+        "都道府県": addr_parts.get("prefecture", ""),
+        "市区町村": addr_parts.get("city", ""),
+        "残り住所": addr_parts.get("remaining", ""),
+        "続柄": "他"  # デフォルト
+    }
+    
+    # 保証人判定
+    if "保証人" in relationship_type:
+        result["guarantor1"] = common_data
+    # 緊急連絡人判定（"緊急連絡"または"(法)代表者１/"を含む場合）
+    elif "緊急連絡" in relationship_type or "(法)代表者１/" in relationship_type:
+        result["emergency1"] = common_data
+    
+    return result
 
 
 def check_for_duplicates(report_df: pd.DataFrame, contract_df: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
@@ -250,11 +390,10 @@ def transform_data_to_ark_format(report_df: pd.DataFrame, contract_df: pd.DataFr
     
     output_df = pd.DataFrame(index=range(len(report_df)), columns=output_columns)
     
-    # 保証人・緊急連絡人の判定
-    guarantors, contacts = identify_guarantors_and_contacts(report_df)
-    logs.append(f"保証人: {len(guarantors)}人, 緊急連絡人: {len(contacts)}人")
-    
     # 基本データの変換
+    guarantor_count = 0
+    emergency_count = 0
+    
     for idx, row in report_df.iterrows():
         output_idx = idx
         
@@ -263,21 +402,18 @@ def transform_data_to_ark_format(report_df: pd.DataFrame, contract_df: pd.DataFr
         output_df.loc[output_idx, "契約者氏名"] = str(row.get("契約者氏名", "")).strip()
         output_df.loc[output_idx, "契約者カナ"] = str(row.get("契約者カナ", "")).strip()
         
-        # 電話番号処理
-        home_tel = normalize_phone_number(row.get("自宅TEL1", ""))
-        mobile_tel = normalize_phone_number(row.get("携帯TEL1", ""))
+        # 電話番号処理（GitHubコード踏襲）
+        phone_result = process_phone_numbers(
+            row.get("自宅TEL1", ""),
+            row.get("携帯TEL1", "")
+        )
+        output_df.loc[output_idx, "契約者TEL自宅"] = phone_result["home"]
+        output_df.loc[output_idx, "契約者TEL携帯"] = phone_result["mobile"]
         
-        # 自宅TELのみの場合は携帯TELに移動
-        if home_tel and not mobile_tel:
-            output_df.loc[output_idx, "契約者TEL自宅"] = ""
-            output_df.loc[output_idx, "契約者TEL携帯"] = home_tel
-        else:
-            output_df.loc[output_idx, "契約者TEL自宅"] = home_tel
-            output_df.loc[output_idx, "契約者TEL携帯"] = mobile_tel
-        
-        # 住所分割
+        # 住所分割（GitHubコード踏襲：郵便番号も抽出）
         address = str(row.get("住所1", "")).strip()
         addr_parts = split_address(address)
+        output_df.loc[output_idx, "契約者現住所郵便番号"] = addr_parts.get("postal_code", "")
         output_df.loc[output_idx, "契約者現住所1"] = addr_parts["prefecture"]
         output_df.loc[output_idx, "契約者現住所2"] = addr_parts["city"]
         output_df.loc[output_idx, "契約者現住所3"] = addr_parts["remaining"]
@@ -311,16 +447,24 @@ def transform_data_to_ark_format(report_df: pd.DataFrame, contract_df: pd.DataFr
         exit_fee = calculate_exit_procedure_fee(rent, management_fee, parking_fee, "0")
         output_df.loc[output_idx, "退去手続き費用"] = str(exit_fee)
         
-        # 引継情報生成
+        # 引継情報生成（GitHubコード踏襲）
         move_in_date = str(row.get("入居日", "")).strip()
-        takeover_info = f"督促手数料については当社規定により請求いたします。{move_in_date}"
+        takeover_info = generate_takeover_info(move_in_date)
         output_df.loc[output_idx, "引継情報"] = takeover_info
         
         # 今日の日付
         today = datetime.now().strftime("%Y/%m/%d")
         output_df.loc[output_idx, "管理受託日"] = today
         output_df.loc[output_idx, "申請者確認日"] = today
+        
+        # 保証人・緊急連絡人判定（GitHubコード踏襲）
+        contact_info = process_guarantor_emergency(row)
+        if contact_info["guarantor1"]:
+            guarantor_count += 1
+        if contact_info["emergency1"]:
+            emergency_count += 1
     
+    logs.append(f"保証人: {guarantor_count}人, 緊急連絡人: {emergency_count}人")
     logs.append(f"データ変換完了: {len(output_df)}件")
     return output_df, logs
 
