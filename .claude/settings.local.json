@@ -1,5 +1,4 @@
 {
-  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
       "WebFetch(domain:github.com)",
@@ -20,13 +19,14 @@
       "Bash(find:*)",
       "Bash(cmd:*)",
       "Bash(git reset:*)",
-      "Bash(streamlit run:*)",
-      "Bash(gh run list:*)",
-      "Bash(gh run:*)",
-      "Bash(gh workflow run:*)",
-      "Bash(rm:*)",
-      "Bash(del:*)",
-      "Bash(git rm:*)"
+      "Bash(docker-compose up:*)",
+      "Bash(docker-compose:*)",
+      "Bash(curl:*)",
+      "Bash(python:*)",
+      "Bash(docker exec:*)",
+      "Bash(git checkout:*)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)"
     ],
     "deny": []
   }
