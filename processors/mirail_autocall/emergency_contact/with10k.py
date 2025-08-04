@@ -17,6 +17,33 @@ if processors_dir not in sys.path:
 from autocall_common import AUTOCALL_OUTPUT_COLUMNS
 
 
+class MirailEmergencyContactWith10kConfig:
+    """ミライル緊急連絡人（残債含む全件）処理の設定"""
+    
+    # フィルタリング条件（with10k版：残債フィルタなし・クライアントCDフィルタなし）
+    FILTER_CONDITIONS = {
+        "委託先法人ID": "空白と5",
+        "入金予定日": "前日以前またはNaN",
+        "回収ランク_not_in": ["弁護士介入"],
+        "TEL携帯.2": "空でない値のみ"
+        # 注意：with10k版では残債フィルタ・クライアントCDフィルタなし（全件処理）
+    }
+    
+    # マッピングルール
+    MAPPING_RULES = {
+        "電話番号": "TEL携帯.2",
+        "架電番号": "TEL携帯.2", 
+        "入居ステータス": "入居ステータス",
+        "滞納ステータス": "滞納ステータス",
+        "管理番号": "管理番号",
+        "契約者名（カナ）": "契約者カナ",
+        "物件名": "物件名",
+        "クライアント": "クライアント名"
+    }
+    
+    OUTPUT_FILE_PREFIX = "ミライル_with10k_緊急連絡人"
+
+
 def read_csv_auto_encoding(file_content: bytes) -> pd.DataFrame:
     """アップロードされたCSVファイルを自動エンコーディング判定で読み込み"""
     encodings = ['utf-8', 'utf-8-sig', 'shift_jis', 'cp932']
@@ -50,24 +77,23 @@ def apply_mirail_emergencycontact_with10k_filters(df: pd.DataFrame) -> Tuple[pd.
     logs.append(f"入金予定日フィルタ後: {len(df)}件")
     
     # 3. 回収ランクのフィルタリング（弁護士介入のみ除外）
-    exclude_ranks = ["弁護士介入"]
-    df = df[~df["回収ランク"].isin(exclude_ranks)]
-    logs.append(f"回収ランクフィルタ後: {len(df)}件")
+    if "回収ランク_not_in" in MirailEmergencyContactWith10kConfig.FILTER_CONDITIONS:
+        df = df[~df["回収ランク"].isin(MirailEmergencyContactWith10kConfig.FILTER_CONDITIONS["回収ランク_not_in"])]
+        logs.append(f"回収ランクフィルタ後: {len(df)}件")
     
-    # 4. クライアントCDのフィルタリング（1のみ）
-    df["クライアントCD"] = pd.to_numeric(df["クライアントCD"], errors="coerce")
-    df = df[df["クライアントCD"] == 1]
-    logs.append(f"クライアントCD=1フィルタ後: {len(df)}件")
+    # 4. 残債・クライアントCDのフィルタリング（with10k版では除外なし - 全件処理）
+    # ※ without10k版では残債10,000円・11,000円を除外するが、with10k版は全件処理
+    # ※ with10k版ではクライアントCDフィルタも適用しない（全クライアント対象）
+    logs.append("残債フィルタ: 除外なし（with10k版：10,000円・11,000円も含む全件処理）")
+    logs.append("クライアントCDフィルタ: 除外なし（with10k版：全クライアント対象）")
     
-    # 5. 残債のフィルタリング（with10k版では除外なし）
-    logs.append("残債フィルタ: 除外なし（with10k版のため）")
-    
-    # 6. TEL携帯.2のフィルタリング（緊急連絡人電話番号が必須）
-    df = df[
-        df["TEL携帯.2"].notna() &
-        (~df["TEL携帯.2"].astype(str).str.strip().isin(["", "nan", "NaN"]))
-    ]
-    logs.append(f"TEL携帯.2フィルタ後: {len(df)}件")
+    # 5. TEL携帯.2のフィルタリング（緊急連絡人電話番号が必須）
+    if "TEL携帯.2" in MirailEmergencyContactWith10kConfig.FILTER_CONDITIONS:
+        df = df[
+            df["TEL携帯.2"].notna() &
+            (~df["TEL携帯.2"].astype(str).str.strip().isin(["", "nan", "NaN"]))
+        ]
+        logs.append(f"TEL携帯.2フィルタ後: {len(df)}件")
     
     return df, logs
 
