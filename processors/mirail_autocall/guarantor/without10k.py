@@ -17,6 +17,33 @@ if processors_dir not in sys.path:
 from autocall_common import AUTOCALL_OUTPUT_COLUMNS
 
 
+class MirailGuarantorConfig:
+    """ミライル保証人処理の設定"""
+    
+    # フィルタリング条件
+    FILTER_CONDITIONS = {
+        "委託先法人ID": "空白と5",
+        "入金予定日": "前日以前またはNaN",
+        "回収ランク_not_in": ["弁護士介入"],
+        "滞納残債_not_in": [10000, 11000],
+        "TEL携帯.1": "空でない値のみ"
+    }
+    
+    # マッピングルール
+    MAPPING_RULES = {
+        "電話番号": "TEL携帯.1",
+        "架電番号": "TEL携帯.1", 
+        "入居ステータス": "入居ステータス",
+        "滞納ステータス": "滞納ステータス",
+        "管理番号": "管理番号",
+        "契約者名（カナ）": "契約者カナ",
+        "物件名": "物件名",
+        "クライアント": "クライアント名"
+    }
+    
+    OUTPUT_FILE_PREFIX = "ミライル_without10k_保証人"
+
+
 def read_csv_auto_encoding(file_content: bytes) -> pd.DataFrame:
     """アップロードされたCSVファイルを自動エンコーディング判定で読み込み"""
     encodings = ['utf-8', 'utf-8-sig', 'shift_jis', 'cp932']
@@ -59,27 +86,29 @@ def apply_mirail_guarantor_without10k_filters(df: pd.DataFrame) -> Tuple[pd.Data
     logs.append(f"入金予定日フィルタ後: {len(df)}件")
     
     # 3. 回収ランクのフィルタリング（弁護士介入のみ除外）
-    exclude_ranks = ["弁護士介入"]
-    df = df[~df["回収ランク"].isin(exclude_ranks)]
-    logs.append(f"回収ランクフィルタ後: {len(df)}件")
+    if "回収ランク_not_in" in MirailGuarantorConfig.FILTER_CONDITIONS:
+        df = df[~df["回収ランク"].isin(MirailGuarantorConfig.FILTER_CONDITIONS["回収ランク_not_in"])]
+        logs.append(f"回収ランクフィルタ後: {len(df)}件")
     
     # 4. 残債除外フィルタリング
     # 「クライアントCD=1 かつ 滞納残債=10,000円・11,000円」のレコードのみ除外
     # その他全てのレコードは対象（クライアントCD≠1や、CD=1でも残債が10k/11k以外）
-    df["クライアントCD"] = pd.to_numeric(df["クライアントCD"], errors="coerce")
-    df["滞納残債"] = pd.to_numeric(df["滞納残債"].astype(str).str.replace(',', ''), errors='coerce')
-    
-    exclude_debts = [10000, 11000]
-    exclude_condition = (df["クライアントCD"] == 1) & (df["滞納残債"].isin(exclude_debts))
-    df = df[~exclude_condition]
-    logs.append(f"クライアントCD=1かつ残債10,000円・11,000円除外後: {len(df)}件")
+    if "滞納残債_not_in" in MirailGuarantorConfig.FILTER_CONDITIONS:
+        df["クライアントCD"] = pd.to_numeric(df["クライアントCD"], errors="coerce")
+        df["滞納残債"] = pd.to_numeric(df["滞納残債"].astype(str).str.replace(',', ''), errors='coerce')
+        
+        exclude_condition = (df["クライアントCD"] == 1) & \
+                           (df["滞納残債"].isin(MirailGuarantorConfig.FILTER_CONDITIONS["滞納残債_not_in"]))
+        df = df[~exclude_condition]
+        logs.append(f"クライアントCD=1かつ残債10,000円・11,000円除外後: {len(df)}件")
     
     # 5. TEL携帯.1のフィルタリング（保証人電話番号が必須）
-    df = df[
-        df["TEL携帯.1"].notna() &
-        (~df["TEL携帯.1"].astype(str).str.strip().isin(["", "nan", "NaN"]))
-    ]
-    logs.append(f"TEL携帯.1フィルタ後: {len(df)}件")
+    if "TEL携帯.1" in MirailGuarantorConfig.FILTER_CONDITIONS:
+        df = df[
+            df["TEL携帯.1"].notna() &
+            (~df["TEL携帯.1"].astype(str).str.strip().isin(["", "nan", "NaN"]))
+        ]
+        logs.append(f"TEL携帯.1フィルタ後: {len(df)}件")
     
     return df, logs
 
