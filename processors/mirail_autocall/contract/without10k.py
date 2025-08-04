@@ -60,7 +60,14 @@ def read_csv_auto_encoding(file_content: bytes) -> pd.DataFrame:
 
 def apply_filters(df_input: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
     """
-    ミライル用フィルタリングを適用
+    ミライル契約者（残債10,000円・11,000円除外）フィルタリング処理
+    
+    📋 フィルタリング条件:
+    - 委託先法人ID: 空白と5（直接管理・特定委託案件）
+    - 入金予定日: 前日以前またはNaN（当日は除外）
+    - 回収ランク: 弁護士介入を除外
+    - 残債除外: クライアントCD=1かつ滞納残債10,000円・11,000円のレコードのみ除外
+    - TEL携帯: 空でない値のみ（契約者電話番号）
     
     Returns:
         tuple: (フィルタリング済みDataFrame, 処理ログ)
@@ -72,14 +79,14 @@ def apply_filters(df_input: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
     initial_count = len(df)
     logs.append(f"初期データ件数: {initial_count}件")
     
-    # 委託先法人IDのフィルタリング（空白と5）
+    # 委託先法人IDのフィルタリング（空白と5 - 直接管理・特定委託案件）
     if "委託先法人ID" in filter_conditions:
         df = df[df["委託先法人ID"].isna() | 
                (df["委託先法人ID"].astype(str).str.strip() == "") | 
                (df["委託先法人ID"].astype(str).str.strip() == "5")]
         logs.append(f"委託先法人IDフィルタリング後: {len(df)}件")
     
-    # 入金予定日のフィルタリング
+    # 入金予定日のフィルタリング（前日以前またはNaN、当日は除外）
     today = pd.Timestamp.now().normalize()
     df["入金予定日"] = pd.to_datetime(df["入金予定日"], errors='coerce')
     df = df[df["入金予定日"].isna() | (df["入金予定日"] < today)]
@@ -90,7 +97,9 @@ def apply_filters(df_input: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
         df = df[~df["回収ランク"].isin(filter_conditions["回収ランク_not_in"])]
         logs.append(f"回収ランクフィルタリング後: {len(df)}件")
     
-    # 滞納残債のフィルタリング（クライアントCDが1かつ10,000円・11,000円を除外）
+    # 残債除外フィルタリング
+    # 「クライアントCD=1 かつ 滞納残債=10,000円・11,000円」のレコードのみ除外
+    # その他全てのレコードは対象（クライアントCD≠1や、CD=1でも残債が10k/11k以外）
     if "滞納残債_not_in" in filter_conditions:
         df["クライアントCD"] = pd.to_numeric(df["クライアントCD"], errors="coerce")
         df["滞納残債"] = pd.to_numeric(df["滞納残債"].astype(str).str.replace(',', ''), errors='coerce')
@@ -98,9 +107,9 @@ def apply_filters(df_input: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
         exclude_condition = (df["クライアントCD"] == 1) & \
                            (df["滞納残債"].isin(filter_conditions["滞納残債_not_in"]))
         df = df[~exclude_condition]
-        logs.append(f"滞納残債フィルタリング後: {len(df)}件")
+        logs.append(f"クライアントCD=1かつ残債10,000円・11,000円除外後: {len(df)}件")
     
-    # TEL携帯のフィルタリング（空でない値のみ）
+    # TEL携帯のフィルタリング（契約者電話番号が必須）
     if "TEL携帯" in filter_conditions:
         df = df[
             df["TEL携帯"].notna() &

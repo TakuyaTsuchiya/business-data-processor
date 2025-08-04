@@ -93,40 +93,53 @@ business-data-processor/
 ## 🎯 業務カテゴリ構造
 
 ### 📞 オートコール処理
+
+#### 🏢 ミライル（6種類）
 ```
-processors/
-├── mirail_autocall/              # ミライル
-│   ├── contract/                 # 契約者
-│   │   ├── without10k.py         # 残債1万円・1万1千円除外
-│   │   └── with10k.py            # 残債含む全件処理
-│   ├── guarantor/                # 保証人
-│   │   ├── without10k.py         # 残債1万円・1万1千円除外
-│   │   └── with10k.py            # 残債含む全件処理
-│   └── emergency_contact/        # 緊急連絡人
-│       ├── without10k.py         # 残債1万円・1万1千円除外
-│       └── with10k.py            # 残債含む全件処理
-├── faith_autocall/               # フェイス
-│   ├── contract/                 # 契約者
-│   │   └── standard.py           # 委託先法人ID別処理
-│   ├── guarantor/                # 保証人
-│   │   └── standard.py           # 委託先法人ID別処理
-│   └── emergency_contact/        # 緊急連絡人
-│       └── standard.py           # 委託先法人ID別処理
-└── plaza_autocall/               # プラザ
-    ├── main/                     # 契約者（2ファイル処理）
-    │   └── standard.py           # ContractList + Excel報告書
-    ├── guarantor/                # 保証人（基本構造のみ）
-    │   └── standard.py           # 基本構造のみ未実装
-    └── contact/                  # 緊急連絡人（2ファイル処理）
-        └── standard.py           # ContractList + Excel報告書
+processors/mirail_autocall/
+├── contract/                     # 契約者オートコール
+│   ├── without10k.py             # 残債除外版
+│   │   📋 フィルタ条件: 委託先法人ID(空白&5), 入金予定日(前日以前), 
+│   │                  回収ランク(弁護士介入除外), 
+│   │                  残債除外(CD=1かつ10k/11k除外), TEL携帯必須
+│   └── with10k.py                # 残債含む全件処理版
+│       📋 フィルタ条件: 委託先法人ID(空白&5), 入金予定日(前日以前),
+│                      回収ランク(弁護士介入除外), 残債フィルタなし, TEL携帯必須
+├── guarantor/                    # 保証人オートコール
+│   ├── without10k.py             # 残債除外版（TEL携帯.1使用）
+│   └── with10k.py                # 残債含む全件処理版（TEL携帯.1使用）
+└── emergency_contact/            # 緊急連絡人オートコール
+    ├── without10k.py             # 残債除外版（TEL携帯.2使用）
+    └── with10k.py                # 残債含む全件処理版（TEL携帯.2使用）
+```
+
+#### 📱 フェイス（3種類）
+```
+processors/faith_autocall/
+├── contract/standard.py          # 契約者オートコール
+├── guarantor/standard.py         # 保証人オートコール  
+└── emergency_contact/standard.py # 緊急連絡人オートコール
+📋 共通フィルタ条件: 委託先法人ID(1-4), 入金予定日(前日以前),
+                   回収ランク(弁護士介入除外), 残債フィルタなし
+```
+
+#### 🏪 プラザ（3種類）
+```
+processors/plaza_autocall/
+├── main/standard.py              # 契約者オートコール（2ファイル処理）
+├── guarantor/standard.py         # 保証人オートコール（2ファイル処理）
+└── contact/standard.py           # 緊急連絡人オートコール（2ファイル処理）
+📋 共通フィルタ条件: 延滞額合計(0,2,3,5円除外), TEL無効除外,
+                   回収ランク(督促停止・弁護士介入除外)
+📂 必要ファイル: ContractList + Excel報告書
 ```
 
 ### 📱 SMS処理
 ```
-processors/
-└── faith_sms/                    # フェイスSMS処理
-    ├── vacated_contract.py       # 退去済み契約者SMS（実装済み）
-    └── standard.py               # 標準版（将来実装予定）
+processors/faith_sms/
+├── vacated_contract.py           # 退去済み契約者SMS（実装済み）
+│   📋 フィルタ条件: 入居ステータス(退去済み), 委託先法人ID(1-4), TEL携帯必須
+└── standard.py                   # 標準版（将来実装予定）
 ```
 
 ### 📋 データ変換処理

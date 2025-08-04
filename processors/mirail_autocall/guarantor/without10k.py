@@ -31,19 +31,28 @@ def read_csv_auto_encoding(file_content: bytes) -> pd.DataFrame:
 
 
 def apply_mirail_guarantor_without10k_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
-    """ミライル保証人（残債除外）フィルタリング処理"""
+    """
+    ミライル保証人（残債10,000円・11,000円除外）フィルタリング処理
+    
+    📋 フィルタリング条件:
+    - 委託先法人ID: 空白と5（直接管理・特定委託案件）
+    - 入金予定日: 前日以前またはNaN（当日は除外）
+    - 回収ランク: 弁護士介入を除外
+    - 残債除外: クライアントCD=1かつ滞納残債10,000円・11,000円のレコードのみ除外
+    - TEL携帯.1: 空でない値のみ（保証人電話番号）
+    """
     logs = []
     original_count = len(df)
     logs.append(f"元データ件数: {original_count}件")
     
     # フィルタリング条件
-    # 1. 委託先法人IDが空白と5
+    # 1. 委託先法人IDが空白と5（直接管理・特定委託案件）
     df = df[df["委託先法人ID"].isna() | 
            (df["委託先法人ID"].astype(str).str.strip() == "") | 
            (df["委託先法人ID"].astype(str).str.strip() == "5")]
     logs.append(f"委託先法人ID（空白と5）フィルタ後: {len(df)}件")
     
-    # 2. 入金予定日のフィルタリング（前日以前またはNaN）
+    # 2. 入金予定日のフィルタリング（前日以前またはNaN、当日は除外）
     today = pd.Timestamp.now().normalize()
     df["入金予定日"] = pd.to_datetime(df["入金予定日"], errors='coerce')
     df = df[df["入金予定日"].isna() | (df["入金予定日"] < today)]
@@ -54,8 +63,9 @@ def apply_mirail_guarantor_without10k_filters(df: pd.DataFrame) -> Tuple[pd.Data
     df = df[~df["回収ランク"].isin(exclude_ranks)]
     logs.append(f"回収ランクフィルタ後: {len(df)}件")
     
-    # 4. 滞納残債とクライアントCDの複合フィルタリング
+    # 4. 残債除外フィルタリング
     # 「クライアントCD=1 かつ 滞納残債=10,000円・11,000円」のレコードのみ除外
+    # その他全てのレコードは対象（クライアントCD≠1や、CD=1でも残債が10k/11k以外）
     df["クライアントCD"] = pd.to_numeric(df["クライアントCD"], errors="coerce")
     df["滞納残債"] = pd.to_numeric(df["滞納残債"].astype(str).str.replace(',', ''), errors='coerce')
     
