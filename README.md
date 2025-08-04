@@ -1,5 +1,7 @@
 # Business Data Processor v2.3.0
 
+[![CI/CD Status](https://github.com/TakuyaTsuchiya/business-data-processor/workflows/Deploy%20to%20Production/badge.svg)](https://github.com/TakuyaTsuchiya/business-data-processor/actions)
+
 **統合データ処理システム** - 革新的UIシステム搭載版
 
 ## 🌟 概要
