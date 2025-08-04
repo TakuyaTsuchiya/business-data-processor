@@ -29,9 +29,11 @@ def apply_mirail_emergencycontact_with10k_filters(df: pd.DataFrame) -> Tuple[pd.
     logs.append(f"元データ件数: {original_count}件")
     
     # フィルタリング条件
-    # 1. 委託先法人IDが空白のみ
-    df = df[df["委託先法人ID"].isna() | (df["委託先法人ID"].astype(str).str.strip() == "")]
-    logs.append(f"委託先法人ID空白フィルタ後: {len(df)}件")
+    # 1. 委託先法人IDが空白と5
+    df = df[df["委託先法人ID"].isna() | 
+           (df["委託先法人ID"].astype(str).str.strip() == "") | 
+           (df["委託先法人ID"].astype(str).str.strip() == "5")]
+    logs.append(f"委託先法人ID（空白と5）フィルタ後: {len(df)}件")
     
     # 2. 入金予定日のフィルタリング（前日以前またはNaN）
     today = pd.Timestamp.now().normalize()

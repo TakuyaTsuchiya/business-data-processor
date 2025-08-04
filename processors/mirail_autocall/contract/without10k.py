@@ -14,7 +14,7 @@ class MirailConfig:
     
     # フィルタリング条件
     FILTER_CONDITIONS = {
-        "委託先法人ID": "空白のみ",
+        "委託先法人ID": "空白と5",
         "入金予定日": "前日以前またはNaN",
         "回収ランク_not_in": ["弁護士介入"],
         "滞納残債_not_in": [10000, 11000],
@@ -64,9 +64,11 @@ def apply_filters(df_input: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
     initial_count = len(df)
     logs.append(f"初期データ件数: {initial_count}件")
     
-    # 委託先法人IDのフィルタリング（空白のみ）
+    # 委託先法人IDのフィルタリング（空白と5）
     if "委託先法人ID" in filter_conditions:
-        df = df[df["委託先法人ID"].isna() | (df["委託先法人ID"].astype(str).str.strip() == "")]
+        df = df[df["委託先法人ID"].isna() | 
+               (df["委託先法人ID"].astype(str).str.strip() == "") | 
+               (df["委託先法人ID"].astype(str).str.strip() == "5")]
         logs.append(f"委託先法人IDフィルタリング後: {len(df)}件")
     
     # 入金予定日のフィルタリング
