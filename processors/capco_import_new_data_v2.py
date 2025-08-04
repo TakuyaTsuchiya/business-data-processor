@@ -248,15 +248,24 @@ def split_address(address: str) -> Dict[str, str]:
             addr = addr[len(pref):]
             break
     
-    # 市区町村を抽出
+    # 市区町村を抽出（政令指定都市の区も含む）
     city = ""
-    city_patterns = ['市', '区', '町', '村']
-    for pattern in city_patterns:
-        match = re.search(f'([^{pattern}]*{pattern})', addr)
-        if match:
-            city = match.group(1)
-            addr = addr[len(city):]
-            break
+    
+    # 政令指定都市の区を優先的にマッチ（例：横浜市港北区、千葉市美浜区）
+    city_ward_pattern = r'([^市]*市[^区]*区)'
+    match = re.search(city_ward_pattern, addr)
+    if match:
+        city = match.group(1)
+        addr = addr[len(city):]
+    else:
+        # 通常の市区町村パターン
+        city_patterns = ['市', '区', '町', '村']
+        for pattern in city_patterns:
+            match = re.search(f'([^{pattern}]*{pattern})', addr)
+            if match:
+                city = match.group(1)
+                addr = addr[len(city):]
+                break
     
     return {
         "prefecture": prefecture,
