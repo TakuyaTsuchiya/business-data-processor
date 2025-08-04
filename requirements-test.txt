@@ -1,0 +1,18 @@
+# テスト実行用の依存関係
+# 本番のrequirements.txtに加えて、テスト時のみ必要なパッケージ
+
+# Testing framework
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-html>=3.0.0
+
+# Code quality
+flake8>=5.0.0
+black>=22.0.0
+
+# Test utilities
+pytest-mock>=3.0.0
+pytest-xdist>=3.0.0  # 並列テスト実行
+
+# Coverage reporting
+coverage>=6.0.0

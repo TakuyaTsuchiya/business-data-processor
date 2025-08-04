@@ -6,7 +6,7 @@
 import pandas as pd
 import io
 from datetime import datetime
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 
 
 def read_csv_auto_encoding(file_content: bytes) -> pd.DataFrame:
@@ -150,3 +150,32 @@ def get_sample_template() -> pd.DataFrame:
         "管理番号", "契約者名（カナ）", "物件名", "クライアント"
     ]
     return pd.DataFrame(columns=columns)
+
+
+def process_mirail_contract_with10k_data(uploaded_file) -> Optional[Tuple[pd.DataFrame, str]]:
+    """
+    Streamlit UploadedFile用のwrapper関数
+    
+    Args:
+        uploaded_file: Streamlit UploadedFile オブジェクト
+        
+    Returns:
+        Optional[Tuple[pd.DataFrame, str]]: (出力DataFrame, ファイル名) または None
+    """
+    try:
+        # UploadedFileからバイト内容を取得
+        file_content = uploaded_file.read()
+        uploaded_file.seek(0)  # ファイルポジションをリセット
+        
+        # メイン処理を実行
+        df_filtered, df_output, logs, output_filename = process_mirail_with10k_data(file_content)
+        
+        # 処理結果が空の場合はNoneを返す
+        if len(df_output) == 0:
+            return None
+            
+        return df_output, output_filename
+        
+    except Exception as e:
+        print(f"ミライル契約者with10k処理エラー: {str(e)}")
+        return None

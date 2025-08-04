@@ -1,13 +1,15 @@
-name: Deploy to Production
+name: Test and Deploy to Production
 on:
   push:
     branches: [main]
     paths:
       - '**.py'
       - 'requirements.txt'
+      - 'requirements-test.txt'
       - 'Dockerfile'
       - 'docker-compose.yml'
       - '.github/workflows/**'
+      - 'tests/**'
   workflow_dispatch:
     inputs:
       force_deploy:
@@ -16,7 +18,57 @@ on:
         type: boolean
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+
+      - name: Run unit tests
+        run: |
+          echo "🧪 Running unit tests..."
+          python -m pytest tests/ -v --tb=short --maxfail=5 -m "not slow"
+
+      - name: Run integration tests
+        run: |
+          echo "🔗 Running integration tests..."
+          python -m pytest tests/test_app_integration.py -v --tb=short
+
+      - name: Generate test coverage report
+        run: |
+          echo "📊 Generating test coverage report..."
+          python -m pytest tests/ --cov=processors --cov=. --cov-report=term-missing --cov-report=html
+        continue-on-error: true
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: coverage-report
+          path: htmlcov/
+        continue-on-error: true
+
   deploy:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -73,4 +125,38 @@ jobs:
           else
             echo "❌ Deployment failed!"
             echo "🔍 Check the logs above for details"
+          fi
+
+  notify:
+    needs: [test, deploy]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Notify workflow result
+        run: |
+          echo "=== Workflow Summary ==="
+          echo "🔬 Test Status: ${{ needs.test.result }}"
+          echo "🚀 Deploy Status: ${{ needs.deploy.result }}"
+          echo "📅 Completed at: $(date)"
+          
+          if [ "${{ needs.test.result }}" == "success" ] && [ "${{ needs.deploy.result }}" == "success" ]; then
+            echo ""
+            echo "🎉 Full CI/CD Pipeline Success!"
+            echo "✅ All tests passed"
+            echo "✅ Deployment completed"
+            echo "🌐 Application: https://mirail.net"
+          elif [ "${{ needs.test.result }}" == "failure" ]; then
+            echo ""
+            echo "❌ Pipeline Failed - Tests Failed"
+            echo "🔍 Check test logs for details"
+            echo "🚫 Deployment was skipped"
+          elif [ "${{ needs.deploy.result }}" == "failure" ]; then
+            echo ""
+            echo "❌ Pipeline Failed - Deployment Failed"
+            echo "✅ Tests passed successfully"
+            echo "🔍 Check deployment logs for details"
+          else
+            echo ""
+            echo "⚠️ Pipeline completed with mixed results"
+            echo "🔍 Check individual job logs for details"
           fi
