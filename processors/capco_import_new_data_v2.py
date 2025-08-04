@@ -347,9 +347,9 @@ def normalize_amount(amount: str) -> str:
 
 
 def generate_takeover_info(contract_start: str) -> str:
-    """引継情報生成（カプコ一括登録 ⚫︎保証開始日：{契約開始}）"""
+    """引継情報生成（カプコ一括登録 ●保証開始日：{契約開始}）"""
     contract_start_clean = str(contract_start).strip() if pd.notna(contract_start) else ""
-    return f"カプコ一括登録 ⚫︎保証開始日：{contract_start_clean}"
+    return f"カプコ一括登録　●保証開始日：{contract_start_clean}"
 
 
 def transform_capco_to_mirail_format(capco_df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
