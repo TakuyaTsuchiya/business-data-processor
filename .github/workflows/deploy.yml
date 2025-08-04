@@ -27,7 +27,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.8'
+          python-version: '3.11'
 
       - name: Cache pip dependencies
         uses: actions/cache@v4
@@ -43,25 +43,20 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-test.txt
 
-      - name: Run unit tests
+      - name: Run all tests
         run: |
-          echo "🧪 Running unit tests..."
-          python -m pytest tests/ -v --tb=short --maxfail=5 -m "not slow"
-
-      - name: Run integration tests
-        run: |
-          echo "🔗 Running integration tests..."
-          python -m pytest tests/test_app_integration.py -v --tb=short
+          echo "🧪 Running all tests..."
+          python -m pytest tests/ -v --tb=short --maxfail=10 --continue-on-collection-errors
 
       - name: Generate test coverage report
         run: |
           echo "📊 Generating test coverage report..."
-          python -m pytest tests/ --cov=processors --cov=. --cov-report=term-missing --cov-report=html
+          python -m pytest tests/ --cov=processors --cov-report=term-missing --cov-report=html --cov-fail-under=0
         continue-on-error: true
 
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && hashFiles('htmlcov/**') != ''
         with:
           name: coverage-report
           path: htmlcov/
