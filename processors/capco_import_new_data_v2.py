@@ -220,17 +220,19 @@ def process_phone_numbers(home_tel: str, mobile_tel: str) -> Tuple[str, str]:
 
 
 def normalize_phone_number(phone: str) -> str:
-    """電話番号の正規化（ハイフン除去、数字以外除去）"""
+    """電話番号の正規化（ハイフン保持、基本的な形式チェックのみ）"""
     if pd.isna(phone) or str(phone).strip() == "":
         return ""
     
     phone_clean = str(phone).strip()
-    # ハイフンを除去
-    phone_clean = re.sub(r'[-−ー]', '', phone_clean)
-    # 数字以外を除去
-    phone_clean = re.sub(r'[^\d]', '', phone_clean)
     
-    return phone_clean if len(phone_clean) >= 10 else ""
+    # 基本的な文字数チェック（ハイフンを除いた数字のみで10桁以上）
+    digits_only = re.sub(r'[^\d]', '', phone_clean)
+    if len(digits_only) < 10:
+        return ""
+    
+    # 元の形式をそのまま返す（ハイフン保持）
+    return phone_clean
 
 
 def split_address(address: str) -> Dict[str, str]:
@@ -443,11 +445,18 @@ def transform_capco_to_mirail_format(capco_df: pd.DataFrame) -> Tuple[pd.DataFra
             # 10. 管理前滞納額
             output_df.iloc[idx]["管理前滞納額"] = normalize_amount(row.get("滞納額合計", ""))
             
-            # 11. 管理会社
+            # 11. 管理会社（クライアントCD条件付き設定）
+            client_cd = output_df.iloc[idx]["クライアントCD"]
             management_company = row.get("管理会社", "")
-            if pd.isna(management_company) or str(management_company).strip() == "":
+            
+            if str(client_cd).strip() == "1":
+                # クライアントCD = 1 の場合は「株式会社前田」に設定
+                output_df.iloc[idx]["管理会社"] = "株式会社前田"
+            elif pd.isna(management_company) or str(management_company).strip() == "":
+                # クライアントCD ≠ 1 かつ 元データが空白の場合は空白のまま
                 output_df.iloc[idx]["管理会社"] = ""
             else:
+                # クライアントCD ≠ 1 かつ 元データに値がある場合はそのまま使用
                 output_df.iloc[idx]["管理会社"] = str(management_company).strip()
             
             # 12. 計算値
