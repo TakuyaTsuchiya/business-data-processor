@@ -63,7 +63,7 @@ def apply_mirail_guarantor_with10k_filters(df: pd.DataFrame) -> Tuple[pd.DataFra
     ミライル保証人（残債含む）フィルタリング処理
     
     📋 フィルタリング条件 (with10k版):
-    - 委託先法人ID: 空白と5（直接管理・特定委託案件）
+    - 委託先法人ID: 空白と5
     - 入金予定日: 前日以前またはNaN（当日は除外）
     - 回収ランク: 弁護士介入を除外
     - クライアントCD: 1のみ（特定クライアントのみ）
@@ -79,7 +79,7 @@ def apply_mirail_guarantor_with10k_filters(df: pd.DataFrame) -> Tuple[pd.DataFra
     logs.append(f"元データ件数: {original_count}件")
     
     # 📊 フィルタリング条件の適用
-    # 1. 委託先法人IDが空白と5（直接管理・特定委託案件のみ対象）
+    # 1. 委託先法人IDが空白と5
     df = df[df["委託先法人ID"].isna() | 
            (df["委託先法人ID"].astype(str).str.strip() == "") | 
            (df["委託先法人ID"].astype(str).str.strip() == "5")]
@@ -160,7 +160,7 @@ def process_mirail_guarantor_with10k_data(file_content: bytes) -> Tuple[pd.DataF
     ミライル保証人（残債含む）データの処理メイン関数
     
     📋 フィルタリング条件 (with10k版):
-    - 委託先法人ID: 空白と5（直接管理・特定委託案件）
+    - 委託先法人ID: 空白と5
     - 入金予定日: 前日以前またはNaN（当日は除外）
     - 回収ランク: 弁護士介入を除外
     - クライアントCD: 1のみ（特定クライアントのみ）

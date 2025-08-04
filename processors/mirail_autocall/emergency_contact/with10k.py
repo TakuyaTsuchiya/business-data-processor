@@ -25,14 +25,14 @@ class MirailEmergencyContactWith10kConfig:
         "委託先法人ID": "空白と5",
         "入金予定日": "前日以前またはNaN",
         "回収ランク_not_in": ["弁護士介入"],
-        "TEL携帯.2": "空でない値のみ"
+        "緊急連絡人１のTEL（携帯）": "空でない値のみ"
         # 注意：with10k版では残債フィルタ・クライアントCDフィルタなし（全件処理）
     }
     
     # マッピングルール
     MAPPING_RULES = {
-        "電話番号": "TEL携帯.2",
-        "架電番号": "TEL携帯.2", 
+        "電話番号": "緊急連絡人１のTEL（携帯）",
+        "架電番号": "緊急連絡人１のTEL（携帯）", 
         "入居ステータス": "入居ステータス",
         "滞納ステータス": "滞納ステータス",
         "管理番号": "管理番号",
@@ -87,13 +87,13 @@ def apply_mirail_emergencycontact_with10k_filters(df: pd.DataFrame) -> Tuple[pd.
     logs.append("残債フィルタ: 除外なし（with10k版：10,000円・11,000円も含む全件処理）")
     logs.append("クライアントCDフィルタ: 除外なし（with10k版：全クライアント対象）")
     
-    # 5. TEL携帯.2のフィルタリング（緊急連絡人電話番号が必須）
-    if "TEL携帯.2" in MirailEmergencyContactWith10kConfig.FILTER_CONDITIONS:
+    # 5. 緊急連絡人１のTEL（携帯）のフィルタリング（緊急連絡人電話番号が必須）
+    if "緊急連絡人１のTEL（携帯）" in MirailEmergencyContactWith10kConfig.FILTER_CONDITIONS:
         df = df[
-            df["TEL携帯.2"].notna() &
-            (~df["TEL携帯.2"].astype(str).str.strip().isin(["", "nan", "NaN"]))
+            df["緊急連絡人１のTEL（携帯）"].notna() &
+            (~df["緊急連絡人１のTEL（携帯）"].astype(str).str.strip().isin(["", "nan", "NaN"]))
         ]
-        logs.append(f"TEL携帯.2フィルタ後: {len(df)}件")
+        logs.append(f"緊急連絡人１のTEL（携帯）フィルタ後: {len(df)}件")
     
     return df, logs
 
@@ -108,8 +108,8 @@ def create_mirail_emergencycontact_output(df_filtered: pd.DataFrame) -> Tuple[pd
     
     # 出力用のマッピング
     mapping_rules = {
-        "電話番号": "TEL携帯.2",
-        "架電番号": "TEL携帯.2", 
+        "電話番号": "緊急連絡人１のTEL（携帯）",
+        "架電番号": "緊急連絡人１のTEL（携帯）", 
         "入居ステータス": "入居ステータス",
         "滞納ステータス": "滞納ステータス",
         "管理番号": "管理番号",
@@ -153,7 +153,7 @@ def process_mirail_emergencycontact_with10k_data(file_content: bytes) -> Tuple[p
         logs.append(f"読み込み完了: {len(df_input)}件")
         
         # 必須列チェック
-        required_columns = ["委託先法人ID", "クライアントCD", "TEL携帯.2", "回収ランク"]
+        required_columns = ["委託先法人ID", "クライアントCD", "緊急連絡人１のTEL（携帯）", "回収ランク"]
         missing_columns = [col for col in required_columns if col not in df_input.columns]
         if missing_columns:
             raise ValueError(f"必須列が不足しています: {missing_columns}")
