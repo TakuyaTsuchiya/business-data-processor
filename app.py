@@ -1631,7 +1631,8 @@ def show_capco_processor():
         contract_file = st.file_uploader(
             "ContractList_*.csv をアップロード",
             type=['csv'],
-            key="capco_contract"
+            key="capco_contract",
+            help="最大100MB、CSVファイルのみ対応"
         )
         if contract_file:
             st.success(f"✅ ファイル: {contract_file.name}")
@@ -1644,6 +1645,20 @@ def show_capco_processor():
         if st.button("🚀 処理開始", key="capco_process", type="primary"):
             with st.spinner("データを統合・変換中..."):
                 try:
+                    # ファイルサイズチェック
+                    MAX_SIZE = 100 * 1024 * 1024  # 100MB
+                    capco_size = len(capco_file.getvalue())
+                    contract_size = len(contract_file.getvalue())
+                    
+                    if capco_size > MAX_SIZE:
+                        st.error(f"❌ カプコファイルサイズが制限を超えています: {capco_size:,} bytes > {MAX_SIZE:,} bytes")
+                        return
+                    if contract_size > MAX_SIZE:
+                        st.error(f"❌ ContractListファイルサイズが制限を超えています: {contract_size:,} bytes > {MAX_SIZE:,} bytes")
+                        return
+                    
+                    st.info(f"📊 ファイルサイズ確認完了 - カプコ: {capco_size:,} bytes, ContractList: {contract_size:,} bytes")
+                    
                     # カプコプロセッサーをインポート
                     from processors.capco_import_new_data_v2 import process_capco_import_new_data_v2
                     
