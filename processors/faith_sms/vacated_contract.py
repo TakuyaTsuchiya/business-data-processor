@@ -1,38 +1,34 @@
-import os
 import pandas as pd
-import chardet
+import io
 import re
 from datetime import datetime
+from typing import Tuple, List
 
-def detect_encoding(file_path):
-    with open(file_path, 'rb') as f:
-        raw_data = f.read(10000)
-    result = chardet.detect(raw_data)
-    return result['encoding']
+def read_csv_auto_encoding(file_content: bytes) -> pd.DataFrame:
+    """アップロードされたCSVファイルを自動エンコーディング判定で読み込み"""
+    encodings = ['utf-8', 'utf-8-sig', 'shift_jis', 'cp932', 'euc_jp']
+    
+    for enc in encodings:
+        try:
+            return pd.read_csv(io.BytesIO(file_content), encoding=enc, dtype=str)
+        except Exception:
+            continue
+    
+    raise ValueError("CSVファイルの読み込みに失敗しました。エンコーディングを確認してください。")
 
-def process_faith_sms_vacated_contract_data(file_path):
-    try:
-        # Encoding detection and CSV loading
-        encodings_to_try = []
-        detected_encoding = detect_encoding(file_path)
-        if detected_encoding:
-            encodings_to_try.append(detected_encoding)
+def process_faith_sms_vacated_contract_data(file_content: bytes) -> Tuple[pd.DataFrame, str, int, int]:
+    """
+    フェイスSMS退去済み契約者データ処理（Streamlit対応版）
+    
+    Args:
+        file_content: アップロードされたCSVファイルの内容（bytes）
         
-        common_encodings = ['shift_jis', 'cp932', 'euc_jp', 'utf-8', 'utf-8-sig']
-        for enc in common_encodings:
-            if enc not in encodings_to_try:
-                encodings_to_try.append(enc)
-
-        df = None
-        for enc in encodings_to_try:
-            try:
-                df = pd.read_csv(file_path, encoding=enc)
-                break
-            except Exception:
-                continue
-
-        if df is None:
-            raise IOError(f"Could not read CSV file {file_path} with any encoding")
+    Returns:
+        tuple: (変換済みDF, 出力ファイル名, 元データ件数, 処理後件数)
+    """
+    try:
+        # CSVファイル読み込み（自動エンコーディング判定）
+        df = read_csv_auto_encoding(file_content)
 
         initial_rows = len(df)
         
@@ -150,4 +146,4 @@ def process_faith_sms_vacated_contract_data(file_path):
         return df_copy, output_filename, initial_rows, len(output_df)
         
     except Exception as e:
-        raise Exception(f"Error processing FAITH SMS vacated contract data: {str(e)}")
+        raise Exception(f"FAITH SMS退去済み契約者処理エラー: {str(e)}")

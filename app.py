@@ -1536,10 +1536,7 @@ def show_faith_sms_vacated_contract_processor():
                     
                     file_content = uploaded_file.getvalue()
                     
-                    with open("/tmp/temp_contractlist.csv", "wb") as f:
-                        f.write(file_content)
-                    
-                    processed_df, output_filename, initial_rows, final_rows = process_faith_sms_vacated_contract_data("/tmp/temp_contractlist.csv")
+                    processed_df, output_filename, initial_rows, final_rows = process_faith_sms_vacated_contract_data(file_content)
                     
                     st.success(f"✅ 処理完了: {initial_rows}行 → {final_rows}行")
                     

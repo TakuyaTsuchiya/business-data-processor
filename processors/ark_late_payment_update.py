@@ -6,6 +6,7 @@ ark-late-payment-updateプロジェクトの統合版プロセッサー
 import pandas as pd
 import streamlit as st
 import chardet
+import io
 import os
 from datetime import datetime
 from typing import Tuple, Optional, Dict, Any
@@ -17,7 +18,14 @@ def detect_encoding(file_content: bytes) -> str:
     detected_encoding = result['encoding']
     confidence = result['confidence']
     
-    st.info(f"エンコーディング検出: {detected_encoding} (信頼度: {confidence:.2f})")
+    # Streamlitコンテキストがある場合のみUI表示
+    try:
+        # st._get_script_run_ctx()でコンテキスト存在確認
+        if hasattr(st, '_get_script_run_ctx') and st._get_script_run_ctx() is not None:
+            st.info(f"エンコーディング検出: {detected_encoding} (信頼度: {confidence:.2f})")
+    except:
+        # コンテキストなし または エラー時は静かに処理続行
+        pass
     
     # 信頼度が低い場合は日本語エンコーディングを試行
     if confidence < 0.7:
@@ -70,19 +78,25 @@ def process_ark_late_payment_data(arc_file, contract_file) -> Optional[Tuple[pd.
         # Phase 1: ファイル読み込み
         st.info("📂 Phase 1: ファイル読み込み")
         
-        # アーク残債CSV読み込み
-        arc_content = arc_file.read()
-        arc_encoding = detect_encoding(arc_content)
-        arc_file.seek(0)
-        arc_df = pd.read_csv(arc_file, encoding=arc_encoding)
-        st.success(f"✅ アーク残債CSV読み込み完了: {len(arc_df):,}行")
+        # アーク残債CSV読み込み（bytes形式対応）
+        try:
+            arc_content = arc_file.getvalue()
+            arc_encoding = detect_encoding(arc_content)
+            arc_df = pd.read_csv(io.BytesIO(arc_content), encoding=arc_encoding)
+            st.success(f"✅ アーク残債CSV読み込み完了: {len(arc_df):,}行")
+        except Exception as e:
+            st.error(f"❌ アーク残債CSVファイルの読み込みに失敗しました: {str(e)}")
+            return None
         
-        # ContractList読み込み
-        contract_content = contract_file.read()
-        contract_encoding = detect_encoding(contract_content)
-        contract_file.seek(0)
-        contract_df = pd.read_csv(contract_file, encoding=contract_encoding)
-        st.success(f"✅ ContractList読み込み完了: {len(contract_df):,}行")
+        # ContractList読み込み（bytes形式対応）
+        try:
+            contract_content = contract_file.getvalue()
+            contract_encoding = detect_encoding(contract_content)
+            contract_df = pd.read_csv(io.BytesIO(contract_content), encoding=contract_encoding)
+            st.success(f"✅ ContractList読み込み完了: {len(contract_df):,}行")
+        except Exception as e:
+            st.error(f"❌ ContractListファイルの読み込みに失敗しました: {str(e)}")
+            return None
         
         # Phase 2: カラム確認
         st.info("🔍 Phase 2: 必須カラム確認")
