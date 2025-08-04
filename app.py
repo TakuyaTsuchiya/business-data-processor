@@ -1515,7 +1515,6 @@ def show_capco_processor():
     st.markdown("カプコ元データとContractListを統合し、ミライル顧客システム用CSVを生成します")
     
     # 重要な注意事項を表示
-    st.info("⚠️ **重要**: 必ず2つのファイルをアップロードしてください。")
     
     # 処理条件の表示
     st.markdown("**📋 主な処理機能**")
@@ -1530,12 +1529,12 @@ def show_capco_processor():
     - **住所分割**: 都道府県・市区町村・残り住所への3分割
     - **物件住所生成**: 契約者住所から物件名・部屋番号を除去
     
-    ### 🏦 **口座・業務情報**
+    #### 🏦 **口座・業務情報**
     - **支店CD判定**: 中央支店→763、東海支店→730
     - **クライアントCD**: 約定日による自動判定（1004年→1、1005年→4）
     - **引継情報**: 「カプコ一括登録 ⚫︎保証開始日：{契約開始}」自動生成
     
-    ### ✅ **固定値・空白値設定**
+    #### ✅ **固定値・空白値設定**
     - **固定値**: 入居中・未精算・契約中・バックレント・普通・9・25・0など
     - **空白値**: 勤務先・保証人・緊急連絡人情報など37項目を明示的に空白化
     """)
@@ -1543,8 +1542,7 @@ def show_capco_processor():
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("### 📄 カプコ元データ.csv")
-        st.markdown("*カプコから提供される案件データファイル*")
+        st.markdown("#### 📄 カプコ元データ.csv")
         capco_file = st.file_uploader(
             "カプコ元データ.csv をアップロード",
             type=['csv'],
@@ -1555,8 +1553,7 @@ def show_capco_processor():
             st.info(f"ファイルサイズ: {len(capco_file.getvalue()):,} bytes")
     
     with col2:
-        st.markdown("### 📋 ContractList_*.csv")  
-        st.markdown("*ミライル顧客システムの既存データ*")
+        st.markdown("#### 📋 ContractList_*.csv")
         contract_file = st.file_uploader(
             "ContractList_*.csv をアップロード",
             type=['csv'],
