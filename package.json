@@ -1,0 +1,15 @@
+{
+  "name": "business-data-processor-ui-tester",
+  "version": "1.0.0",
+  "description": "自動UIテスト・修正システム",
+  "main": "ui_auto_tester.py",
+  "scripts": {
+    "install-deps": "npm install puppeteer",
+    "test-ui": "python3 ui_auto_tester.py"
+  },
+  "dependencies": {
+    "puppeteer": "^21.0.0"
+  },
+  "author": "Claude Code",
+  "license": "MIT"
+}

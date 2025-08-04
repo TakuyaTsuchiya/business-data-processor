@@ -1592,14 +1592,14 @@ def show_capco_processor():
                         st.info(f"ファイルサイズ確認完了 - カプコ: {capco_size:,} bytes, ContractList: {contract_size:,} bytes")
                         
                         # カプコプロセッサーをインポート
-                        from processors.capco_import_new_data_v2 import process_capco_import_new_data_v2
+                        from processors.capco_registration import process_capco_data
                         
                         # ファイル内容を取得
                         capco_content = capco_file.getvalue()
                         contract_content = contract_file.getvalue()
                         
                         # データ処理実行
-                        df_output, logs, output_filename = process_capco_import_new_data_v2(capco_content, contract_content)
+                        df_output, logs, output_filename = process_capco_data(capco_content, contract_content)
                         
                         # 処理結果表示
                         st.success("処理が完了しました")
