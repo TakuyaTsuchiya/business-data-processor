@@ -1511,25 +1511,37 @@ def show_faith_sms_vacated_contract_processor():
 
 def show_capco_processor():
     """カプコ新規登録処理画面"""
-    st.markdown("## 📋 カプコ新規登録")
+    st.markdown("## カプコ新規登録")
     st.markdown("カプコ元データとContractListを統合し、ミライル顧客システム用CSVを生成します")
+    
+    # ファイルアップロードエリアのスタイル改善
+    st.markdown("""
+    <style>
+    .stFileUploader > div > div > div > div {
+        min-height: 120px !important;
+    }
+    .stFileUploader [data-testid="stFileUploaderDropzone"] {
+        min-height: 120px !important;
+        padding: 2rem !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
     
     # ファイルアップロード（最優先で配置）
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("#### 📄 カプコ元データ.csv")
+        st.markdown("#### カプコ元データ.csv")
         capco_file = st.file_uploader(
             "カプコ元データ.csv をアップロード",
             type=['csv'],
             key="capco_data"
         )
         if capco_file:
-            st.success(f"✅ ファイル: {capco_file.name}")
-            st.info(f"ファイルサイズ: {len(capco_file.getvalue()):,} bytes")
+            st.success(f"ファイル: {capco_file.name}")
     
     with col2:
-        st.markdown("#### 📋 ContractList_*.csv")
+        st.markdown("#### ContractList_*.csv")
         contract_file = st.file_uploader(
             "ContractList_*.csv をアップロード",
             type=['csv'],
@@ -1537,129 +1549,100 @@ def show_capco_processor():
             help="最大100MB、CSVファイルのみ対応"
         )
         if contract_file:
-            st.success(f"✅ ファイル: {contract_file.name}")
-            st.info(f"ファイルサイズ: {len(contract_file.getvalue()):,} bytes")
+            st.success(f"ファイル: {contract_file.name}")
 
     if capco_file is not None and contract_file is not None:
-        st.success("✅ 両方のファイルアップロード完了")
-        
-        # 処理ボタン
-        if st.button("🚀 処理開始", key="capco_process", type="primary"):
-            with st.spinner("データを統合・変換中..."):
-                try:
-                    # ファイルサイズチェック
-                    MAX_SIZE = 100 * 1024 * 1024  # 100MB
-                    capco_size = len(capco_file.getvalue())
-                    contract_size = len(contract_file.getvalue())
-                    
-                    if capco_size > MAX_SIZE:
-                        st.error(f"❌ カプコファイルサイズが制限を超えています: {capco_size:,} bytes > {MAX_SIZE:,} bytes")
-                        return
-                    if contract_size > MAX_SIZE:
-                        st.error(f"❌ ContractListファイルサイズが制限を超えています: {contract_size:,} bytes > {MAX_SIZE:,} bytes")
-                        return
-                    
-                    st.info(f"📊 ファイルサイズ確認完了 - カプコ: {capco_size:,} bytes, ContractList: {contract_size:,} bytes")
-                    
-                    # カプコプロセッサーをインポート
-                    from processors.capco_import_new_data_v2 import process_capco_import_new_data_v2
-                    
-                    # ファイル内容を取得
-                    capco_content = capco_file.getvalue()
-                    contract_content = contract_file.getvalue()
-                    
-                    # データ処理実行
-                    df_output, logs, output_filename = process_capco_import_new_data_v2(capco_content, contract_content)
-                    
-                    # 処理結果表示
-                    st.success("✅ 処理が完了しました！")
-                    
-                    # 処理ログ表示
-                    with st.expander("📊 処理ログ"):
-                        for log in logs:
-                            st.text(log)
-                    
-                    # 結果統計
-                    if len(df_output) > 0:
-                        col1, col2, col3, col4 = st.columns(4)
-                        with col1:
-                            st.metric("📊 出力件数", len(df_output))
-                        with col2:
-                            phone_count = sum([
-                                df_output["契約者TEL自宅"].notna().sum(),
-                                df_output["契約者TEL携帯"].notna().sum()
-                            ])
-                            st.metric("📞 電話番号件数", phone_count)
-                        with col3:
-                            address_count = df_output["契約者現住所1"].notna().sum()
-                            st.metric("🏠 住所件数", address_count)
-                        with col4:
-                            client_cd_count = df_output["クライアントCD"].notna().sum()
-                            st.metric("🏢 クライアントCD", client_cd_count)
+        # 処理ボタン（中央揃え・サイズ拡大・爽やかな色）
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.markdown("""
+            <style>
+            .stButton > button {
+                width: 100%;
+                height: 3rem;
+                font-size: 1.2rem;
+                font-weight: bold;
+                background-color: #4A90E2;
+                color: white;
+                border: none;
+                border-radius: 0.5rem;
+                transition: all 0.3s ease;
+            }
+            .stButton > button:hover {
+                background-color: #357ABD;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(74, 144, 226, 0.3);
+            }
+            </style>
+            """, unsafe_allow_html=True)
+            
+            if st.button("処理開始", key="capco_process"):
+                with st.spinner("データを統合・変換中..."):
+                    try:
+                        # ファイルサイズチェック
+                        MAX_SIZE = 100 * 1024 * 1024  # 100MB
+                        capco_size = len(capco_file.getvalue())
+                        contract_size = len(contract_file.getvalue())
                         
-                        # データプレビュー表示
-                        st.markdown("### 📋 出力データプレビュー（上位10件）")
-                        # 表示用に主要列を選択
-                        preview_columns = [
-                            "引継番号", "契約者氏名", "契約者カナ", "契約者TEL携帯",
-                            "契約者現住所1", "契約者現住所2", "物件名", "部屋番号",
-                            "入居ステータス", "滞納ステータス", "管理前滞納額", "クライアントCD"
-                        ]
-                        available_columns = [col for col in preview_columns if col in df_output.columns]
-                        st.dataframe(df_output[available_columns].head(10), use_container_width=True)
+                        if capco_size > MAX_SIZE:
+                            st.error(f"エラー: カプコファイルサイズが制限を超えています: {capco_size:,} bytes > {MAX_SIZE:,} bytes")
+                            return
+                        if contract_size > MAX_SIZE:
+                            st.error(f"エラー: ContractListファイルサイズが制限を超えています: {contract_size:,} bytes > {MAX_SIZE:,} bytes")
+                            return
+                        
+                        st.info(f"ファイルサイズ確認完了 - カプコ: {capco_size:,} bytes, ContractList: {contract_size:,} bytes")
+                        
+                        # カプコプロセッサーをインポート
+                        from processors.capco_import_new_data_v2 import process_capco_import_new_data_v2
+                        
+                        # ファイル内容を取得
+                        capco_content = capco_file.getvalue()
+                        contract_content = contract_file.getvalue()
+                        
+                        # データ処理実行
+                        df_output, logs, output_filename = process_capco_import_new_data_v2(capco_content, contract_content)
+                        
+                        # 処理結果表示
+                        st.success("処理が完了しました")
+                        
+                        # 処理ログ表示
+                        with st.expander("処理ログ"):
+                            for log in logs:
+                                st.text(log)
                         
                         # CSVダウンロード
-                        safe_csv_download(df_output, output_filename)
-                        
-                        # 詳細統計情報
-                        with st.expander("📈 詳細統計情報"):
-                            st.markdown("#### データ品質統計")
+                        if len(df_output) > 0:
+                            safe_csv_download(df_output, output_filename)
+                        else:
+                            st.warning("処理対象データがありませんでした")
                             
-                            # 電話番号統計
-                            home_tel_count = df_output["契約者TEL自宅"].notna().sum()
-                            mobile_tel_count = df_output["契約者TEL携帯"].notna().sum()
-                            st.text(f"契約者TEL自宅: {home_tel_count}件")
-                            st.text(f"契約者TEL携帯: {mobile_tel_count}件")
-                            
-                            # 住所統計
-                            if "契約者住所1" in df_output.columns:
-                                addr1_count = df_output["契約者住所1"].notna().sum()
-                                st.text(f"都道府県あり: {addr1_count}件")
-                            
-                            # 金額統計
-                            if "月額家賃" in df_output.columns:
-                                rent_avg = pd.to_numeric(df_output["月額家賃"], errors='coerce').mean()
-                                if pd.notna(rent_avg):
-                                    st.text(f"平均家賃: {rent_avg:,.0f}円")
-                    else:
-                        st.warning("⚠️ 処理対象データがありませんでした")
-                        
-                except ImportError as e:
-                    st.error(f"モジュールインポートエラー: {e}")
-                except Exception as e:
-                    st.error(f"❌ エラーが発生しました: {e}")
-                    with st.expander("エラー詳細"):
-                        st.exception(e)
+                    except ImportError as e:
+                        st.error(f"モジュールインポートエラー: {e}")
+                    except Exception as e:
+                        st.error(f"エラーが発生しました: {e}")
+                        with st.expander("エラー詳細"):
+                            st.exception(e)
 
     # 処理機能説明（最後に配置）
-    st.markdown("**📋 主な処理機能**")
+    st.markdown("**主な処理機能**")
     st.markdown("""
-    #### 🔄 **重複チェック・新規抽出**
+    #### 重複チェック・新規抽出
     - **照合キー**: カプコ元データ「契約No」⟷ ContractList「引継番号」
     - **新規案件のみ抽出**: 既存データとの重複を自動除外
     
-    #### 📝 **データ変換**
+    #### データ変換
     - **基本情報**: 氏名・カナ正規化（スペース除去、ひらがな→カタカナ変換）
     - **電話番号処理**: 携帯優先ロジック（携帯空欄時は自宅番号を携帯欄に移動）
     - **住所分割**: 都道府県・市区町村・残り住所への3分割
     - **物件住所生成**: 契約者住所から物件名・部屋番号を除去
     
-    #### 🏦 **口座・業務情報**
+    #### 口座・業務情報
     - **支店CD判定**: 中央支店→763、東海支店→730
     - **クライアントCD**: 約定日による自動判定（1004年→1、1005年→4）
     - **引継情報**: 「カプコ一括登録 ●保証開始日：{契約開始}」自動生成
     
-    #### ✅ **固定値・空白値設定**
+    #### 固定値・空白値設定
     - **固定値**: 入居中・未精算・契約中・バックレント・普通・9・25・0など
     - **空白値**: 勤務先・保証人・緊急連絡人情報など37項目を明示的に空白化
     """)
