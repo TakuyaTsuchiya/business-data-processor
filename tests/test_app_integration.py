@@ -73,7 +73,14 @@ class TestAppIntegration:
         result = process_ark_late_payment_data(ark_file, contract_file)
         
         if result is not None:
-            output_df, filename = result
+            # Mirail processors return 4 values
+            if len(result) == 4:
+                df_filtered, output_df, logs, filename = result
+                assert isinstance(df_filtered, pd.DataFrame), "フィルタリング済みDFがDataFrameではない"
+                assert isinstance(logs, list), "ログがリストではない"
+            else:
+                # Ark processors return 2 values
+                output_df, filename = result
             
             # 統合処理結果の検証
             assert isinstance(output_df, pd.DataFrame), "統合処理の出力がDataFrameではない"
@@ -99,8 +106,11 @@ class TestAppIntegration:
         results = [result_without, result_with]
         for result in results:
             if result is not None:
-                output_df, filename = result
+                # Mirail processors return 4 values
+                df_filtered, output_df, logs, filename = result
+                assert isinstance(df_filtered, pd.DataFrame), "フィルタリング済みDFがDataFrameではない"
                 assert isinstance(output_df, pd.DataFrame), "統合処理の出力がDataFrameではない"
+                assert isinstance(logs, list), "ログがリストではない"
                 assert isinstance(filename, str), "ファイル名が文字列ではない"
                 assert len(filename) > 0, "ファイル名が空"
 
@@ -154,8 +164,9 @@ class TestAppIntegration:
         
         # データ一貫性の確認
         if result_without is not None and result_with is not None:
-            df_without, _ = result_without
-            df_with, _ = result_with
+            # Mirail processors return 4 values
+            _, df_without, _, _ = result_without
+            _, df_with, _, _ = result_with
             
             # 基本的なデータ構造の一貫性確認
             assert isinstance(df_without, pd.DataFrame), "without10k出力がDataFrameではない"
