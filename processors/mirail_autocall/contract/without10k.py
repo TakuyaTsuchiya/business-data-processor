@@ -171,30 +171,24 @@ def get_sample_template() -> pd.DataFrame:
     return create_template_dataframe(0)
 
 
-def process_mirail_contract_without10k_data(uploaded_file) -> Optional[Tuple[pd.DataFrame, str]]:
+def process_mirail_contract_without10k_data(file_content: bytes) -> Tuple[pd.DataFrame, pd.DataFrame, list, str]:
     """
-    Streamlit UploadedFile用のwrapper関数
+    ミライル契約者データ処理（app.py統合用）
     
     Args:
-        uploaded_file: Streamlit UploadedFile オブジェクト
+        file_content: CSVファイルの内容（bytes）
         
     Returns:
-        Optional[Tuple[pd.DataFrame, str]]: (出力DataFrame, ファイル名) または None
+        Tuple[pd.DataFrame, pd.DataFrame, list, str]: (フィルタリング済みDF, 出力DF, ログ, ファイル名)
     """
     try:
-        # UploadedFileからバイト内容を取得
-        file_content = uploaded_file.read()
-        uploaded_file.seek(0)  # ファイルポジションをリセット
-        
         # メイン処理を実行
         df_filtered, df_output, logs, output_filename = process_mirail_data(file_content)
         
-        # 処理結果が空の場合はNoneを返す
-        if len(df_output) == 0:
-            return None
-            
-        return df_output, output_filename
+        return df_filtered, df_output, logs, output_filename
         
     except Exception as e:
-        print(f"ミライル契約者without10k処理エラー: {str(e)}")
-        return None
+        # エラー時は空のデータを返す
+        logs = [f"エラー: {str(e)}"]
+        empty_df = pd.DataFrame()
+        return empty_df, empty_df, logs, "error.csv"
