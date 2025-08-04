@@ -337,7 +337,7 @@ def show_welcome_screen():
 
 def show_mirail_contract_without10k_processor():
     """ミライル契約者処理画面"""
-    st.markdown("## 🏢 ミライルオートコール契約者データ処理")
+    st.markdown("## 契約者（10,000円を除外するパターン）")
     st.markdown("ContractListから契約者の電話番号を抽出し、オートコール用CSVを生成します（残債1万円・1万1千円除外）")
     
     # 処理条件の表示
@@ -416,7 +416,7 @@ def show_mirail_contract_without10k_processor():
 
 def show_mirail_contract_with10k_processor():
     """ミライル（残債含む）契約者処理画面"""
-    st.markdown("## 🏢 ミライルオートコール契約者データ処理（残債含む全件）")
+    st.markdown("## 契約者（10,000円を除外しないパターン）")
     st.markdown("ContractListから契約者の電話番号を抽出し、オートコール用CSVを生成します（残債1万円・1万1千円含む）")
     
     # 処理条件の表示
@@ -583,7 +583,7 @@ def show_faith_contract_processor():
 
 def show_mirail_guarantor_without10k_processor():
     """ミライル保証人（残債除外）処理画面"""
-    st.markdown("## 👥 ミライル保証人オートコール（残債10,000円・11,000円除外）")
+    st.markdown("## 保証人（10,000円を除外するパターン）")
     st.markdown("ContractListから保証人の電話番号を抽出し、オートコール用CSVを生成します（残債1万円・1万1千円除外）")
     
     # 処理条件の表示
@@ -593,6 +593,7 @@ def show_mirail_guarantor_without10k_processor():
     - **入金予定日**: 前日以前またはNaN（当日は除外）  
     - **回収ランク**: 弁護士介入を除外
     - **残債除外**: クライアントCD=1かつ残債10,000円・11,000円のレコードのみ除外
+    - **入金予定金額**: 2,3,5を除外
     - **TEL携帯.1**: 空でない値のみ（保証人電話番号）
     """)
     
@@ -659,7 +660,7 @@ def show_mirail_guarantor_without10k_processor():
 
 def show_mirail_guarantor_with10k_processor():
     """ミライル保証人（残債含む）処理画面"""
-    st.markdown("## 👥 ミライル保証人オートコール（残債含む全件）")
+    st.markdown("## 保証人（10,000円を除外しないパターン）")
     st.markdown("ContractListから保証人の電話番号を抽出し、オートコール用CSVを生成します（残債1万円・1万1千円含む）")
     
     # 処理条件の表示
@@ -670,6 +671,7 @@ def show_mirail_guarantor_with10k_processor():
     - **回収ランク**: 弁護士介入を除外
     - **残債含む**: 全件処理（10,000円・11,000円も含む）
     - **クライアント**: 全クライアント対象（CDフィルタなし）
+    - **入金予定金額**: 2,3,5を除外
     - **TEL携帯.1**: 空でない値のみ（保証人電話番号）
     """)
     
@@ -736,7 +738,7 @@ def show_mirail_guarantor_with10k_processor():
 
 def show_mirail_emergencycontact_without10k_processor():
     """ミライル緊急連絡人（残債除外）処理画面"""
-    st.markdown("## 🚨 ミライル緊急連絡人オートコール（残債10,000円・11,000円除外）")
+    st.markdown("## 緊急連絡人（10,000円を除外するパターン）")
     st.markdown("ContractListから緊急連絡人の電話番号を抽出し、オートコール用CSVを生成します（残債1万円・1万1千円除外）")
     
     # 処理条件の表示
@@ -812,7 +814,7 @@ def show_mirail_emergencycontact_without10k_processor():
 
 def show_mirail_emergencycontact_with10k_processor():
     """ミライル緊急連絡人（残債含む）処理画面"""
-    st.markdown("## 🚨 ミライル緊急連絡人オートコール（残債含む全件）")
+    st.markdown("## 緊急連絡人（10,000円を除外しないパターン）")
     st.markdown("ContractListから緊急連絡人の電話番号を抽出し、オートコール用CSVを生成します（残債1万円・1万1千円含む）")
     
     # 処理条件の表示
