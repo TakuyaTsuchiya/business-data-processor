@@ -6,12 +6,18 @@ Business Data Processor
 - アーク新規登録データ変換
 - ミライル契約者データ処理
 - フェイス契約者データ処理
+- アーク残債更新処理
+
+CI/CD自動デプロイ対応版
 """
 
 import streamlit as st
 import pandas as pd
 import io
 from datetime import datetime
+
+# アーク残債更新プロセッサーをインポート
+from processors.ark_late_payment_update import process_ark_late_payment_data
 
 def main():
     st.set_page_config(
@@ -199,6 +205,13 @@ def main():
     if st.sidebar.button("カプコ新規登録", key="capco_registration", use_container_width=True):
         st.session_state.selected_processor = "📋 カプコ新規登録"
     
+    st.sidebar.markdown("---")
+    
+    # 残債更新カテゴリ
+    st.sidebar.markdown("### 💰 残債の更新用CSV加工")
+    if st.sidebar.button("アーク残債更新", key="ark_late_payment", use_container_width=True):
+        st.session_state.selected_processor = "💰 アーク残債更新"
+    
     # 選択されたプロセッサーを取得
     processor_type = st.session_state.selected_processor
     
@@ -237,6 +250,8 @@ def main():
         show_ark_processor()
     elif processor_type == "📋 カプコ新規登録":
         show_capco_processor()
+    elif processor_type == "💰 アーク残債更新":
+        process_ark_late_payment_page()
 
 def show_welcome_screen():
     """ウェルカム画面の表示"""
@@ -284,6 +299,20 @@ def show_welcome_screen():
         - 統合CSVを生成
         - 重複チェック・データ変換
         """)
+    
+    # 残債更新の説明を追加
+    st.markdown("---")
+    st.markdown("""
+    ### 💰 残債の更新
+    **対応システム:**
+    - 💰 アーク残債更新
+    
+    **機能:**
+    - アーク残債CSVとContractListの自動紐付け
+    - 契約番号と引継番号でのマッチング
+    - 管理番号と管理前滞納額の2列出力
+    - エンコーディング自動検出
+    """)
     
 
 def show_mirail_contract_without10k_processor():
@@ -1669,6 +1698,100 @@ def show_capco_processor():
                     st.error(f"❌ エラーが発生しました: {e}")
                     with st.expander("エラー詳細"):
                         st.exception(e)
+
+
+def process_ark_late_payment_page():
+    """アーク残債更新処理画面"""
+    st.markdown("## 💰 アーク残債更新処理")
+    st.markdown("アーク残債CSVとContractListを紐付けて、ミライル顧客システム用の取込ファイルを生成します")
+    
+    # 処理条件の表示
+    with st.expander("📋 処理概要"):
+        st.markdown("""
+        ### 必要なファイル
+        1. **アーク残債CSVファイル**
+           - ファイル名: 【アーク継続中】②残債取込用CSV_*.csv
+           - 必須カラム: 契約番号、管理前滞納額
+        
+        2. **ContractListファイル**
+           - ファイル名: ContractList*.csv
+           - 必須カラム: 引継番号、管理番号
+        
+        ### 処理内容
+        - 契約番号（アーク）と引継番号（ContractList）で紐付け
+        - 管理番号と管理前滞納額の2列のみ出力
+        - 重複管理番号は滞納額を合計
+        - CP932エンコーディングで出力
+        """)
+    
+    # ファイルアップロード
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("### 📁 アーク残債CSVファイル")
+        arc_file = st.file_uploader(
+            "【アーク継続中】②残債取込用CSV_*.csv",
+            type=['csv'],
+            key="arc_csv_upload"
+        )
+    
+    with col2:
+        st.markdown("### 📁 ContractListファイル")
+        contract_file = st.file_uploader(
+            "ContractList*.csv",
+            type=['csv'],
+            key="contract_list_upload"
+        )
+    
+    # 処理実行
+    if arc_file and contract_file:
+        if st.button("🚀 処理開始", key="process_ark_late_payment", type="primary"):
+            try:
+                # 処理実行
+                result = process_ark_late_payment_data(arc_file, contract_file)
+                
+                if result:
+                    df_output, output_filename = result
+                    
+                    # 結果表示
+                    st.success(f"✅ 処理が完了しました！")
+                    
+                    # データプレビュー
+                    st.markdown("### 📊 出力データプレビュー")
+                    st.dataframe(df_output.head(10))
+                    
+                    # CSV出力（CP932エンコーディング）
+                    csv_buffer = io.BytesIO()
+                    df_output.to_csv(
+                        csv_buffer, 
+                        index=False, 
+                        encoding='cp932',
+                        errors='replace'
+                    )
+                    csv_data = csv_buffer.getvalue()
+                    
+                    # ダウンロードボタン
+                    st.download_button(
+                        label=f"💾 {output_filename} をダウンロード",
+                        data=csv_data,
+                        file_name=output_filename,
+                        mime="text/csv",
+                        type="primary"
+                    )
+                    
+                    st.info("💡 ダウンロードしたファイルをミライル顧客システムに取り込んでください")
+                else:
+                    st.error("処理に失敗しました。ファイルの内容を確認してください。")
+                    
+            except Exception as e:
+                st.error(f"❌ エラーが発生しました: {str(e)}")
+                with st.expander("エラー詳細"):
+                    st.exception(e)
+    else:
+        if not arc_file:
+            st.info("👆 アーク残債CSVファイルをアップロードしてください")
+        if not contract_file:
+            st.info("👆 ContractListファイルをアップロードしてください")
 
 
 if __name__ == "__main__":
