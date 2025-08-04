@@ -46,10 +46,10 @@ def apply_mirail_guarantor_without10k_filters(df: pd.DataFrame) -> Tuple[pd.Data
     df = df[~df["回収ランク"].isin(exclude_ranks)]
     logs.append(f"回収ランクフィルタ後: {len(df)}件")
     
-    # 4. クライアントコードのフィルタリング（1のみ）
-    df["クライアントコード"] = pd.to_numeric(df["クライアントコード"], errors="coerce")
-    df = df[df["クライアントコード"] == 1]
-    logs.append(f"クライアントコード=1フィルタ後: {len(df)}件")
+    # 4. クライアントCDのフィルタリング（1のみ）
+    df["クライアントCD"] = pd.to_numeric(df["クライアントCD"], errors="coerce")
+    df = df[df["クライアントCD"] == 1]
+    logs.append(f"クライアントCD=1フィルタ後: {len(df)}件")
     
     # 5. 残債のフィルタリング（10,000円・11,000円除外）
     exclude_debts = [10000, 11000]
@@ -119,7 +119,7 @@ def process_mirail_guarantor_without10k_data(file_content: bytes) -> Tuple[pd.Da
         logs.append(f"読み込み完了: {len(df_input)}件")
         
         # 必須列チェック
-        required_columns = ["委託先法人ID", "クライアントコード", "TEL携帯.1", "回収ランク"]
+        required_columns = ["委託先法人ID", "クライアントCD", "TEL携帯.1", "回収ランク"]
         missing_columns = [col for col in required_columns if col not in df_input.columns]
         if missing_columns:
             raise ValueError(f"必須列が不足しています: {missing_columns}")
