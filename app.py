@@ -1520,7 +1520,21 @@ def show_plaza_contact_processor():
 def show_faith_sms_vacated_contract_processor():
     """フェイスSMS退去済み契約者処理画面"""
     st.markdown("## 📱 フェイスSMS退去済み契約者処理")
-    st.markdown("**ContractList*.csv** から退去済み契約者のSMS送信用データを生成します")
+    
+    # 機能説明
+    st.markdown("""
+    ### 🎯 主な処理機能
+    - **退去済み契約者抽出**: 契約状態「退去済み」の契約者をフィルタリング
+    - **電話番号の正規化**: ハイフン除去・形式統一（090-xxxx-xxxx → 09012345678）
+    - **SMS送信可能番号**: 090/080/070番号のみ抽出
+    - **重複除去処理**: 同一電話番号の重複を自動除去
+    - **CSV出力**: SMS送信システム用の専用フォーマットで出力
+    
+    ### 📋 入力ファイル形式
+    **ContractList*.csv** - フェイス契約管理システムからのエクスポートファイル
+    """)
+    
+    st.markdown("---")
     
     uploaded_file = st.file_uploader(
         "ContractList*.csv ファイルをアップロードしてください",
