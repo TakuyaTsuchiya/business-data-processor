@@ -11,7 +11,7 @@ services:
     hostname: bdp-app
     
     # 起動コマンドの明示的指定（権限問題対策）
-    command: ["python", "-m", "streamlit", "run", "app.py", "--server.maxUploadSize", "200"]
+    command: ["python", "-m", "streamlit", "run", "app.py", "--server.maxUploadSize", "30"]
     
     # ポート設定
     ports:

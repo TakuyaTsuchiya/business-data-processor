@@ -84,4 +84,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 USER streamlit
 
 # アプリケーション起動
-CMD ["streamlit", "run", "app.py", "--server.maxUploadSize", "200"]
+CMD ["streamlit", "run", "app.py", "--server.maxUploadSize", "30"]
