@@ -1643,10 +1643,10 @@ def show_capco_processor():
                             st.markdown("#### データ品質統計")
                             
                             # 電話番号統計
-                            home_tel_count = df_output["契約者電話番号"].notna().sum()
-                            mobile_tel_count = df_output["契約者携帯番号"].notna().sum()
-                            st.text(f"契約者電話番号: {home_tel_count}件")
-                            st.text(f"契約者携帯番号: {mobile_tel_count}件")
+                            home_tel_count = df_output["契約者TEL自宅"].notna().sum()
+                            mobile_tel_count = df_output["契約者TEL携帯"].notna().sum()
+                            st.text(f"契約者TEL自宅: {home_tel_count}件")
+                            st.text(f"契約者TEL携帯: {mobile_tel_count}件")
                             
                             # 住所統計
                             if "契約者住所1" in df_output.columns:
