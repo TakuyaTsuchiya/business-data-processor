@@ -444,7 +444,11 @@ def transform_capco_to_mirail_format(capco_df: pd.DataFrame) -> Tuple[pd.DataFra
             output_df.iloc[idx]["管理前滞納額"] = normalize_amount(row.get("滞納額合計", ""))
             
             # 11. 管理会社
-            output_df.iloc[idx]["管理会社"] = str(row.get("管理会社", "")).strip()
+            management_company = row.get("管理会社", "")
+            if pd.isna(management_company) or str(management_company).strip() == "":
+                output_df.iloc[idx]["管理会社"] = ""
+            else:
+                output_df.iloc[idx]["管理会社"] = str(management_company).strip()
             
             # 12. 計算値
             output_df.iloc[idx]["管理受託日"] = today
