@@ -6,8 +6,14 @@
 
 import pandas as pd
 import io
+import sys
+import os
 from datetime import datetime
 from typing import Tuple, List
+
+# 共通定義のインポート
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from autocall_common import AUTOCALL_OUTPUT_COLUMNS
 
 
 def read_csv_auto_encoding(file_content: bytes) -> pd.DataFrame:
@@ -90,48 +96,32 @@ def apply_plaza_guarantor_filters(df_contract: pd.DataFrame, df_report: pd.DataF
 
 
 def create_plaza_guarantor_output(df_filtered: pd.DataFrame, tel_column: str) -> Tuple[pd.DataFrame, List[str]]:
-    """プラザ保証人出力データ作成"""
+    """プラザ保証人出力データ作成（28列統一フォーマット）"""
     logs = []
+    
+    # 28列の統一フォーマットで初期化
+    df_output = pd.DataFrame(index=range(len(df_filtered)), columns=AUTOCALL_OUTPUT_COLUMNS)
+    df_output = df_output.fillna("")
     
     # 電話番号にダブルクォーテーションを追加（Excel対策）
     tel_series = df_filtered[tel_column].apply(lambda x: f'"{x}"' if x else "")
     
-    # データが0件の場合でも列構造を維持
-    output_columns = [
-        "電話番号", "架電番号", "管理番号", "保証人名（カナ）", "契約者名（カナ）",
-        "物件名", "クライアント", "入居ステータス", "滞納ステータス"
-    ]
-    
+    # データが0件の場合
     if len(df_filtered) == 0:
-        df_output = pd.DataFrame(columns=output_columns)
         logs.append("保証人出力データ作成完了: 0件（フィルタリング後データなし）")
         return df_output, logs
     
-    # プラザ保証人用の出力データ作成
-    output_data = []
+    # データをマッピング（保証人名は削除、契約者名のみ使用）
     for i, (_, row) in enumerate(df_filtered.iterrows()):
-        # 保証人名を取得（複数の可能性のある列名を確認）
-        guarantor_name = ""
-        guarantor_name_columns = ["保証人名", "保証人氏名", "保証人", "保証人名（カナ）", "保証人カナ", "保証人１氏名"]
-        for col in guarantor_name_columns:
-            if col in row and pd.notna(row[col]) and str(row[col]).strip():
-                guarantor_name = str(row[col])
-                break
-        
-        output_row = {
-            "電話番号": tel_series.iloc[i],
-            "架電番号": tel_series.iloc[i],
-            "管理番号": str(row.get("会員番号", "")),
-            "保証人名（カナ）": guarantor_name,
-            "契約者名（カナ）": str(row.get("契約者カナ", "")),
-            "物件名": str(row.get("物件名", "")),
-            "クライアント": "プラザ賃貸管理保証",
-            "入居ステータス": "入居中",
-            "滞納ステータス": "未精算"
-        }
-        output_data.append(output_row)
+        df_output.at[i, "電話番号"] = tel_series.iloc[i]
+        df_output.at[i, "架電番号"] = tel_series.iloc[i]
+        df_output.at[i, "管理番号"] = str(row.get("会員番号", ""))
+        df_output.at[i, "契約者名（カナ）"] = str(row.get("契約者カナ", ""))  # 保証人でも契約者名を入れる
+        df_output.at[i, "物件名"] = str(row.get("物件名", ""))
+        df_output.at[i, "クライアント"] = "プラザ賃貸管理保証"
+        df_output.at[i, "入居ステータス"] = "入居中"
+        df_output.at[i, "滞納ステータス"] = "未精算"
     
-    df_output = pd.DataFrame(output_data)
     logs.append(f"保証人出力データ作成完了: {len(df_output)}件")
     
     return df_output, logs

@@ -5,8 +5,14 @@
 
 import pandas as pd
 import io
+import sys
+import os
 from datetime import datetime
 from typing import Tuple, Optional
+
+# 共通定義のインポート
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from processors.autocall_common import AUTOCALL_OUTPUT_COLUMNS
 
 
 class MirailConfig:
@@ -111,26 +117,23 @@ def apply_filters(df_input: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
 
 
 def create_template_dataframe(row_count: int) -> pd.DataFrame:
-    """テンプレートDataFrameを作成"""
-    template_columns = [
-        "電話番号", "架電番号", "入居ステータス", "滞納ステータス", 
-        "管理番号", "契約者名（カナ）", "物件名", "クライアント"
-    ]
-    
-    # 空のDataFrameを作成
-    return pd.DataFrame(index=range(row_count), columns=template_columns)
+    """統一フォーマットのテンプレートDataFrameを作成"""
+    # 28列の統一フォーマットで初期化（全て空文字）
+    df_template = pd.DataFrame(index=range(row_count), columns=AUTOCALL_OUTPUT_COLUMNS)
+    df_template = df_template.fillna("")
+    return df_template
 
 
 def map_data_to_template(df_filtered: pd.DataFrame) -> pd.DataFrame:
-    """フィルタリング済みデータをテンプレート形式にマッピング"""
+    """フィルタリング済みデータを28列の統一テンプレート形式にマッピング"""
     df_template = create_template_dataframe(len(df_filtered))
     mapping_rules = MirailConfig.MAPPING_RULES
     
     # マッピングルールに従ってデータを転記
     for template_col, input_col in mapping_rules.items():
-        if input_col in df_filtered.columns:
+        if template_col in df_template.columns and input_col in df_filtered.columns:
             df_template[template_col] = df_filtered[input_col].values
-        else:
+        elif template_col in df_template.columns:
             df_template[template_col] = ""
     
     return df_template

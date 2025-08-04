@@ -6,8 +6,14 @@
 
 import pandas as pd
 import io
+import sys
+import os
 from datetime import datetime
 from typing import Tuple, List
+
+# 共通定義のインポート
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from autocall_common import AUTOCALL_OUTPUT_COLUMNS
 
 
 def read_csv_auto_encoding(file_content: bytes) -> pd.DataFrame:
@@ -75,27 +81,26 @@ def apply_plaza_contact_filters(df_contract: pd.DataFrame, df_report: pd.DataFra
 
 
 def create_plaza_contact_output(df_filtered: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
-    """プラザ緊急連絡人出力データ作成"""
+    """プラザ緊急連絡人出力データ作成（28列統一フォーマット）"""
     logs = []
+    
+    # 28列の統一フォーマットで初期化
+    df_output = pd.DataFrame(index=range(len(df_filtered)), columns=AUTOCALL_OUTPUT_COLUMNS)
+    df_output = df_output.fillna("")
     
     tel_column = "緊急連絡人１のTEL（携帯）"
     
-    # プラザ用の出力データ作成
-    output_data = []
-    for _, row in df_filtered.iterrows():
-        output_row = {
-            "電話番号": str(row.get(tel_column, "")),
-            "架電番号": str(row.get(tel_column, "")),
-            "管理番号": str(row.get("会員番号", "")),
-            "契約者名（カナ）": str(row.get("契約者カナ", "")),
-            "物件名": str(row.get("物件名", "")),
-            "クライアント": "プラザ賃貸管理保証",
-            "入居ステータス": "入居中",
-            "滞納ステータス": "未精算"
-        }
-        output_data.append(output_row)
+    # データをマッピング
+    for i, (_, row) in enumerate(df_filtered.iterrows()):
+        df_output.at[i, "電話番号"] = str(row.get(tel_column, ""))
+        df_output.at[i, "架電番号"] = str(row.get(tel_column, ""))
+        df_output.at[i, "管理番号"] = str(row.get("会員番号", ""))
+        df_output.at[i, "契約者名（カナ）"] = str(row.get("契約者カナ", ""))  # 緊急連絡人でも契約者名を入れる
+        df_output.at[i, "物件名"] = str(row.get("物件名", ""))
+        df_output.at[i, "クライアント"] = "プラザ賃貸管理保証"
+        df_output.at[i, "入居ステータス"] = "入居中"
+        df_output.at[i, "滞納ステータス"] = "未精算"
     
-    df_output = pd.DataFrame(output_data)
     logs.append(f"緊急連絡人出力データ作成完了: {len(df_output)}件")
     
     return df_output, logs

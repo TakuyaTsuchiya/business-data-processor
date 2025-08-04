@@ -5,8 +5,14 @@
 
 import pandas as pd
 import io
+import sys
+import os
 from datetime import datetime
 from typing import Tuple, List
+
+# 共通定義のインポート
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from autocall_common import AUTOCALL_OUTPUT_COLUMNS
 
 
 def read_csv_auto_encoding(file_content: bytes) -> pd.DataFrame:
@@ -68,8 +74,12 @@ def apply_mirail_emergencycontact_without10k_filters(df: pd.DataFrame) -> Tuple[
 
 
 def create_mirail_emergencycontact_output(df_filtered: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
-    """ミライル緊急連絡人出力データ作成"""
+    """ミライル緊急連絡人出力データ作成（28列統一フォーマット）"""
     logs = []
+    
+    # 28列の統一フォーマットで初期化
+    df_output = pd.DataFrame(index=range(len(df_filtered)), columns=AUTOCALL_OUTPUT_COLUMNS)
+    df_output = df_output.fillna("")
     
     # 出力用のマッピング
     mapping_rules = {
@@ -78,29 +88,22 @@ def create_mirail_emergencycontact_output(df_filtered: pd.DataFrame) -> Tuple[pd
         "入居ステータス": "入居ステータス",
         "滞納ステータス": "滞納ステータス",
         "管理番号": "管理番号",
-        "契約者名（カナ）": "契約者カナ",
+        "契約者名（カナ）": "契約者カナ",  # 緊急連絡人でも契約者名を入れる
         "物件名": "物件名",
         "クライアント": "クライアント名"
     }
     
-    # データが0件の場合でも列構造を維持
+    # データが0件の場合
     if len(df_filtered) == 0:
-        df_output = pd.DataFrame(columns=list(mapping_rules.keys()))
         logs.append("緊急連絡人出力データ作成完了: 0件（フィルタリング後データなし）")
         return df_output, logs
     
-    # 出力データ作成
-    output_data = []
-    for _, row in df_filtered.iterrows():
-        output_row = {}
+    # データをマッピング
+    for i, (_, row) in enumerate(df_filtered.iterrows()):
         for output_col, input_col in mapping_rules.items():
-            if input_col in row:
-                output_row[output_col] = str(row[input_col]) if pd.notna(row[input_col]) else ""
-            else:
-                output_row[output_col] = ""
-        output_data.append(output_row)
+            if output_col in df_output.columns and input_col in row:
+                df_output.at[i, output_col] = str(row[input_col]) if pd.notna(row[input_col]) else ""
     
-    df_output = pd.DataFrame(output_data)
     logs.append(f"緊急連絡人出力データ作成完了: {len(df_output)}件")
     
     return df_output, logs

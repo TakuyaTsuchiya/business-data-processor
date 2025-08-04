@@ -5,8 +5,14 @@
 
 import pandas as pd
 import io
+import sys
+import os
 from datetime import datetime
 from typing import Tuple, List, Optional
+
+# 共通定義のインポート
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from autocall_common import AUTOCALL_OUTPUT_COLUMNS
 
 
 def read_csv_auto_encoding(file_content: bytes) -> pd.DataFrame:
@@ -46,22 +52,18 @@ def apply_mirail_with10k_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[s
     df = df[~df["回収ランク"].isin(exclude_ranks)]
     logs.append(f"回収ランクフィルタ後: {len(df)}件")
     
-    # 4. クライアントCDのフィルタリング（1のみ）
-    df["クライアントCD"] = pd.to_numeric(df["クライアントCD"], errors="coerce")
-    df = df[df["クライアントCD"] == 1]
-    logs.append(f"クライアントCD=1フィルタ後: {len(df)}件")
+    # 4. 残債のフィルタリング（with10k版では除外なし - 全件処理）
+    logs.append("残債フィルタ: 除外なし（全件処理のため）")
+    logs.append("クライアントCDフィルタ: 除外なし（全件処理のため）")
     
-    # 5. 残債のフィルタリング（with10k版では除外なし）
-    logs.append("残債フィルタ: 除外なし（with10k版のため）")
-    
-    # 6. TEL携帯のフィルタリング（空でない値のみ）
+    # 5. TEL携帯のフィルタリング（空でない値のみ）
     df = df[
         df["TEL携帯"].notna() &
         (~df["TEL携帯"].astype(str).str.strip().isin(["", "nan", "NaN"]))
     ]
     logs.append(f"TEL携帯フィルタ後: {len(df)}件")
     
-    # 7. 入金予定金額のフィルタリング（2,3,5,12を除外）
+    # 6. 入金予定金額のフィルタリング（2,3,5,12を除外）
     exclude_amounts = [2, 3, 5, 12]
     df["入金予定金額"] = pd.to_numeric(df["入金予定金額"], errors='coerce')
     df = df[~df["入金予定金額"].isin(exclude_amounts)]
@@ -71,8 +73,12 @@ def apply_mirail_with10k_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[s
 
 
 def create_mirail_with10k_output(df_filtered: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
-    """ミライル（残債含む）出力データ作成"""
+    """ミライル（残債含む）出力データ作成（28列統一フォーマット）"""
     logs = []
+    
+    # 28列の統一フォーマットで初期化
+    df_output = pd.DataFrame(index=range(len(df_filtered)), columns=AUTOCALL_OUTPUT_COLUMNS)
+    df_output = df_output.fillna("")
     
     # 出力用のマッピング
     mapping_rules = {
@@ -86,18 +92,12 @@ def create_mirail_with10k_output(df_filtered: pd.DataFrame) -> Tuple[pd.DataFram
         "クライアント": "クライアント名"
     }
     
-    # 出力データ作成
-    output_data = []
-    for _, row in df_filtered.iterrows():
-        output_row = {}
+    # データをマッピング
+    for i, (_, row) in enumerate(df_filtered.iterrows()):
         for output_col, input_col in mapping_rules.items():
-            if input_col in row:
-                output_row[output_col] = str(row[input_col]) if pd.notna(row[input_col]) else ""
-            else:
-                output_row[output_col] = ""
-        output_data.append(output_row)
+            if output_col in df_output.columns and input_col in row:
+                df_output.at[i, output_col] = str(row[input_col]) if pd.notna(row[input_col]) else ""
     
-    df_output = pd.DataFrame(output_data)
     logs.append(f"出力データ作成完了: {len(df_output)}件")
     
     return df_output, logs
@@ -122,7 +122,7 @@ def process_mirail_with10k_data(file_content: bytes) -> Tuple[pd.DataFrame, pd.D
         logs.append(f"読み込み完了: {len(df_input)}件")
         
         # 必須列チェック
-        required_columns = ["委託先法人ID", "クライアントCD", "TEL携帯", "回収ランク"]
+        required_columns = ["委託先法人ID", "TEL携帯", "回収ランク"]
         missing_columns = [col for col in required_columns if col not in df_input.columns]
         if missing_columns:
             raise ValueError(f"必須列が不足しています: {missing_columns}")

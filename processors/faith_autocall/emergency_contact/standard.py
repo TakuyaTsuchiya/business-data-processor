@@ -5,8 +5,14 @@
 
 import pandas as pd
 import io
+import sys
+import os
 from datetime import datetime
 from typing import Tuple, List
+
+# 共通定義のインポート
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from autocall_common import AUTOCALL_OUTPUT_COLUMNS
 
 
 def read_csv_auto_encoding(file_content: bytes) -> pd.DataFrame:
@@ -61,8 +67,12 @@ def apply_faith_emergencycontact_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame
 
 
 def create_faith_emergencycontact_output(df_filtered: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
-    """フェイス緊急連絡人出力データ作成"""
+    """フェイス緊急連絡人出力データ作成（28列統一フォーマット）"""
     logs = []
+    
+    # 28列の統一フォーマットで初期化
+    df_output = pd.DataFrame(index=range(len(df_filtered)), columns=AUTOCALL_OUTPUT_COLUMNS)
+    df_output = df_output.fillna("")
     
     # 出力用のマッピング
     mapping_rules = {
@@ -71,29 +81,23 @@ def create_faith_emergencycontact_output(df_filtered: pd.DataFrame) -> Tuple[pd.
         "入居ステータス": "入居ステータス",
         "滞納ステータス": "滞納ステータス",
         "管理番号": "管理番号",
-        "契約者名（カナ）": "契約者カナ",
+        "契約者名（カナ）": "契約者カナ",  # 緊急連絡人でも契約者名を入れる
         "物件名": "物件名"
     }
     
-    # 出力データ作成
-    output_data = []
-    for _, row in df_filtered.iterrows():
-        output_row = {}
+    # データをマッピング
+    for i, (_, row) in enumerate(df_filtered.iterrows()):
+        # 基本マッピング
         for output_col, input_col in mapping_rules.items():
-            if input_col in row:
-                output_row[output_col] = str(row[input_col]) if pd.notna(row[input_col]) else ""
-            else:
-                output_row[output_col] = ""
+            if output_col in df_output.columns and input_col in row:
+                df_output.at[i, output_col] = str(row[input_col]) if pd.notna(row[input_col]) else ""
         
         # クライアント列の生成（フェイス1, フェイス2, フェイス3, フェイス4）
         if "委託先法人ID" in row and pd.notna(row["委託先法人ID"]):
-            output_row["クライアント"] = f"フェイス{int(row['委託先法人ID'])}"
+            df_output.at[i, "クライアント"] = f"フェイス{int(row['委託先法人ID'])}"
         else:
-            output_row["クライアント"] = ""
-            
-        output_data.append(output_row)
+            df_output.at[i, "クライアント"] = ""
     
-    df_output = pd.DataFrame(output_data)
     logs.append(f"緊急連絡人出力データ作成完了: {len(df_output)}件")
     
     return df_output, logs
