@@ -11,8 +11,10 @@ from datetime import datetime
 from typing import Tuple, Optional
 
 # 共通定義のインポート
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from processors.autocall_common import AUTOCALL_OUTPUT_COLUMNS
+processors_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if processors_dir not in sys.path:
+    sys.path.append(processors_dir)
+from autocall_common import AUTOCALL_OUTPUT_COLUMNS
 
 
 class MirailConfig:
