@@ -1573,42 +1573,61 @@ def show_faith_sms_vacated_contract_processor():
 def show_capco_processor():
     """カプコ新規登録処理画面"""
     st.markdown("## 📋 カプコ新規登録データ変換")
-    st.markdown("カプコレポートファイルとContractListを統合し、カプコ新規登録用のCSVを生成します")
+    st.markdown("カプコ元データとContractListを統合し、ミライル顧客システム用CSVを生成します")
+    
+    # 重要な注意事項を表示
+    st.info("⚠️ **重要**: 必ず2つのファイルをアップロードしてください。")
     
     # 処理条件の表示
     with st.expander("📋 主な処理機能"):
         st.markdown("""
-        - **重複チェック**: ContractListとの照合により既存データを自動除外
-        - **管理番号生成**: CAP-プレフィックス付きの管理番号を自動生成
-        - **住所分割**: 都道府県、市区町村、残り住所に自動分割
-        - **電話番号処理**: 正規化とフォーマット統一
-        - **金額計算**: 処理費用の自動計算（最低50,000円保証）
-        - **カプコ仕様**: カプコシステム特有のデータ形式に対応
+        ### 🔄 **重複チェック・新規抽出**
+        - **照合キー**: カプコ元データ「契約No」⟷ ContractList「引継番号」
+        - **新規案件のみ抽出**: 既存データとの重複を自動除外
+        
+        ### 📝 **データ変換**
+        - **基本情報**: 氏名・カナ正規化（スペース除去、ひらがな→カタカナ変換）
+        - **電話番号処理**: 携帯優先ロジック（携帯空欄時は自宅番号を携帯欄に移動）
+        - **住所分割**: 都道府県・市区町村・残り住所への3分割
+        - **物件住所生成**: 契約者住所から物件名・部屋番号を除去
+        
+        ### 🏦 **口座・業務情報**
+        - **支店CD判定**: 中央支店→763、東海支店→730
+        - **クライアントCD**: 約定日による自動判定（1004年→1、1005年→4）
+        - **引継情報**: 「カプコ一括登録 ⚫︎保証開始日：{契約開始}」自動生成
+        
+        ### ✅ **固定値・空白値設定**
+        - **固定値**: 入居中・未精算・契約中・バックレント・普通・9・25・0など
+        - **空白値**: 勤務先・保証人・緊急連絡人情報など37項目を明示的に空白化
         """)
     
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("### 📄 カプコレポートファイル")
-        report_file = st.file_uploader(
-            "カプコレポート*.csv",
+        st.markdown("### 📄 カプコ元データ.csv")
+        st.markdown("*カプコから提供される案件データファイル*")
+        capco_file = st.file_uploader(
+            "カプコ元データ.csv をアップロード",
             type=['csv'],
-            key="capco_report"
+            key="capco_data"
         )
-        if report_file:
-            st.info(f"ファイルサイズ: {len(report_file.getvalue()):,} bytes")
+        if capco_file:
+            st.success(f"✅ ファイル: {capco_file.name}")
+            st.info(f"ファイルサイズ: {len(capco_file.getvalue()):,} bytes")
     
     with col2:
-        st.markdown("### 📋 ContractList")
+        st.markdown("### 📋 ContractList_*.csv")  
+        st.markdown("*ミライル顧客システムの既存データ*")
         contract_file = st.file_uploader(
-            "ContractList_*.csv",
+            "ContractList_*.csv をアップロード",
             type=['csv'],
             key="capco_contract"
         )
         if contract_file:
+            st.success(f"✅ ファイル: {contract_file.name}")
             st.info(f"ファイルサイズ: {len(contract_file.getvalue()):,} bytes")
     
-    if report_file is not None and contract_file is not None:
+    if capco_file is not None and contract_file is not None:
         st.success("✅ 両方のファイルアップロード完了")
         
         # 処理ボタン
@@ -1616,14 +1635,14 @@ def show_capco_processor():
             with st.spinner("データを統合・変換中..."):
                 try:
                     # カプコプロセッサーをインポート
-                    from processors.capco_import_new_data import process_capco_import_new_data
+                    from processors.capco_import_new_data_v2 import process_capco_import_new_data_v2
                     
                     # ファイル内容を取得
-                    report_content = report_file.getvalue()
+                    capco_content = capco_file.getvalue()
                     contract_content = contract_file.getvalue()
                     
                     # データ処理実行
-                    df_output, logs, output_filename = process_capco_import_new_data(report_content, contract_content)
+                    df_output, logs, output_filename = process_capco_import_new_data_v2(capco_content, contract_content)
                     
                     # 処理結果表示
                     st.success("✅ 処理が完了しました！")
@@ -1635,26 +1654,29 @@ def show_capco_processor():
                     
                     # 結果統計
                     if len(df_output) > 0:
-                        col1, col2, col3 = st.columns(3)
+                        col1, col2, col3, col4 = st.columns(4)
                         with col1:
-                            st.metric("出力件数", len(df_output))
+                            st.metric("📊 出力件数", len(df_output))
                         with col2:
                             phone_count = sum([
-                                df_output["契約者電話番号"].notna().sum(),
-                                df_output["契約者携帯番号"].notna().sum()
+                                df_output["契約者TEL自宅"].notna().sum(),
+                                df_output["契約者TEL携帯"].notna().sum()
                             ])
-                            st.metric("電話番号件数", phone_count)
+                            st.metric("📞 電話番号件数", phone_count)
                         with col3:
-                            room_count = df_output["部屋番号"].notna().sum()
-                            st.metric("部屋番号あり", room_count)
+                            address_count = df_output["契約者現住所1"].notna().sum()
+                            st.metric("🏠 住所件数", address_count)
+                        with col4:
+                            client_cd_count = df_output["クライアントCD"].notna().sum()
+                            st.metric("🏢 クライアントCD", client_cd_count)
                         
                         # データプレビュー表示
                         st.markdown("### 📋 出力データプレビュー（上位10件）")
-                        # 表示用に列を選択
+                        # 表示用に主要列を選択
                         preview_columns = [
-                            "管理番号", "契約者名", "契約者カナ", 
-                            "契約者携帯番号", "物件名称", "部屋番号",
-                            "月額家賃", "処理費用"
+                            "引継番号", "契約者氏名", "契約者カナ", "契約者TEL携帯",
+                            "契約者現住所1", "契約者現住所2", "物件名", "部屋番号",
+                            "入居ステータス", "滞納ステータス", "管理前滞納額", "クライアントCD"
                         ]
                         available_columns = [col for col in preview_columns if col in df_output.columns]
                         st.dataframe(df_output[available_columns].head(10), use_container_width=True)
