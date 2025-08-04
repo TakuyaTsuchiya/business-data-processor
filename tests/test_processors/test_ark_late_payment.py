@@ -8,6 +8,10 @@ import pandas as pd
 from io import StringIO
 import sys
 import os
+import warnings
+
+# Streamlitの警告を無視
+warnings.filterwarnings("ignore", message="missing ScriptRunContext")
 
 # プロジェクトルートをパスに追加
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
