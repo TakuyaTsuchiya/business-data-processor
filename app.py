@@ -16,6 +16,26 @@ import pandas as pd
 import io
 from datetime import datetime
 
+
+def safe_csv_download(df: pd.DataFrame, filename: str, label: str = "📥 CSVファイルをダウンロード"):
+    """安全なCSVダウンロード関数（cp932エンコーディングエラー対応）"""
+    try:
+        csv_data = df.to_csv(index=False, encoding='cp932', errors='ignore')
+        csv_bytes = csv_data.encode('cp932', errors='ignore')
+    except UnicodeEncodeError:
+        # cp932でエラーが出る場合はUTF-8で出力
+        csv_data = df.to_csv(index=False, encoding='utf-8-sig')
+        csv_bytes = csv_data.encode('utf-8-sig')
+        st.warning("⚠️ 一部の文字がcp932に対応していないため、UTF-8で出力します")
+    
+    return st.download_button(
+        label=label,
+        data=csv_bytes,
+        file_name=filename,
+        mime="text/csv",
+        type="primary"
+    )
+
 # アーク残債更新プロセッサーをインポート
 from processors.ark_late_payment_update import process_ark_late_payment_data
 
@@ -383,14 +403,7 @@ def show_mirail_contract_without10k_processor():
                         st.dataframe(df_output.head(10), use_container_width=True)
                         
                         # CSVダウンロード
-                        csv_data = df_output.to_csv(index=False, encoding='cp932')
-                        st.download_button(
-                            label="📥 CSVファイルをダウンロード",
-                            data=csv_data.encode('cp932'),
-                            file_name=output_filename,
-                            mime="text/csv",
-                            type="primary"
-                        )
+                        safe_csv_download(df_output, output_filename)
                     else:
                         st.warning("⚠️ フィルタリング条件に合致するデータがありません")
                         
@@ -473,14 +486,7 @@ def show_mirail_contract_with10k_processor():
                         st.dataframe(df_output.head(10), use_container_width=True)
                         
                         # CSVダウンロード
-                        csv_data = df_output.to_csv(index=False, encoding='cp932')
-                        st.download_button(
-                            label="📥 CSVファイルをダウンロード",
-                            data=csv_data.encode('cp932'),
-                            file_name=output_filename,
-                            mime="text/csv",
-                            type="primary"
-                        )
+                        safe_csv_download(df_output, output_filename)
                     else:
                         st.warning("⚠️ フィルタリング条件に合致するデータがありません")
                         
@@ -564,14 +570,7 @@ def show_faith_contract_processor():
                         st.dataframe(df_output.head(10), use_container_width=True)
                         
                         # CSVダウンロード
-                        csv_data = df_output.to_csv(index=False, encoding='cp932')
-                        st.download_button(
-                            label="📥 CSVファイルをダウンロード",
-                            data=csv_data.encode('cp932'),
-                            file_name=output_filename,
-                            mime="text/csv",
-                            type="primary"
-                        )
+                        safe_csv_download(df_output, output_filename)
                     else:
                         st.warning("⚠️ フィルタリング条件に合致するデータがありません")
                         
@@ -648,14 +647,7 @@ def show_mirail_guarantor_without10k_processor():
                         st.dataframe(df_output.head(10), use_container_width=True)
                         
                         # CSVダウンロード
-                        csv_data = df_output.to_csv(index=False, encoding='cp932')
-                        st.download_button(
-                            label="📥 CSVファイルをダウンロード",
-                            data=csv_data.encode('cp932'),
-                            file_name=output_filename,
-                            mime="text/csv",
-                            type="primary"
-                        )
+                        safe_csv_download(df_output, output_filename)
                     else:
                         st.warning("⚠️ フィルタリング条件に合致するデータがありません")
                         
@@ -732,14 +724,7 @@ def show_mirail_guarantor_with10k_processor():
                         st.dataframe(df_output.head(10), use_container_width=True)
                         
                         # CSVダウンロード
-                        csv_data = df_output.to_csv(index=False, encoding='cp932')
-                        st.download_button(
-                            label="📥 CSVファイルをダウンロード",
-                            data=csv_data.encode('cp932'),
-                            file_name=output_filename,
-                            mime="text/csv",
-                            type="primary"
-                        )
+                        safe_csv_download(df_output, output_filename)
                     else:
                         st.warning("⚠️ フィルタリング条件に合致するデータがありません")
                         
@@ -816,14 +801,7 @@ def show_mirail_emergencycontact_without10k_processor():
                         st.dataframe(df_output.head(10), use_container_width=True)
                         
                         # CSVダウンロード
-                        csv_data = df_output.to_csv(index=False, encoding='cp932')
-                        st.download_button(
-                            label="📥 CSVファイルをダウンロード",
-                            data=csv_data.encode('cp932'),
-                            file_name=output_filename,
-                            mime="text/csv",
-                            type="primary"
-                        )
+                        safe_csv_download(df_output, output_filename)
                     else:
                         st.warning("⚠️ フィルタリング条件に合致するデータがありません")
                         
@@ -900,14 +878,7 @@ def show_mirail_emergencycontact_with10k_processor():
                         st.dataframe(df_output.head(10), use_container_width=True)
                         
                         # CSVダウンロード
-                        csv_data = df_output.to_csv(index=False, encoding='cp932')
-                        st.download_button(
-                            label="📥 CSVファイルをダウンロード",
-                            data=csv_data.encode('cp932'),
-                            file_name=output_filename,
-                            mime="text/csv",
-                            type="primary"
-                        )
+                        safe_csv_download(df_output, output_filename)
                     else:
                         st.warning("⚠️ フィルタリング条件に合致するデータがありません")
                         
@@ -991,14 +962,7 @@ def show_faith_guarantor_processor():
                         st.dataframe(df_output.head(10), use_container_width=True)
                         
                         # CSVダウンロード
-                        csv_data = df_output.to_csv(index=False, encoding='cp932')
-                        st.download_button(
-                            label="📥 CSVファイルをダウンロード",
-                            data=csv_data.encode('cp932'),
-                            file_name=output_filename,
-                            mime="text/csv",
-                            type="primary"
-                        )
+                        safe_csv_download(df_output, output_filename)
                     else:
                         st.warning("⚠️ フィルタリング条件に合致するデータがありません")
                         
@@ -1082,14 +1046,7 @@ def show_faith_emergencycontact_processor():
                         st.dataframe(df_output.head(10), use_container_width=True)
                         
                         # CSVダウンロード
-                        csv_data = df_output.to_csv(index=False, encoding='cp932')
-                        st.download_button(
-                            label="📥 CSVファイルをダウンロード",
-                            data=csv_data.encode('cp932'),
-                            file_name=output_filename,
-                            mime="text/csv",
-                            type="primary"
-                        )
+                        safe_csv_download(df_output, output_filename)
                     else:
                         st.warning("⚠️ フィルタリング条件に合致するデータがありません")
                         
@@ -1191,14 +1148,7 @@ def show_ark_processor():
                         st.dataframe(df_output[available_columns].head(10), use_container_width=True)
                         
                         # CSVダウンロード
-                        csv_data = df_output.to_csv(index=False, encoding='cp932')
-                        st.download_button(
-                            label="📥 CSVファイルをダウンロード",
-                            data=csv_data.encode('cp932'),
-                            file_name=output_filename,
-                            mime="text/csv",
-                            type="primary"
-                        )
+                        safe_csv_download(df_output, output_filename)
                         
                         # 詳細統計情報
                         with st.expander("📈 詳細統計情報"):
@@ -1307,14 +1257,7 @@ def show_plaza_main_processor():
                         st.dataframe(df_output.head(10), use_container_width=True)
                         
                         # CSVダウンロード
-                        csv_data = df_output.to_csv(index=False, encoding='cp932')
-                        st.download_button(
-                            label="📥 CSVファイルをダウンロード",
-                            data=csv_data.encode('cp932'),
-                            file_name=output_filename,
-                            mime="text/csv",
-                            type="primary"
-                        )
+                        safe_csv_download(df_output, output_filename)
                     else:
                         st.warning("⚠️ フィルタリング条件に合致するデータがありません")
                         
@@ -1403,14 +1346,7 @@ def show_plaza_guarantor_processor():
                         st.dataframe(df_output.head(10), use_container_width=True)
                         
                         # CSVダウンロード
-                        csv_data = df_output.to_csv(index=False, encoding='cp932')
-                        st.download_button(
-                            label="📥 CSVファイルをダウンロード",
-                            data=csv_data.encode('cp932'),
-                            file_name=output_filename,
-                            mime="text/csv",
-                            type="primary"
-                        )
+                        safe_csv_download(df_output, output_filename)
                     else:
                         st.warning("⚠️ フィルタリング条件に合致するデータがありません")
                         
@@ -1498,14 +1434,7 @@ def show_plaza_contact_processor():
                         st.dataframe(df_output.head(10), use_container_width=True)
                         
                         # CSVダウンロード
-                        csv_data = df_output.to_csv(index=False, encoding='cp932')
-                        st.download_button(
-                            label="📥 CSVファイルをダウンロード",
-                            data=csv_data.encode('cp932'),
-                            file_name=output_filename,
-                            mime="text/csv",
-                            type="primary"
-                        )
+                        safe_csv_download(df_output, output_filename)
                     else:
                         st.warning("⚠️ フィルタリング条件に合致するデータがありません")
                         
@@ -1707,14 +1636,7 @@ def show_capco_processor():
                         st.dataframe(df_output[available_columns].head(10), use_container_width=True)
                         
                         # CSVダウンロード
-                        csv_data = df_output.to_csv(index=False, encoding='cp932')
-                        st.download_button(
-                            label="📥 CSVファイルをダウンロード",
-                            data=csv_data.encode('cp932'),
-                            file_name=output_filename,
-                            mime="text/csv",
-                            type="primary"
-                        )
+                        safe_csv_download(df_output, output_filename)
                         
                         # 詳細統計情報
                         with st.expander("📈 詳細統計情報"):
