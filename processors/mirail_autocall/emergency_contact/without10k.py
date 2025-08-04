@@ -54,18 +54,17 @@ def apply_mirail_emergencycontact_without10k_filters(df: pd.DataFrame) -> Tuple[
     df = df[~df["回収ランク"].isin(exclude_ranks)]
     logs.append(f"回収ランクフィルタ後: {len(df)}件")
     
-    # 4. クライアントCDのフィルタリング（1のみ）
+    # 4. 滞納残債とクライアントCDの複合フィルタリング
+    # 「クライアントCD=1 かつ 滞納残債=10,000円・11,000円」のレコードのみ除外
     df["クライアントCD"] = pd.to_numeric(df["クライアントCD"], errors="coerce")
-    df = df[df["クライアントCD"] == 1]
-    logs.append(f"クライアントCD=1フィルタ後: {len(df)}件")
-    
-    # 5. 滞納残債のフィルタリング（10,000円・11,000円除外）
-    exclude_debts = [10000, 11000]
     df["滞納残債"] = pd.to_numeric(df["滞納残債"].astype(str).str.replace(',', ''), errors='coerce')
-    df = df[~df["滞納残債"].isin(exclude_debts)]
-    logs.append(f"滞納残債除外フィルタ後: {len(df)}件")
     
-    # 6. TEL携帯.2のフィルタリング（緊急連絡人電話番号が必須）
+    exclude_debts = [10000, 11000]
+    exclude_condition = (df["クライアントCD"] == 1) & (df["滞納残債"].isin(exclude_debts))
+    df = df[~exclude_condition]
+    logs.append(f"クライアントCD=1かつ残債10,000円・11,000円除外後: {len(df)}件")
+    
+    # 5. TEL携帯.2のフィルタリング（緊急連絡人電話番号が必須）
     df = df[
         df["TEL携帯.2"].notna() &
         (~df["TEL携帯.2"].astype(str).str.strip().isin(["", "nan", "NaN"]))
