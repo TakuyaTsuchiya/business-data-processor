@@ -80,6 +80,12 @@ def create_mirail_emergencycontact_output(df_filtered: pd.DataFrame) -> Tuple[pd
         "クライアント": "クライアント名"
     }
     
+    # データが0件の場合でも列構造を維持
+    if len(df_filtered) == 0:
+        df_output = pd.DataFrame(columns=list(mapping_rules.keys()))
+        logs.append("緊急連絡人出力データ作成完了: 0件（フィルタリング後データなし）")
+        return df_output, logs
+    
     # 出力データ作成
     output_data = []
     for _, row in df_filtered.iterrows():
