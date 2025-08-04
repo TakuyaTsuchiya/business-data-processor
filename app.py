@@ -1330,18 +1330,15 @@ def show_plaza_guarantor_processor():
     st.markdown("## 👥 プラザ保証人オートコール")
     st.markdown("ContractListとExcel報告書を組み合わせて、プラザ保証人のオートコール用CSVを生成します")
     
-    # 未実装の警告表示
-    st.warning("⚠️ プラザ保証人処理は現在未実装です")
-    st.info("📝 基本構造のみ提供されています。元のリポジトリに実装が見つかりませんでした。")
-    
     # 処理条件の表示
-    st.markdown("**📋 フィルタリング条件（予定）**")
+    st.markdown("**📋 フィルタリング条件**")
     st.markdown("""
     - **2ファイル処理**: ContractList + Excel報告書の結合処理
     - **延滞額フィルター**: 0円、2円、3円、5円を除外
     - **TEL無効除外**: "TEL無効"を含むレコードを除外
     - **回収ランクフィルター**: 督促停止、弁護士介入を除外
-    - **保証人電話番号**: 空でない値のみ（要実装）
+    - **保証人電話番号**: 保証人TEL携帯列の空でない値のみ
+    - **出力形式**: 保証人名、契約者名、管理番号を含むオートコール用CSV
     """)
     
     col1, col2 = st.columns(2)
@@ -1384,7 +1381,7 @@ def show_plaza_guarantor_processor():
                     df_filtered, df_output, logs, output_filename = process_plaza_guarantor_data(contract_content, report_content)
                     
                     # 処理結果表示
-                    st.warning("✅ 基本処理が完了しました（未実装警告）")
+                    st.success("✅ プラザ保証人データ処理が完了しました")
                     
                     # 処理ログ表示
                     with st.expander("📊 処理ログ"):
