@@ -1807,10 +1807,7 @@ def process_ark_late_payment_page():
                 with st.expander("エラー詳細"):
                     st.exception(e)
     else:
-        if not arc_file:
-            st.info("👆 アーク残債CSVファイルをアップロードしてください")
-        if not contract_file:
-            st.info("👆 ContractListファイルをアップロードしてください")
+        pass
 
 
 if __name__ == "__main__":
