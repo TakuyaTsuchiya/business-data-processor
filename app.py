@@ -343,15 +343,13 @@ def show_mirail_contract_without10k_processor():
     # 処理条件の表示
     st.markdown("**📋 フィルタリング条件**")
     st.markdown("""
-    <small>
-    • 委託先法人ID: 空白と5<br>
-    • 入金予定日: 前日以前またはNaN（当日は除外）<br>
-    • 回収ランク: 弁護士介入を除外<br>
-    • 滞納残債: クライアントCD=1で1万円・1万1千円を除外<br>
-    • TEL携帯: 空でない値のみ<br>
+    • 委託先法人ID: 空白と5
+    • 入金予定日: 前日以前またはNaN（当日は除外）
+    • 回収ランク: 弁護士介入を除外
+    • 滞納残債: クライアントCD=1で1万円・1万1千円を除外
+    • TEL携帯: 空でない値のみ
     • 入金予定金額: 2,3,5,12を除外
-    </small>
-    """, unsafe_allow_html=True)
+    """)
     
     # ファイルアップロード
     uploaded_file = st.file_uploader(
