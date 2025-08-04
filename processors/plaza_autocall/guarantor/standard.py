@@ -57,14 +57,19 @@ def apply_plaza_guarantor_filters(df_contract: pd.DataFrame, df_report: pd.DataF
         logs.append(f"回収ランクフィルタ後: {len(merged)}件")
     
     # 4. 保証人TEL携帯のフィルタリング（保証人の電話番号が必須）
-    # 保証人関連の電話番号列を検索
-    guarantor_tel_columns = [col for col in merged.columns 
-                           if "保証人" in col and ("TEL" in col or "電話" in col)]
+    # 保証人関連の電話番号列を検索（TEL携帯.1、TEL携帯.2なども含む）
+    guarantor_tel_columns = []
     
+    # まず保証人関連の電話番号列を探す
+    for col in merged.columns:
+        if "保証人" in col and ("TEL" in col or "電話" in col):
+            guarantor_tel_columns.append(col)
+    
+    # 保証人専用列がない場合は、TEL携帯.1、TEL携帯.2を探す（保証人の電話番号として使用）
     if not guarantor_tel_columns:
-        # 保証人TEL携帯列がない場合は、保証人電話番号列を探す
-        guarantor_tel_columns = [col for col in merged.columns 
-                               if "保証人電話番号" in col or col == "保証人TEL携帯"]
+        for col in merged.columns:
+            if col in ["TEL携帯.1", "TEL携帯.2"] or col.startswith("保証人TEL"):
+                guarantor_tel_columns.append(col)
     
     if not guarantor_tel_columns:
         raise ValueError("保証人電話番号列が見つかりません。利用可能な列: " + str(merged.columns.tolist()))
@@ -79,7 +84,7 @@ def apply_plaza_guarantor_filters(df_contract: pd.DataFrame, df_report: pd.DataF
         .apply(lambda x: x if x.startswith("0") else f"0{x}" if x else "")
     )
     merged = merged[merged[tel_column].str.strip() != ""]
-    logs.append(f"保証人TEL携帯フィルタ後: {len(merged)}件")
+    logs.append(f"保証人TEL携帯フィルタ後（{tel_column}使用）: {len(merged)}件")
     
     return merged, logs, tel_column
 
@@ -91,12 +96,23 @@ def create_plaza_guarantor_output(df_filtered: pd.DataFrame, tel_column: str) ->
     # 電話番号にダブルクォーテーションを追加（Excel対策）
     tel_series = df_filtered[tel_column].apply(lambda x: f'"{x}"' if x else "")
     
+    # データが0件の場合でも列構造を維持
+    output_columns = [
+        "電話番号", "架電番号", "管理番号", "保証人名（カナ）", "契約者名（カナ）",
+        "物件名", "クライアント", "入居ステータス", "滞納ステータス"
+    ]
+    
+    if len(df_filtered) == 0:
+        df_output = pd.DataFrame(columns=output_columns)
+        logs.append("保証人出力データ作成完了: 0件（フィルタリング後データなし）")
+        return df_output, logs
+    
     # プラザ保証人用の出力データ作成
     output_data = []
     for i, (_, row) in enumerate(df_filtered.iterrows()):
         # 保証人名を取得（複数の可能性のある列名を確認）
         guarantor_name = ""
-        guarantor_name_columns = ["保証人名", "保証人氏名", "保証人", "保証人名（カナ）", "保証人カナ"]
+        guarantor_name_columns = ["保証人名", "保証人氏名", "保証人", "保証人名（カナ）", "保証人カナ", "保証人１氏名"]
         for col in guarantor_name_columns:
             if col in row and pd.notna(row[col]) and str(row[col]).strip():
                 guarantor_name = str(row[col])
