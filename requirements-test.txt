@@ -13,6 +13,7 @@ black>=22.0.0
 # Test utilities
 pytest-mock>=3.0.0
 pytest-xdist>=3.0.0  # 並列テスト実行
+psutil>=5.0.0  # メモリ効率性テスト用
 
 # Coverage reporting
 coverage>=6.0.0
