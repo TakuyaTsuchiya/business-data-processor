@@ -1310,7 +1310,7 @@ def show_plaza_guarantor_processor():
         st.success("✅ 両方のファイルアップロード完了")
         
         # 処理ボタン
-        if st.button("🚀 処理開始（基本構造のみ）", key="plaza_guarantor_process", type="primary"):
+        if st.button("🚀 処理開始", key="plaza_guarantor_process", type="primary"):
             with st.spinner("データを処理中..."):
                 try:
                     # プラザ保証人プロセッサーをインポート
