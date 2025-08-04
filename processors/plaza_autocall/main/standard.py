@@ -56,11 +56,13 @@ def apply_plaza_main_filters(df_contract: pd.DataFrame, df_report: pd.DataFrame)
         merged = merged[~merged["回収ランク"].isin(["督促停止", "弁護士介入"])]
         logs.append(f"回収ランクフィルタ後: {len(merged)}件")
     
-    # 4. 契約者TEL携帯のフィルタリング（電話番号が必須）
-    # 複数のTEL携帯列から1つ目を使用
-    tel_columns = [col for col in merged.columns if col == "契約者TEL携帯" or col.startswith("契約者TEL携帯.")]
+    # 4. TEL携帯のフィルタリング（電話番号が必須）
+    # TEL携帯列を探す（契約者TEL携帯、TEL携帯、TEL携帯.1など）
+    tel_columns = [col for col in merged.columns if 
+                   col == "契約者TEL携帯" or col == "TEL携帯" or
+                   col.startswith("契約者TEL携帯.") or col.startswith("TEL携帯.")]
     if not tel_columns:
-        raise ValueError("契約者TEL携帯列が見つかりません")
+        raise ValueError("TEL携帯列が見つかりません（契約者TEL携帯、TEL携帯、TEL携帯.1などの列が必要です）")
     
     tel_column = tel_columns[0]  # 1つ目の列を使用
     
@@ -72,7 +74,7 @@ def apply_plaza_main_filters(df_contract: pd.DataFrame, df_report: pd.DataFrame)
         .apply(lambda x: x if x.startswith("0") else f"0{x}" if x else "")
     )
     merged = merged[merged[tel_column].str.strip() != ""]
-    logs.append(f"契約者TEL携帯フィルタ後: {len(merged)}件")
+    logs.append(f"TEL携帯フィルタ後（{tel_column}使用）: {len(merged)}件")
     
     return merged, logs, tel_column
 
@@ -83,6 +85,17 @@ def create_plaza_main_output(df_filtered: pd.DataFrame, tel_column: str) -> Tupl
     
     # 電話番号にダブルクォーテーションを追加（Excel対策）
     tel_series = df_filtered[tel_column].apply(lambda x: f'"{x}"' if x else "")
+    
+    # データが0件の場合でも列構造を維持
+    output_columns = [
+        "電話番号", "架電番号", "管理番号", "契約者名（カナ）",
+        "物件名", "クライアント", "入居ステータス", "滞納ステータス"
+    ]
+    
+    if len(df_filtered) == 0:
+        df_output = pd.DataFrame(columns=output_columns)
+        logs.append("契約者出力データ作成完了: 0件（フィルタリング後データなし）")
+        return df_output, logs
     
     # プラザ用の出力データ作成
     output_data = []
