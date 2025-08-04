@@ -1059,48 +1059,14 @@ def show_faith_emergencycontact_processor():
                         st.exception(e)
 
 def show_ark_processor():
-    """アーク新規登録処理画面（GitHub完全版）"""
-    st.markdown("## 📋 アーク新規登録データ変換（111列フル仕様）")
-    st.markdown("🚀 **GitHub動作実績コード完全踏襲版** - 案件取込用レポートとContractListを統合し、アーク新規登録用の111列フルCSVを生成")
-    
-    # GitHub完全版機能一覧
-    st.markdown("### 🎆 GitHub完全版主要機能")
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("""
-        **🔍 データ検証・照合**
-        - 重複チェック（ContractListとの引継番号照合）
-        - 自動エンコーディング検出（UTF-8/Shift_JIS/CP932）
-        - 統計情報・マッチング率表示
-        
-        **📍 住所・連絡先処理**
-        - 郵便番号自動抽出（〒マーク対応）
-        - 都道府県・市区町村・残り住所分割
-        - 東京23区特別処理対応
-        - 電話番号正規化・移行ロジック
-        """)
-    
-    with col2:
-        st.markdown("""
-        **🏢 物件・金額処理**
-        - 物件名から部屋番号自動抽出・正規化
-        - 退去手続き費用自動計算（最低70,000円保証）
-        - 固定値設定（入居ステータス・受託状況等）
-        
-        **👥 保証人・緊急連絡人処理**
-        - 種別/続柄２による自動判定ロジック
-        - 名前・カナ・住所・電話番号全項目対応
-        - 引継情報自動生成（督促手数料注意+入居日）
-        """)
-    
-    st.markdown("---")
-    st.markdown("📊 **111列フル仕様出力** - GitHubの`ark_import_new_data`リポジトリと完全同一の出力列構成")
+    """アーク新規登録処理画面"""
+    st.markdown("## アーク新規登録")
+    st.markdown("案件取込用レポートとContractListを統合し、アーク新規登録用のCSVを生成します")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("### 📄 案件取込用レポート")
+        st.markdown("### 案件取込用レポート")
         report_file = st.file_uploader(
             "【東京支店】①案件取込用レポート*.csv",
             type=['csv'],
@@ -1110,7 +1076,7 @@ def show_ark_processor():
             st.info(f"ファイルサイズ: {len(report_file.getvalue()):,} bytes")
     
     with col2:
-        st.markdown("### 📋 ContractList")
+        st.markdown("### ContractList")
         contract_file = st.file_uploader(
             "ContractList_*.csv",
             type=['csv'],
@@ -1120,10 +1086,10 @@ def show_ark_processor():
             st.info(f"ファイルサイズ: {len(contract_file.getvalue()):,} bytes")
     
     if report_file is not None and contract_file is not None:
-        st.success("✅ 両方のファイルアップロード完了")
+        st.success("両方のファイルアップロード完了")
         
         # 処理ボタン
-        if st.button("🚀 処理開始", key="ark_process", type="primary"):
+        if st.button("処理開始", key="ark_process", type="primary"):
             with st.spinner("データを統合・変換中..."):
                 try:
                     # アークプロセッサーをインポート
