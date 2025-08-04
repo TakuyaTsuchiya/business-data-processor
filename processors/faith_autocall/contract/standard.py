@@ -50,7 +50,7 @@ def apply_faith_contract_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[s
     df = df[~df["回収ランク"].isin(exclude_ranks)]
     logs.append(f"回収ランクフィルタ後: {len(df)}件")
     
-    # 5. TEL携帯のフィルタリング（契約者電話番号が必須）
+    # 5. TEL携帯のフィルタリング（契約者TEL携帯が必須）
     df = df[
         df["TEL携帯"].notna() &
         (~df["TEL携帯"].astype(str).str.strip().isin(["", "nan", "NaN"]))
