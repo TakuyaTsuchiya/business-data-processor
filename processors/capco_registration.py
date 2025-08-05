@@ -8,8 +8,9 @@ import io
 import re
 import unicodedata
 from datetime import datetime
-from typing import Tuple, Optional, Dict, List
+from typing import Tuple, Optional, Dict, List, Union
 import logging
+import chardet
 
 
 class CapcoConfig:
@@ -60,29 +61,63 @@ class DataLoader:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
     
-    def detect_encoding(self, file_content: bytes) -> str:
-        """エンコーディング自動検出（GitHub完全踏襲）"""
-        encodings_to_try = ['shift_jis', 'utf-8', 'cp932']
+    def detect_encoding(self, file_content: Union[bytes, str]) -> str:
+        """エンコーディング自動検出（改善版）"""
+        if isinstance(file_content, str):
+            # ファイルパスの場合
+            with open(file_content, 'rb') as f:
+                raw_data = f.read(10000)
+        else:
+            # バイトデータの場合
+            raw_data = file_content[:10000] if len(file_content) > 10000 else file_content
         
-        for encoding in encodings_to_try:
-            try:
-                test_content = file_content[:1000]
-                test_content.decode(encoding)
-                return encoding
-            except UnicodeDecodeError:
-                continue
+        # chardetで検出
+        result = chardet.detect(raw_data)
+        detected_encoding = result['encoding']
+        confidence = result.get('confidence', 0)
         
-        return 'cp932'
+        # エンコーディング候補リスト（拡張版）
+        encoding_candidates = ['cp932', 'shift_jis', 'utf-8-sig', 'utf-8', 'iso-2022-jp', 'euc-jp']
+        
+        # 信頼度が低い場合は代替エンコーディングを試す
+        if confidence < 0.7:
+            for encoding in encoding_candidates:
+                try:
+                    raw_data.decode(encoding)
+                    return encoding
+                except UnicodeDecodeError:
+                    continue
+        
+        # ヨくあるエンコーディングの修正
+        if detected_encoding in ['CP932', 'SHIFT_JIS', 'SHIFT-JIS']:
+            return 'cp932'
+        elif detected_encoding in ['UTF-8-SIG']:
+            return 'utf-8-sig'
+        elif detected_encoding:
+            return detected_encoding
+        else:
+            # フォールバック
+            return 'cp932'
     
     def load_csv_from_bytes(self, file_content: bytes) -> pd.DataFrame:
-        """バイト形式CSVファイル読み込み（GitHub完全踏襲）"""
+        """バイト形式CSVファイル読み込み（改善版）"""
         encoding = self.detect_encoding(file_content)
         
-        try:
-            df = pd.read_csv(io.BytesIO(file_content), encoding=encoding, dtype=str)
-            return df
-        except Exception as e:
-            raise ValueError(f"CSVファイルの読み込みに失敗: {str(e)}")
+        # 複数のエンコーディングで試行
+        encodings_to_try = [encoding, 'cp932', 'shift_jis', 'utf-8-sig', 'utf-8', 'iso-2022-jp', 'euc-jp']
+        
+        for try_encoding in encodings_to_try:
+            try:
+                df = pd.read_csv(io.BytesIO(file_content), encoding=try_encoding, dtype=str)
+                return df
+            except UnicodeDecodeError:
+                continue
+            except Exception as e:
+                if try_encoding == encodings_to_try[-1]:  # 最後の試行の場合
+                    raise ValueError(f"CSVファイルの読み込みに失敗: {str(e)}")
+                continue
+        
+        raise ValueError("対応するエンコーディングが見つかりませんでした")
     
     def load_capco_data(self, file_content: bytes) -> pd.DataFrame:
         """カプコ元データ読み込み（GitHub完全踏襲）"""
