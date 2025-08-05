@@ -643,7 +643,7 @@ class DataConverter:
             
             # 8. その他情報
             converted_row["管理前滞納額"] = self.safe_str_convert(row.get("未収金額合計", "0"))
-            converted_row["契約者勤務先名"] = self.safe_str_convert(row.get("勤務偈1", ""))
+            converted_row["契約者勤務先名"] = self.safe_str_convert(row.get("勤務先1", ""))
             converted_row["契約者勤務先TEL"] = self.safe_str_convert(row.get("勤務先TEL1", ""))
             
             # 9. 回収口座情報（バーチャル口座情報を含む）
