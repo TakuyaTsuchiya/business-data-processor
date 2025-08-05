@@ -1,14 +1,17 @@
 """
-Business Data Processor
-統合データ処理システム - Streamlit版
+Business Data Processor v2.4.0
+統合データ処理システム
 
-対応システム:
-- アーク新規登録データ変換
-- ミライル契約者データ処理
-- フェイス契約者データ処理
-- アーク残債更新処理
+対応システム（完全版）:
+- アーク新規登録データ変換（111列フル仕様）
+- アーク残債更新処理（管理番号・管理前滞納額）
+- カプコ新規登録（重複チェック・完全変換）
+- ミライル用オートコール（契約者・保証人・緊急連絡人・6種類）
+- フェイス用オートコール（契約者・保証人・緊急連絡人・3種類）
+- プラザ用オートコール（契約者・緊急連絡人・2種類実装済み）
+- フェイスSMS（退去済み契約者・実装済み）
 
-CI/CD自動デプロイ対応版
+★ 簡略版廃止・動作実績コード100%採用
 """
 
 import streamlit as st
@@ -164,9 +167,9 @@ def main():
     """, unsafe_allow_html=True)
     
     # ヘッダー
-    st.title("📊 Business Data Processor")
+    st.title("Business Data Processor")
     st.markdown("**統合データ処理システム** - CSVデータの自動変換・フィルタリングツール")
-    st.info("👈 左側のメニューから処理したい業務を選択してください")
+    st.info("左側のメニューから処理したい業務を選択してください")
     
     # サイドバーメニュー（シンプル構成）
     # セッション状態の初期化
@@ -228,9 +231,9 @@ def main():
     st.sidebar.markdown("---")
     
     # 残債更新カテゴリ
-    st.sidebar.markdown("### 💰 残債の更新用CSV加工")
+    st.sidebar.markdown("### 残債の更新用CSV加工")
     if st.sidebar.button("アーク残債更新", key="ark_late_payment", use_container_width=True):
-        st.session_state.selected_processor = "💰 アーク残債更新"
+        st.session_state.selected_processor = "アーク残債更新"
     
     # 選択されたプロセッサーを取得
     processor_type = st.session_state.selected_processor
@@ -270,7 +273,7 @@ def main():
         show_ark_processor()
     elif processor_type == "📋 カプコ新規登録":
         show_capco_processor()
-    elif processor_type == "💰 アーク残債更新":
+    elif processor_type == "アーク残債更新":
         process_ark_late_payment_page()
 
 def show_welcome_screen():
@@ -308,10 +311,10 @@ def show_welcome_screen():
     
     with col3:
         st.markdown("""
-        ### 📋 新規登録
+        ### 新規登録
         **対応システム:**
-        - 📋 アーク新規登録
-        - 📋 カプコ新規登録
+        - アーク新規登録
+        - カプコ新規登録
         
         **機能:**
         - 案件取込用レポートとContractListの統合
@@ -323,9 +326,9 @@ def show_welcome_screen():
     # 残債更新の説明を追加
     st.markdown("---")
     st.markdown("""
-    ### 💰 残債の更新
+    ### 残債の更新
     **対応システム:**
-    - 💰 アーク残債更新
+    - アーク残債更新
     
     **機能:**
     - アーク残債CSVとContractListの自動紐付け
@@ -337,21 +340,19 @@ def show_welcome_screen():
 
 def show_mirail_contract_without10k_processor():
     """ミライル契約者処理画面"""
-    st.markdown("## 🏢 ミライルオートコール契約者データ処理")
+    st.markdown("## 契約者（10,000円を除外するパターン）")
     st.markdown("ContractListから契約者の電話番号を抽出し、オートコール用CSVを生成します（残債1万円・1万1千円除外）")
     
     # 処理条件の表示
-    st.markdown("<small><strong>📋 フィルタリング条件</strong></small>", unsafe_allow_html=True)
+    st.markdown("**フィルタリング条件**")
     st.markdown("""
-    <small>
-    • 委託先法人ID: 空白と5（直接管理・特定委託案件）<br>
-    • 入金予定日: 前日以前またはNaN（当日は除外）<br>
-    • 回収ランク: 弁護士介入を除外<br>
-    • 滞納残債: クライアントCD=1で1万円・1万1千円を除外<br>
-    • TEL携帯: 空でない値のみ<br>
-    • 入金予定金額: 2,3,5,12を除外
-    </small>
-    """, unsafe_allow_html=True)
+    - **委託先法人ID**: 空白と5
+    - **入金予定日**: 前日以前またはNaN（当日は除外）
+    - **回収ランク**: 弁護士介入を除外
+    - **滞納残債**: クライアントCD=1で1万円・1万1千円を除外
+    - **TEL携帯**: 空でない値のみ
+    - **入金予定金額**: 2,3,5,12を除外
+    """)
     
     # ファイルアップロード
     uploaded_file = st.file_uploader(
@@ -416,13 +417,13 @@ def show_mirail_contract_without10k_processor():
 
 def show_mirail_contract_with10k_processor():
     """ミライル（残債含む）契約者処理画面"""
-    st.markdown("## 🏢 ミライルオートコール契約者データ処理（残債含む全件）")
+    st.markdown("## 契約者（10,000円を除外しないパターン）")
     st.markdown("ContractListから契約者の電話番号を抽出し、オートコール用CSVを生成します（残債1万円・1万1千円含む）")
     
     # 処理条件の表示
-    st.markdown("**📋 フィルタリング条件**")
+    st.markdown("**フィルタリング条件**")
     st.markdown("""
-    - **委託先法人ID**: 空白と5（直接管理・特定委託案件）
+    - **委託先法人ID**: 空白と5
     - **入金予定日**: 前日以前またはNaN（当日は除外）
     - **回収ランク**: 弁護士介入を除外
     - **滞納残債**: 除外なし（1万円・1万1千円含む全件）
@@ -503,11 +504,11 @@ def show_faith_contract_processor():
     st.markdown("ContractListからフェイス委託先の契約者データを抽出し、オートコール用CSVを生成します")
     
     # 処理条件の表示
-    st.markdown("**📋 フィルタリング条件**")
+    st.markdown("**フィルタリング条件**")
     st.markdown("""
     - **委託先法人ID**: 1,2,3,4のみ（フェイス1〜4）
     - **入金予定日**: 前日以前またはNaN（当日は除外）
-    - **入金予定金額**: 2,3,5を除外
+    - **入金予定金額**: 2,3,5,12を除外
     - **回収ランク**: 死亡決定、破産決定、弁護士介入を除外
     - **TEL携帯**: 空でない値のみ
     """)
@@ -583,16 +584,17 @@ def show_faith_contract_processor():
 
 def show_mirail_guarantor_without10k_processor():
     """ミライル保証人（残債除外）処理画面"""
-    st.markdown("## 👥 ミライル保証人オートコール（残債10,000円・11,000円除外）")
+    st.markdown("## 保証人（10,000円を除外するパターン）")
     st.markdown("ContractListから保証人の電話番号を抽出し、オートコール用CSVを生成します（残債1万円・1万1千円除外）")
     
     # 処理条件の表示
-    st.markdown("**📋 フィルタリング条件**")
+    st.markdown("**フィルタリング条件**")
     st.markdown("""
-    - **委託先法人ID**: 空白と5（直接管理・特定委託案件）
+    - **委託先法人ID**: 空白と5
     - **入金予定日**: 前日以前またはNaN（当日は除外）  
     - **回収ランク**: 弁護士介入を除外
     - **残債除外**: クライアントCD=1かつ残債10,000円・11,000円のレコードのみ除外
+    - **入金予定金額**: 2,3,5,12を除外
     - **TEL携帯.1**: 空でない値のみ（保証人電話番号）
     """)
     
@@ -659,17 +661,18 @@ def show_mirail_guarantor_without10k_processor():
 
 def show_mirail_guarantor_with10k_processor():
     """ミライル保証人（残債含む）処理画面"""
-    st.markdown("## 👥 ミライル保証人オートコール（残債含む全件）")
+    st.markdown("## 保証人（10,000円を除外しないパターン）")
     st.markdown("ContractListから保証人の電話番号を抽出し、オートコール用CSVを生成します（残債1万円・1万1千円含む）")
     
     # 処理条件の表示
-    st.markdown("**📋 フィルタリング条件**")
+    st.markdown("**フィルタリング条件**")
     st.markdown("""
-    - **委託先法人ID**: 空白と5（直接管理・特定委託案件）
+    - **委託先法人ID**: 空白と5
     - **入金予定日**: 前日以前またはNaN（当日は除外）
     - **回収ランク**: 弁護士介入を除外
     - **残債含む**: 全件処理（10,000円・11,000円も含む）
     - **クライアント**: 全クライアント対象（CDフィルタなし）
+    - **入金予定金額**: 2,3,5,12を除外
     - **TEL携帯.1**: 空でない値のみ（保証人電話番号）
     """)
     
@@ -736,17 +739,18 @@ def show_mirail_guarantor_with10k_processor():
 
 def show_mirail_emergencycontact_without10k_processor():
     """ミライル緊急連絡人（残債除外）処理画面"""
-    st.markdown("## 🚨 ミライル緊急連絡人オートコール（残債10,000円・11,000円除外）")
+    st.markdown("## 緊急連絡人（10,000円を除外するパターン）")
     st.markdown("ContractListから緊急連絡人の電話番号を抽出し、オートコール用CSVを生成します（残債1万円・1万1千円除外）")
     
     # 処理条件の表示
-    st.markdown("**📋 フィルタリング条件**")
+    st.markdown("**フィルタリング条件**")
     st.markdown("""
-    - **委託先法人ID**: 空白と5（直接管理・特定委託案件）
+    - **委託先法人ID**: 空白と5
     - **入金予定日**: 前日以前またはNaN（当日は除外）
     - **回収ランク**: 弁護士介入を除外
     - **残債除外**: クライアントCD=1かつ残債10,000円・11,000円のレコードのみ除外
-    - **TEL携帯.2**: 空でない値のみ（緊急連絡人電話番号）
+    - **入金予定金額**: 2,3,5,12を除外
+    - **緊急連絡人１のTEL（携帯）**: 空でない値のみ（緊急連絡人電話番号）
     """)
     
     # ファイルアップロード
@@ -812,18 +816,19 @@ def show_mirail_emergencycontact_without10k_processor():
 
 def show_mirail_emergencycontact_with10k_processor():
     """ミライル緊急連絡人（残債含む）処理画面"""
-    st.markdown("## 🚨 ミライル緊急連絡人オートコール（残債含む全件）")
+    st.markdown("## 緊急連絡人（10,000円を除外しないパターン）")
     st.markdown("ContractListから緊急連絡人の電話番号を抽出し、オートコール用CSVを生成します（残債1万円・1万1千円含む）")
     
     # 処理条件の表示
-    st.markdown("**📋 フィルタリング条件**")
+    st.markdown("**フィルタリング条件**")
     st.markdown("""
-    - **委託先法人ID**: 空白と5（直接管理・特定委託案件）
+    - **委託先法人ID**: 空白と5
     - **入金予定日**: 前日以前またはNaN（当日は除外）
     - **回収ランク**: 弁護士介入を除外
     - **残債含む**: 全件処理（10,000円・11,000円も含む）
     - **クライアント**: 全クライアント対象（CDフィルタなし）
-    - **TEL携帯.2**: 空でない値のみ（緊急連絡人電話番号）
+    - **入金予定金額**: 2,3,5,12を除外
+    - **緊急連絡人１のTEL（携帯）**: 空でない値のみ（緊急連絡人電話番号）
     """)
     
     # ファイルアップロード
@@ -893,11 +898,11 @@ def show_faith_guarantor_processor():
     st.markdown("ContractListからフェイス委託先の保証人データを抽出し、オートコール用CSVを生成します")
     
     # 処理条件の表示
-    st.markdown("**📋 フィルタリング条件**")
+    st.markdown("**フィルタリング条件**")
     st.markdown("""
     - **委託先法人ID**: 1,2,3,4のみ（フェイス1〜4）
     - **入金予定日**: 前日以前またはNaN（当日は除外）
-    - **入金予定金額**: 2,3,5を除外
+    - **入金予定金額**: 2,3,5,12を除外
     - **回収ランク**: 死亡決定、破産決定、弁護士介入を除外
     - **TEL携帯.1**: 空でない値のみ（保証人電話番号）
     """)
@@ -977,11 +982,11 @@ def show_faith_emergencycontact_processor():
     st.markdown("ContractListからフェイス委託先の緊急連絡人データを抽出し、オートコール用CSVを生成します")
     
     # 処理条件の表示
-    st.markdown("**📋 フィルタリング条件**")
+    st.markdown("**フィルタリング条件**")
     st.markdown("""
     - **委託先法人ID**: 1,2,3,4のみ（フェイス1〜4）
     - **入金予定日**: 前日以前またはNaN（当日は除外）
-    - **入金予定金額**: 2,3,5を除外
+    - **入金予定金額**: 2,3,5,12を除外
     - **回収ランク**: 死亡決定、破産決定、弁護士介入を除外
     - **緊急連絡人１のTEL（携帯）**: 空でない値のみ（緊急連絡人電話番号）
     """)
@@ -1057,25 +1062,13 @@ def show_faith_emergencycontact_processor():
 
 def show_ark_processor():
     """アーク新規登録処理画面"""
-    st.markdown("## 📋 アーク新規登録データ変換")
+    st.markdown("## アーク新規登録")
     st.markdown("案件取込用レポートとContractListを統合し、アーク新規登録用のCSVを生成します")
-    
-    # 処理条件の表示
-    st.markdown("**📋 主な処理機能**")
-    st.markdown("""
-    - **重複チェック**: ContractListとの照合により既存データを自動除外
-    - **住所分割**: 都道府県、市区町村、残り住所に自動分割
-    - **物件名処理**: 物件名から部屋番号を自動抽出・分離
-    - **電話番号処理**: 自宅TELのみの場合は携帯TELに自動移動
-    - **保証人・緊急連絡人判定**: 種別により自動判定
-    - **金額計算**: 退去手続き費用の自動計算（最低70,000円保証）
-    - **引継情報生成**: 督促手数料注意書き + 入居日
-    """)
     
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("### 📄 案件取込用レポート")
+        st.markdown("### 案件取込用レポート")
         report_file = st.file_uploader(
             "【東京支店】①案件取込用レポート*.csv",
             type=['csv'],
@@ -1085,7 +1078,7 @@ def show_ark_processor():
             st.info(f"ファイルサイズ: {len(report_file.getvalue()):,} bytes")
     
     with col2:
-        st.markdown("### 📋 ContractList")
+        st.markdown("### ContractList")
         contract_file = st.file_uploader(
             "ContractList_*.csv",
             type=['csv'],
@@ -1095,10 +1088,10 @@ def show_ark_processor():
             st.info(f"ファイルサイズ: {len(contract_file.getvalue()):,} bytes")
     
     if report_file is not None and contract_file is not None:
-        st.success("✅ 両方のファイルアップロード完了")
+        st.success("両方のファイルアップロード完了")
         
         # 処理ボタン
-        if st.button("🚀 処理開始", key="ark_process", type="primary"):
+        if st.button("処理開始", key="ark_process", type="primary"):
             with st.spinner("データを統合・変換中..."):
                 try:
                     # アークプロセッサーをインポート
@@ -1184,7 +1177,7 @@ def show_plaza_main_processor():
     st.markdown("ContractListとExcel報告書を組み合わせて、プラザ契約者のオートコール用CSVを生成します")
     
     # 処理条件の表示
-    st.markdown("**📋 フィルタリング条件**")
+    st.markdown("**フィルタリング条件**")
     st.markdown("""
     - **2ファイル処理**: ContractList + Excel報告書の結合処理
     - **延滞額フィルター**: 0円、2円、3円、5円を除外
@@ -1272,7 +1265,7 @@ def show_plaza_guarantor_processor():
     st.markdown("ContractListとExcel報告書を組み合わせて、プラザ保証人のオートコール用CSVを生成します")
     
     # 処理条件の表示
-    st.markdown("**📋 フィルタリング条件**")
+    st.markdown("**フィルタリング条件**")
     st.markdown("""
     - **2ファイル処理**: ContractList + Excel報告書の結合処理
     - **延滞額フィルター**: 0円、2円、3円、5円を除外
@@ -1361,7 +1354,7 @@ def show_plaza_contact_processor():
     st.markdown("ContractListとExcel報告書を組み合わせて、プラザ緊急連絡人のオートコール用CSVを生成します")
     
     # 処理条件の表示
-    st.markdown("**📋 フィルタリング条件**")
+    st.markdown("**フィルタリング条件**")
     st.markdown("""
     - **2ファイル処理**: ContractList + Excel報告書の結合処理
     - **延滞額フィルター**: 0円、2円、3円、5円を除外
@@ -1592,14 +1585,14 @@ def show_capco_processor():
                         st.info(f"ファイルサイズ確認完了 - カプコ: {capco_size:,} bytes, ContractList: {contract_size:,} bytes")
                         
                         # カプコプロセッサーをインポート
-                        from processors.capco_import_new_data_v2 import process_capco_import_new_data_v2
+                        from processors.capco_registration import process_capco_data
                         
                         # ファイル内容を取得
                         capco_content = capco_file.getvalue()
                         contract_content = contract_file.getvalue()
                         
                         # データ処理実行
-                        df_output, logs, output_filename = process_capco_import_new_data_v2(capco_content, contract_content)
+                        df_output, logs, output_filename = process_capco_data(capco_content, contract_content)
                         
                         # 処理結果表示
                         st.success("処理が完了しました")
@@ -1648,13 +1641,13 @@ def show_capco_processor():
 
 def process_ark_late_payment_page():
     """アーク残債更新処理画面"""
-    st.markdown("## 💰 アーク残債更新処理")
+    st.markdown("## アーク残債更新処理")
     st.markdown("アーク残債CSVとContractListを紐付けて、ミライル顧客システム用の取込ファイルを生成します")
     
     # 処理条件の表示
-    with st.expander("📋 処理概要"):
+    with st.expander("処理仕様詳細"):
         st.markdown("""
-        ### 必要なファイル
+        ### 必要ファイル
         1. **アーク残債CSVファイル**
            - ファイル名: 【アーク継続中】②残債取込用CSV_*.csv
            - 必須カラム: 契約番号、管理前滞納額
@@ -1663,18 +1656,18 @@ def process_ark_late_payment_page():
            - ファイル名: ContractList*.csv
            - 必須カラム: 引継番号、管理番号
         
-        ### 処理内容
-        - 契約番号（アーク）と引継番号（ContractList）で紐付け
-        - 管理番号と管理前滞納額の2列のみ出力
-        - 重複管理番号は滞納額を合計
-        - CP932エンコーディングで出力
+        ### 処理フロー
+        1. ファイル読み込み（エンコーディング自動検出）
+        2. 必須カラム確認・バリデーション
+        3. データ紐付け・統計計算
+        4. 2列CSV出力・完了報告
         """)
     
     # ファイルアップロード
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("### 📁 アーク残債CSVファイル")
+        st.markdown("### アーク残債CSVファイル")
         arc_file = st.file_uploader(
             "【アーク継続中】②残債取込用CSV_*.csv",
             type=['csv'],
@@ -1682,7 +1675,7 @@ def process_ark_late_payment_page():
         )
     
     with col2:
-        st.markdown("### 📁 ContractListファイル")
+        st.markdown("### ContractListファイル")
         contract_file = st.file_uploader(
             "ContractList*.csv",
             type=['csv'],
@@ -1691,7 +1684,7 @@ def process_ark_late_payment_page():
     
     # 処理実行
     if arc_file and contract_file:
-        if st.button("🚀 処理開始", key="process_ark_late_payment", type="primary"):
+        if st.button("処理開始", key="process_ark_late_payment", type="primary"):
             try:
                 # 処理実行
                 result = process_ark_late_payment_data(arc_file, contract_file)
@@ -1700,10 +1693,10 @@ def process_ark_late_payment_page():
                     df_output, output_filename = result
                     
                     # 結果表示
-                    st.success(f"✅ 処理が完了しました！")
+                    st.success(f"処理が完了しました！")
                     
                     # データプレビュー
-                    st.markdown("### 📊 出力データプレビュー")
+                    st.markdown("### 出力データプレビュー")
                     st.dataframe(df_output.head(10))
                     
                     # CSV出力（CP932エンコーディング）
@@ -1718,14 +1711,14 @@ def process_ark_late_payment_page():
                     
                     # ダウンロードボタン
                     st.download_button(
-                        label=f"💾 {output_filename} をダウンロード",
+                        label=f"{output_filename} をダウンロード",
                         data=csv_data,
                         file_name=output_filename,
                         mime="text/csv",
                         type="primary"
                     )
                     
-                    st.info("💡 ダウンロードしたファイルをミライル顧客システムに取り込んでください")
+                    st.info("ダウンロードしたファイルをミライル顧客システムに取り込んでください")
                 else:
                     st.error("処理に失敗しました。ファイルの内容を確認してください。")
                     

@@ -1,5 +1,4 @@
 {
-  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
       "WebFetch(domain:github.com)",
@@ -14,7 +13,6 @@
       "Bash(create_distribution_package.bat)",
       "Bash(cmd.exe:*)",
       "Bash(move \"🚀起動.bat\" \"起動.bat\")",
-      "Bash(powershell.exe:*)",
       "Bash(powershell:*)",
       "Bash(del /f /q \"business-data-processor-docker-v2.1.0.zip\")",
       "Bash(find:*)",
@@ -29,7 +27,16 @@
       "Bash(git rm:*)",
       "Bash(python:*)",
       "Bash(rg:*)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(docker-compose:*)",
+      "Bash(curl:*)",
+      "Bash(docker exec:*)",
+      "Bash(git checkout:*)",
+      "Bash(git stash:*)",
+      "Bash(npm install:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)"
     ],
     "deny": []
   }

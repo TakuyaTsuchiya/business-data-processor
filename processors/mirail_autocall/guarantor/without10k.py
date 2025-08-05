@@ -26,7 +26,8 @@ class MirailGuarantorConfig:
         "入金予定日": "前日以前またはNaN",
         "回収ランク_not_in": ["弁護士介入"],
         "滞納残債_not_in": [10000, 11000],
-        "TEL携帯.1": "空でない値のみ"
+        "TEL携帯.1": "空でない値のみ",
+        "入金予定金額_not_in": [2, 3, 5, 12]
     }
     
     # マッピングルール
@@ -62,7 +63,7 @@ def apply_mirail_guarantor_without10k_filters(df: pd.DataFrame) -> Tuple[pd.Data
     ミライル保証人（残債10,000円・11,000円除外）フィルタリング処理
     
     📋 フィルタリング条件:
-    - 委託先法人ID: 空白と5（直接管理・特定委託案件）
+    - 委託先法人ID: 空白と5
     - 入金予定日: 前日以前またはNaN（当日は除外）
     - 回収ランク: 弁護士介入を除外
     - 残債除外: クライアントCD=1かつ滞納残債10,000円・11,000円のレコードのみ除外
@@ -73,7 +74,7 @@ def apply_mirail_guarantor_without10k_filters(df: pd.DataFrame) -> Tuple[pd.Data
     logs.append(f"元データ件数: {original_count}件")
     
     # フィルタリング条件
-    # 1. 委託先法人IDが空白と5（直接管理・特定委託案件）
+    # 1. 委託先法人IDが空白と5
     df = df[df["委託先法人ID"].isna() | 
            (df["委託先法人ID"].astype(str).str.strip() == "") | 
            (df["委託先法人ID"].astype(str).str.strip() == "5")]
@@ -102,7 +103,13 @@ def apply_mirail_guarantor_without10k_filters(df: pd.DataFrame) -> Tuple[pd.Data
         df = df[~exclude_condition]
         logs.append(f"クライアントCD=1かつ残債10,000円・11,000円除外後: {len(df)}件")
     
-    # 5. TEL携帯.1のフィルタリング（保証人電話番号が必須）
+    # 5. 入金予定金額のフィルタリング（2,3,5を除外）
+    if "入金予定金額_not_in" in MirailGuarantorConfig.FILTER_CONDITIONS:
+        df["入金予定金額"] = pd.to_numeric(df["入金予定金額"], errors='coerce')
+        df = df[df["入金予定金額"].isna() | ~df["入金予定金額"].isin(MirailGuarantorConfig.FILTER_CONDITIONS["入金予定金額_not_in"])]
+        logs.append(f"入金予定金額フィルタ後: {len(df)}件")
+    
+    # 6. TEL携帯.1のフィルタリング（保証人電話番号が必須）
     if "TEL携帯.1" in MirailGuarantorConfig.FILTER_CONDITIONS:
         df = df[
             df["TEL携帯.1"].notna() &
