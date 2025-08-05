@@ -202,19 +202,8 @@ def process_ark_late_payment_data(arc_file, contract_file) -> Optional[Tuple[pd.
             how='inner'
         )
         
-        # 紐付け統計
-        matched_count = len(merged_df)
-        arc_total = len(arc_df)
-        unmatch_count = arc_total - matched_count
-        match_ratio = (matched_count / arc_total * 100) if arc_total > 0 else 0
-        
-        if HAS_STREAMLIT:
-            st.write(f"📊 紐付け結果:")
-            st.write(f"- アーク残債総数: {arc_total:,}件")
-            st.write(f"- 紐付け成功: {matched_count:,}件 ({match_ratio:.1f}%)")
-            st.write(f"- 紐付け失敗: {unmatch_count:,}件")
-        
-        if matched_count == 0:
+        # 紐付けチェック
+        if len(merged_df) == 0:
             if HAS_STREAMLIT:
                 st.error("❌ 紐付け処理の結果、出力データが0件になりました")
                 st.error("原因: 契約番号と引継番号の値が一致していない可能性があります")
@@ -241,13 +230,9 @@ def process_ark_late_payment_data(arc_file, contract_file) -> Optional[Tuple[pd.
         current_date = datetime.now()
         output_filename = f"{current_date.strftime('%m%d')}アーク残債.csv"
         
-        # 処理サマリー表示
+        # 処理完了
         if HAS_STREAMLIT:
             st.success("✅ 処理完了")
-            st.write(f"📊 最終出力:")
-            st.write(f"- レコード数: {len(output_df):,}件")
-            st.write(f"- 管理前滞納額合計: ¥{output_df['管理前滞納額'].sum():,}")
-            st.write(f"- 平均滞納額: ¥{output_df['管理前滞納額'].mean():,.0f}")
         
         return output_df, output_filename
         

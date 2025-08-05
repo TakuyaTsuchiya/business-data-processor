@@ -1641,27 +1641,9 @@ def show_capco_processor():
 
 def process_ark_late_payment_page():
     """アーク残債更新処理画面"""
-    st.markdown("## アーク残債更新処理")
+    st.markdown("## アーク残債更新")
     st.markdown("アーク残債CSVとContractListを紐付けて、ミライル顧客システム用の取込ファイルを生成します")
     
-    # 処理条件の表示
-    with st.expander("処理仕様詳細"):
-        st.markdown("""
-        ### 必要ファイル
-        1. **アーク残債CSVファイル**
-           - ファイル名: 【アーク継続中】②残債取込用CSV_*.csv
-           - 必須カラム: 契約番号、管理前滞納額
-        
-        2. **ContractListファイル**
-           - ファイル名: ContractList*.csv
-           - 必須カラム: 引継番号、管理番号
-        
-        ### 処理フロー
-        1. ファイル読み込み（エンコーディング自動検出）
-        2. 必須カラム確認・バリデーション
-        3. データ紐付け・統計計算
-        4. 2列CSV出力・完了報告
-        """)
     
     # ファイルアップロード
     col1, col2 = st.columns(2)
@@ -1695,9 +1677,6 @@ def process_ark_late_payment_page():
                     # 結果表示
                     st.success(f"処理が完了しました！")
                     
-                    # データプレビュー
-                    st.markdown("### 出力データプレビュー")
-                    st.dataframe(df_output.head(10))
                     
                     # CSV出力（CP932エンコーディング）
                     csv_buffer = io.BytesIO()
@@ -1718,7 +1697,6 @@ def process_ark_late_payment_page():
                         type="primary"
                     )
                     
-                    st.info("ダウンロードしたファイルをミライル顧客システムに取り込んでください")
                 else:
                     st.error("処理に失敗しました。ファイルの内容を確認してください。")
                     
