@@ -236,9 +236,14 @@ class DataConverter:
                 addr = addr[len(pref):]
                 break
         
-        # 市区町村抽出
+        # 市区町村抽出（政令指定都市の区まで含む）
         city = ""
-        city_patterns = [r'([^市区町村]*[市区町村])']
+        city_patterns = [
+            r'([^市区町村]*市[^区]*区)',  # 政令指定都市の区（例：千葉市美浜区、横浜市港北区）
+            r'([^市区町村]*[市])',       # 市
+            r'([^市区町村]*[区])',       # 特別区（東京23区など）
+            r'([^市区町村]*[町村])'      # 町村
+        ]
         
         for pattern in city_patterns:
             match = re.search(pattern, addr)
