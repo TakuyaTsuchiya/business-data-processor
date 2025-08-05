@@ -23,8 +23,8 @@ from datetime import datetime
 def safe_csv_download(df: pd.DataFrame, filename: str, label: str = "📥 CSVファイルをダウンロード"):
     """安全なCSVダウンロード関数（cp932エンコーディングエラー対応）"""
     try:
-        csv_data = df.to_csv(index=False, encoding='cp932', errors='ignore')
-        csv_bytes = csv_data.encode('cp932', errors='ignore')
+        csv_data = df.to_csv(index=False, encoding='cp932', errors='replace')
+        csv_bytes = csv_data.encode('cp932', errors='replace')
     except UnicodeEncodeError:
         # cp932でエラーが出る場合はUTF-8で出力
         csv_data = df.to_csv(index=False, encoding='utf-8-sig')
