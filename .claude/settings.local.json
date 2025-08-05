@@ -39,7 +39,8 @@
       "WebFetch(domain:api.github.com)",
       "Bash(gh workflow:*)",
       "WebFetch(domain:docs.anthropic.com)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(grep:*)"
     ],
     "deny": []
   }
