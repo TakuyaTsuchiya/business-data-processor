@@ -191,6 +191,11 @@ class DataLoader:
         for try_encoding in encodings_to_try:
             try:
                 df = pd.read_csv(io.BytesIO(file_content), encoding=try_encoding, dtype=str)
+                # デバッグ情報をファイルに保存
+                with open('debug_csv_loading.log', 'w', encoding='utf-8') as f:
+                    f.write(f"CSV読み込み成功 (エンコーディング: {try_encoding})\n")
+                    f.write(f"読み込み列数: {len(df.columns)}\n")
+                    f.write(f"読み込み行数: {len(df)}\n")
                 return df
             except UnicodeDecodeError:
                 continue
@@ -204,6 +209,35 @@ class DataLoader:
     def load_ark_report_data(self, file_content: bytes) -> pd.DataFrame:
         """案件取込用レポート読み込み"""
         df = self.load_csv_from_bytes(file_content)
+        
+        # DEBUG: 列名詳細確認（ログに出力）
+        debug_logs = []
+        debug_logs.append("DEBUG: 案件取込用レポート列名一覧:")
+        for i, col in enumerate(df.columns, 1):
+            debug_logs.append(f"  {i:2d}: '{col}' (len: {len(str(col))})")
+        
+        # 重要列の存在確認
+        target_columns = ['名前2', '名前2（カナ）', '種別／続柄２', '生年月日2', '自宅住所2', '自宅TEL2', '携帯TEL2']
+        debug_logs.append("DEBUG: 重要列の存在確認:")
+        for col in target_columns:
+            exists = col in df.columns
+            debug_logs.append(f"  '{col}': {exists}")
+        
+        # 1行目データ確認（名前2関連のみ）
+        if len(df) > 0:
+            first_row = df.iloc[0]
+            debug_logs.append("DEBUG: 1行目の名前2関連データ:")
+            for col in ['名前2', '名前2（カナ）', '種別／続柄２']:
+                value = first_row.get(col, 'NOT_FOUND')
+                debug_logs.append(f"  '{col}': '{value}'")
+        
+        # デバッグログをファイルに保存（外部確認用）
+        with open('debug_ark_columns.log', 'w', encoding='utf-8') as f:
+            f.write('\n'.join(debug_logs))
+        
+        # 一部をprintで出力（開発時確認用）
+        for log in debug_logs[:10]:  # 最初の10行のみ
+            print(log)
         
         # 必須カラム確認
         required_columns = ["契約番号", "契約元帳: 主契約者"]
@@ -488,9 +522,12 @@ class DataConverter:
         
         # 名前2の処理（種別／続柄２で判定）
         relationship_type2 = self.safe_str_convert(row.get("種別／続柄２", ""))
+        print(f"DEBUG: process_guarantor_emergency開始")
+        print(f"DEBUG: 種別／続柄２の値: '{relationship_type2}'")
         
         if relationship_type2:
             name2 = self.remove_all_spaces(self.safe_str_convert(row.get("名前2", "")))
+            print(f"DEBUG: 名前2の値: '{name2}'")
             
             # 名前2がある場合のみ処理
             if name2:
