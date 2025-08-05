@@ -45,7 +45,7 @@ class MirailMonthlyConfig:
         "クライアント": "クライアント名"
     }
     
-    OUTPUT_FILE_PREFIX = "ミライル_monthly_契約者"
+    OUTPUT_FILE_PREFIX = "ミライル_契約者_月初"
 
 
 def read_csv_auto_encoding(file_content: bytes) -> pd.DataFrame:

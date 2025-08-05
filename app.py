@@ -169,7 +169,6 @@ def main():
     # ヘッダー
     st.title("Business Data Processor")
     st.markdown("**統合データ処理システム** - CSVデータの自動変換・フィルタリングツール")
-    st.info("左側のメニューから処理したい業務を選択してください")
     
     # サイドバーメニュー（シンプル構成）
     # セッション状態の初期化
@@ -345,7 +344,7 @@ def show_welcome_screen():
 def show_mirail_contract_monthly_processor():
     """ミライル契約者（月初）処理画面"""
     st.markdown("## 契約者（月初）")
-    st.markdown("ContractListから契約者の電話番号を抽出し、オートコール用CSVを生成します（月初専用フィルタリング）")
+    st.markdown("ContractListから契約者の電話番号を抽出し、オートコール用CSVを生成します")
     
     # フィルタリング条件の説明
     st.markdown("### 📋 フィルタリング条件")
