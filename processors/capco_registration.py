@@ -428,9 +428,23 @@ class DataConverter:
             converted_row["回収口座名義"] = str(row.get("V口座振込先", "")).strip()
             
             # 7. 特殊項目
-            converted_row["クライアントCD"] = self.get_client_cd(row.get("約定日", ""))
+            client_cd = self.get_client_cd(row.get("約定日", ""))
+            converted_row["クライアントCD"] = client_cd
             converted_row["管理前滞納額"] = str(row.get("滞納額合計", "")).strip()
-            converted_row["管理会社"] = str(row.get("管理会社", "")).strip()
+            
+            # 管理会社処理：nan回避 + クライアントCD条件処理
+            management_company = row.get("管理会社", "")
+            if pd.isna(management_company) or str(management_company).strip().lower() == "nan":
+                management_company = ""
+            else:
+                management_company = str(management_company).strip()
+            
+            # クライアントCDが"1"の場合は株式会社前田を設定
+            if client_cd == "1":
+                converted_row["管理会社"] = "株式会社前田"
+            else:
+                converted_row["管理会社"] = management_company
+                
             converted_row["管理受託日"] = datetime.now().strftime("%Y/%m/%d")
             
             # 8. 固定値設定（すべて適用）
@@ -439,13 +453,35 @@ class DataConverter:
             
             output_data.append(converted_row)
         
-        # 111列の正確な順序でDataFrame構築
-        final_df = pd.DataFrame()
-        for col in CapcoConfig.OUTPUT_COLUMNS:
+        # 111列の正確な順序でDataFrame構築（空列対応）
+        # 空列用の一意な仮名前を使用してから最後にリネーム
+        temp_columns = []
+        temp_data = {}
+        empty_col_counter = 1
+        
+        for i, col in enumerate(CapcoConfig.OUTPUT_COLUMNS):
             if col == "":  # 空列の場合
-                final_df[col] = [""] * len(output_data)
+                temp_col_name = f"__EMPTY_COL_{empty_col_counter}__"
+                temp_columns.append(temp_col_name)
+                temp_data[temp_col_name] = [""] * len(output_data)
+                empty_col_counter += 1
             else:
-                final_df[col] = [row.get(col, "") for row in output_data]
+                temp_columns.append(col)
+                temp_data[col] = [row.get(col, "") for row in output_data]
+        
+        # DataFrameを一度に構築（パフォーマンス向上）
+        final_df = pd.DataFrame(temp_data, columns=temp_columns)
+        
+        # 空列の仮名前を元に戻す
+        final_column_names = []
+        empty_col_counter = 1
+        for col in CapcoConfig.OUTPUT_COLUMNS:
+            if col == "":
+                final_column_names.append("")
+            else:
+                final_column_names.append(col)
+        
+        final_df.columns = final_column_names
         
         return final_df
 
