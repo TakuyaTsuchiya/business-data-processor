@@ -77,8 +77,6 @@ def process_ark_late_payment_data(arc_file, contract_file) -> Optional[Tuple[pd.
     """
     try:
         # Phase 1: ファイル読み込み
-        if HAS_STREAMLIT:
-            st.info("📂 Phase 1: ファイル読み込み")
         
         # アーク残債CSV読み込み
         try:
@@ -127,13 +125,11 @@ def process_ark_late_payment_data(arc_file, contract_file) -> Optional[Tuple[pd.
             return None
         
         # Phase 2: カラム確認
-        if HAS_STREAMLIT:
-            st.info("🔍 Phase 2: 必須カラム確認")
         
         # アーク残債の必須カラム
         ark_required = {
             'contract_number': '契約番号',
-            'amount': '管理前滞納額'
+            'amount': '未収金額合計'
         }
         
         # ContractListの必須カラム
@@ -158,12 +154,8 @@ def process_ark_late_payment_data(arc_file, contract_file) -> Optional[Tuple[pd.
                 st.error(f"利用可能なカラム: {list(contract_df.columns)}")
             return None
         
-        if HAS_STREAMLIT:
-            st.success("✅ 必須カラム確認完了")
         
         # Phase 3: データ処理・紐付け
-        if HAS_STREAMLIT:
-            st.info("🔗 Phase 3: データ処理・紐付け")
         
         # キー項目の正規化
         arc_df = normalize_key_column(arc_df, '契約番号')
@@ -171,7 +163,7 @@ def process_ark_late_payment_data(arc_file, contract_file) -> Optional[Tuple[pd.
         
         # データ結合（契約番号と引継番号で紐付け）
         merged_df = pd.merge(
-            arc_df[['契約番号', '管理前滞納額']],
+            arc_df[['契約番号', '未収金額合計']],
             contract_df[['引継番号', '管理番号']],
             left_on='契約番号',
             right_on='引継番号',
@@ -197,7 +189,9 @@ def process_ark_late_payment_data(arc_file, contract_file) -> Optional[Tuple[pd.
             return None
         
         # 出力データ作成（管理番号、管理前滞納額の2列のみ）
-        output_df = merged_df[['管理番号', '管理前滞納額']].copy()
+        output_df = merged_df[['管理番号', '未収金額合計']].copy()
+        # 出力用にカラム名を変更
+        output_df = output_df.rename(columns={'未収金額合計': '管理前滞納額'})
         
         # データ型変換
         output_df['管理番号'] = output_df['管理番号'].astype(str)
@@ -217,7 +211,7 @@ def process_ark_late_payment_data(arc_file, contract_file) -> Optional[Tuple[pd.
         
         # 処理サマリー表示
         if HAS_STREAMLIT:
-            st.success("✅ Phase 4: 処理完了")
+            st.success("✅ 処理完了")
             st.write(f"📊 最終出力:")
             st.write(f"- レコード数: {len(output_df):,}件")
             st.write(f"- 管理前滞納額合計: ¥{output_df['管理前滞納額'].sum():,}")
