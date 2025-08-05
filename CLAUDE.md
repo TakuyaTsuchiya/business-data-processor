@@ -169,6 +169,58 @@ processors/
 - データプレビュー・統計情報表示
 - CP932エンコーディングCSV出力
 
+### 【重要】pandas空列処理問題と解決策
+⚠️ **111列テンプレート実装時の必須対応** ⚠️
+
+**問題**: pandasは空文字列("")の列名を正しく処理できず、DataFrame構築時に列が欠落・位置ずれが発生
+
+**影響範囲**:
+- アーク新規登録（108-110番目空列）
+- カプコ新規登録（108-110番目空列）
+- その他111列テンプレート準拠プロセッサー
+
+**解決パターン**:
+```python
+# ❌ 間違った実装（列欠落・位置ずれ発生）
+final_df = pd.DataFrame()
+for col in OUTPUT_COLUMNS:
+    if col == "":  # 空列の場合
+        final_df[col] = [""] * len(output_data)  # pandasが正しく処理できない
+
+# ✅ 正しい実装（仮名前方式）
+temp_columns = []
+temp_data = {}
+empty_col_counter = 1
+
+for col in OUTPUT_COLUMNS:
+    if col == "":  # 空列の場合
+        temp_col_name = f"__EMPTY_COL_{empty_col_counter}__"
+        temp_columns.append(temp_col_name)
+        temp_data[temp_col_name] = [""] * len(output_data)
+        empty_col_counter += 1
+    else:
+        temp_columns.append(col)
+        temp_data[col] = [row.get(col, "") for row in output_data]
+
+# DataFrame一括構築（パフォーマンス向上）
+final_df = pd.DataFrame(temp_data, columns=temp_columns)
+
+# 空列の仮名前を元の空文字列に戻す
+final_column_names = []
+for col in OUTPUT_COLUMNS:
+    final_column_names.append(col)  # 空文字列("")も含めてそのまま
+
+final_df.columns = final_column_names
+```
+
+**実装時のチェックポイント**:
+1. 総列数が111列になっているか確認
+2. 空列（108-110番目）が正しい位置にあるか確認
+3. 登録フラグが111番目（DG列）にあるか確認
+4. CSV出力時に列位置がずれていないか確認
+
+**参考事例**: `processors/capco_registration.py:456-486`
+
 ## 📋 開発ルール
 
 ### 新機能追加時の手順
