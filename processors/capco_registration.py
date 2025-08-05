@@ -18,17 +18,98 @@ class CapcoConfig:
     
     OUTPUT_FILE_PREFIX = "カプコ新規登録"
     
-    # GitHub完全踏襲 - 固定値設定
+    # ContractInfoSample（final）完全準拠 - 固定値設定
     FIXED_VALUES = {
         "入居ステータス": "入居中",
-        "滞納ステータス": "未精算",
+        "滞納ステータス": "未精算", 
         "受託状況": "契約中",
         "契約種類": "バックレント",
         "回収口座種類": "普通",
         "退去済手数料": 25,
         "入居中滞納手数料": 0,
         "入居中正常手数料": 0,
-        "回収口座金融機関CD": 9
+        "回収口座金融機関CD": 9,
+        # 空白設定項目
+        "契約者生年月日": "",
+        "月額賃料": "",
+        "管理費": "",
+        "共益費": "",
+        "水道代": "",
+        "駐車場代": "",
+        "その他費用1": "",
+        "その他費用2": "",
+        "敷金": "",
+        "礼金": "",
+        "契約確認日": "",
+        "更新契約手数料": "",
+        "退去手続き（実費）": "",
+        "初回振替月": "",
+        "保証開始日": "",
+        "パートナーCD": "",
+        # 勤務先情報（全て空白）
+        "契約者勤務先名": "",
+        "契約者勤務先カナ": "",
+        "契約者勤務先TEL": "",
+        "勤務先業種": "",
+        "契約者勤務先郵便番号": "",
+        "契約者勤務先住所1": "",
+        "契約者勤務先住所2": "",
+        "契約者勤務先住所3": "",
+        # 保証人1情報（全て空白）
+        "保証人１氏名": "",
+        "保証人１カナ": "",
+        "保証人１契約者との関係": "",
+        "保証人１生年月日": "",
+        "保証人１郵便番号": "",
+        "保証人１住所1": "",
+        "保証人１住所2": "",
+        "保証人１住所3": "",
+        "保証人１TEL自宅": "",
+        "保証人１TEL携帯": "",
+        # 保証人2情報（全て空白）
+        "保証人２氏名": "",
+        "保証人２カナ": "",
+        "保証人２契約者との関係": "",
+        "保証人２生年月日": "",
+        "保証人２郵便番号": "",
+        "保証人２住所1": "",
+        "保証人２住所2": "",
+        "保証人２住所3": "",
+        "保証人２TEL自宅": "",
+        "保証人２TEL携帯": "",
+        # 緊急連絡人1情報（全て空白）
+        "緊急連絡人１氏名": "",
+        "緊急連絡人１カナ": "",
+        "緊急連絡人１契約者との関係": "",
+        "緊急連絡人１郵便番号": "",
+        "緊急連絡人１現住所1": "",
+        "緊急連絡人１現住所2": "",
+        "緊急連絡人１現住所3": "",
+        "緊急連絡人１TEL自宅": "",
+        "緊急連絡人１TEL携帯": "",
+        # 緊急連絡人2情報（全て空白）
+        "緊急連絡人２氏名": "",
+        "緊急連絡人２カナ": "",
+        "緊急連絡人２契約者との関係": "",
+        "緊急連絡人２郵便番号": "",
+        "緊急連絡人２現住所1": "",
+        "緊急連絡人２現住所2": "",
+        "緊急連絡人２現住所3": "",
+        "緊急連絡人２TEL自宅": "",
+        "緊急連絡人２TEL携帯": "",
+        # 引落・その他情報（全て空白）
+        "保証入金日": "",
+        "保証入金者": "",
+        "引落銀行CD": "",
+        "引落銀行名": "",
+        "引落支店CD": "",
+        "引落支店名": "",
+        "引落預金種別": "",
+        "引落口座番号": "",
+        "引落口座名義": "",
+        "解約日": "",
+        "委託先法人ID": "",
+        "登録フラグ": ""
     }
     
     # 支店コードマッピング（GitHub完全踏襲）
@@ -37,7 +118,7 @@ class CapcoConfig:
         "東海支店": "730"
     }
     
-    # クライアントCDマッピング（GitHub完全踏襲）
+    # クライアントCDマッピング（ContractInfoSample final準拠）
     CLIENT_CD_MAPPING = {
         "1004-01-01": "1",
         "1005-01-01": "4"
@@ -270,13 +351,13 @@ class DataConverter:
         return self.branch_code_mapping.get(str(branch_name).strip(), "")
     
     def _get_client_cd(self, yakutei_date: str) -> str:
-        """クライアントコード取得（GitHub完全踏襲）"""
+        """クライアントコード取得（ContractInfoSample final準拠）"""
         if pd.isna(yakutei_date) or str(yakutei_date).strip() == "":
             return ""
         
         date_str = str(yakutei_date).strip()
         
-        # 日付の正規化
+        # 日付の正規化と判定
         try:
             date_formats = ['%Y/%m/%d', '%Y-%m-%d', '%Y年%m月%d日']
             for fmt in date_formats:
@@ -286,13 +367,20 @@ class DataConverter:
                     return self.client_cd_mapping.get(formatted_date, "")
                 except ValueError:
                     continue
+            
+            # 直接的な文字列判定も追加
+            if "1004" in date_str and "01" in date_str and "01" in date_str:
+                return "1"
+            elif "1005" in date_str and "01" in date_str and "01" in date_str:
+                return "4"
+                
         except Exception:
             pass
         
         return ""
     
     def convert_to_mirail_format(self, capco_df: pd.DataFrame) -> pd.DataFrame:
-        """カプコフォーマットからミライルフォーマットへ変換（GitHub完全踏襲）"""
+        """カプコフォーマットからContractInfoSample（final）形式へ変換"""
         output_df = pd.DataFrame()
         
         for _, row in capco_df.iterrows():
@@ -330,18 +418,15 @@ class DataConverter:
             converted_row["物件名"] = building_name
             converted_row["部屋番号"] = room_name
             
-            # 物件住所（契約者住所と同じ）
+            # 物件住所（契約者住所と同じだが物件住所3は建物名・部屋名除外）
             converted_row["物件住所郵便番号"] = converted_row["契約者現住所郵便番号"]
             converted_row["物件住所1"] = converted_row["契約者現住所1"]
             converted_row["物件住所2"] = converted_row["契約者現住所2"]
             converted_row["物件住所3"] = address_parts["remaining"]  # 建物名、部屋名は除外
             
-            # 引継情報
-            converted_row["引継情報"] = self._create_takeover_info(row.get("契約開始", ""))
-            
-            # 固定値設定
-            for key, value in self.fixed_values.items():
-                converted_row[key] = value
+            # 引継情報（「カプコ一括登録　●保証開始日：」+ 契約開始）
+            contract_start = str(row.get("契約開始", "")).strip()
+            converted_row["引継情報"] = f"カプコ一括登録　●保証開始日：{contract_start}"
             
             # 口座情報
             converted_row["回収口座金融機関名"] = str(row.get("V口座銀行名", "")).strip()
@@ -365,8 +450,12 @@ class DataConverter:
             arrears_amount = str(row.get("滞納額合計", "")).replace(',', '').replace('¥', '').strip()
             converted_row["管理前滞納額"] = arrears_amount if arrears_amount.isdigit() else ""
             
-            # 管理受託日
+            # 管理受託日（今日の日付）
             converted_row["管理受託日"] = datetime.now().strftime("%Y/%m/%d")
+            
+            # 固定値設定（98列すべて）
+            for key, value in self.fixed_values.items():
+                converted_row[key] = value
             
             output_df = pd.concat([output_df, pd.DataFrame([converted_row])], ignore_index=True)
         
@@ -447,8 +536,8 @@ def process_capco_data(capco_content: bytes, contract_content: bytes) -> Tuple[p
 
 
 def get_sample_template() -> pd.DataFrame:
-    """サンプルテンプレート（GitHub完全版）"""
-    # GitHub完全準拠のカラム構成
+    """サンプルテンプレート（ContractInfoSample final完全準拠）"""
+    # ContractInfoSample（final）.csvの98列完全準拠
     template_columns = [
         "引継番号", "契約者氏名", "契約者カナ", "契約者生年月日",
         "契約者TEL自宅", "契約者TEL携帯", "契約者現住所郵便番号",
@@ -464,6 +553,23 @@ def get_sample_template() -> pd.DataFrame:
         "退去済手数料", "入居中滞納手数料", "入居中正常手数料",
         "管理前滞納額", "更新契約手数料", "退去手続き（実費）",
         "初回振替月", "保証開始日", "クライアントCD", "パートナーCD",
-        "管理会社", "委託先法人ID", "登録フラグ"
+        "契約者勤務先名", "契約者勤務先カナ", "契約者勤務先TEL", "勤務先業種",
+        "契約者勤務先郵便番号", "契約者勤務先住所1", "契約者勤務先住所2", "契約者勤務先住所3",
+        "保証人１氏名", "保証人１カナ", "保証人１契約者との関係", "保証人１生年月日",
+        "保証人１郵便番号", "保証人１住所1", "保証人１住所2", "保証人１住所3",
+        "保証人１TEL自宅", "保証人１TEL携帯",
+        "保証人２氏名", "保証人２カナ", "保証人２契約者との関係", "保証人２生年月日",
+        "保証人２郵便番号", "保証人２住所1", "保証人２住所2", "保証人２住所3",
+        "保証人２TEL自宅", "保証人２TEL携帯",
+        "緊急連絡人１氏名", "緊急連絡人１カナ", "緊急連絡人１契約者との関係",
+        "緊急連絡人１郵便番号", "緊急連絡人１現住所1", "緊急連絡人１現住所2", "緊急連絡人１現住所3",
+        "緊急連絡人１TEL自宅", "緊急連絡人１TEL携帯",
+        "緊急連絡人２氏名", "緊急連絡人２カナ", "緊急連絡人２契約者との関係",
+        "緊急連絡人２郵便番号", "緊急連絡人２現住所1", "緊急連絡人２現住所2", "緊急連絡人２現住所3",
+        "緊急連絡人２TEL自宅", "緊急連絡人２TEL携帯",
+        "保証入金日", "保証入金者",
+        "引落銀行CD", "引落銀行名", "引落支店CD", "引落支店名",
+        "引落預金種別", "引落口座番号", "引落口座名義",
+        "解約日", "管理会社", "委託先法人ID", "登録フラグ"
     ]
     return pd.DataFrame(columns=template_columns)
