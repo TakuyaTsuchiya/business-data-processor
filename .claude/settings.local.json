@@ -36,7 +36,10 @@
       "Bash(git stash:*)",
       "Bash(npm install:*)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "WebFetch(domain:api.github.com)"
+      "WebFetch(domain:api.github.com)",
+      "Bash(gh workflow:*)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "Bash(ls:*)"
     ],
     "deny": []
   }
