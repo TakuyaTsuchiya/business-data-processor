@@ -480,84 +480,48 @@ class DataConverter:
         return f"●20日～25日頃に督促手数料2,750円or2,970円が加算されることあり。案内注意！！　●入居日：{formatted_date}"
     
     def process_guarantor_emergency(self, row: pd.Series) -> Dict[str, Dict[str, str]]:
-        """保証人・緊急連絡人判定（種別／続柄２の判定のみ）"""
+        """保証人・緊急連絡人判定（シンプル版：名前2のみ処理）"""
         result = {
             "guarantor1": {},
-            "guarantor2": {},
-            "emergency1": {},
-            "emergency2": {}
+            "emergency1": {}
         }
         
         # 名前2の処理（種別／続柄２で判定）
         relationship_type2 = self.safe_str_convert(row.get("種別／続柄２", ""))
+        
         if relationship_type2:
             name2 = self.remove_all_spaces(self.safe_str_convert(row.get("名前2", "")))
-            name2_kana = self.remove_all_spaces(self.hankaku_to_zenkaku(self.safe_str_convert(row.get("名前2（カナ）", ""))))
             
-            phone_result2 = self.process_phone_numbers(
-                row.get("自宅TEL2", ""),
-                row.get("携帯TEL2", "")
-            )
-            
-            address2 = self.safe_str_convert(row.get("自宅住所2", ""))
-            addr_parts2 = self.split_address(address2)
-            
-            common_data2 = {
-                "氏名": name2,
-                "カナ": name2_kana,
-                "生年月日": self.safe_str_convert(row.get("生年月日2", "")),
-                "続柄": relationship_type2,
-                "自宅TEL": phone_result2["home"],
-                "携帯TEL": phone_result2["mobile"],
-                "郵便番号": addr_parts2.get("postal_code", ""),
-                "住所1": addr_parts2.get("prefecture", ""),
-                "住所2": addr_parts2.get("city", ""),
-                "住所3": addr_parts2.get("remaining", "")
-            }
-            
-            # 判定処理
-            if "保証人" in relationship_type2:
-                result["guarantor1"] = common_data2
-            elif "緊急連絡" in relationship_type2 or "(法)代表者１/" in relationship_type2:
-                result["emergency1"] = common_data2
-        
-        # 名前3の処理（種別／続柄２と同じ判定を適用）
-        name3 = self.remove_all_spaces(self.safe_str_convert(row.get("名前3", "")))
-        if name3 and relationship_type2:  # 名前3があり、種別／続柄２で判定
-            name3_kana = self.remove_all_spaces(self.hankaku_to_zenkaku(self.safe_str_convert(row.get("名前3（カナ）", ""))))
-            
-            phone_result3 = self.process_phone_numbers(
-                row.get("自宅TEL3", ""),
-                row.get("携帯TEL3", "")
-            )
-            
-            address3 = self.safe_str_convert(row.get("自宅住所3", ""))
-            addr_parts3 = self.split_address(address3)
-            
-            common_data3 = {
-                "氏名": name3,
-                "カナ": name3_kana,
-                "生年月日": self.safe_str_convert(row.get("生年月日3", "")),
-                "続柄": relationship_type2,  # 種別／続柄２を使用
-                "自宅TEL": phone_result3["home"],
-                "携帯TEL": phone_result3["mobile"],
-                "郵便番号": addr_parts3.get("postal_code", ""),
-                "住所1": addr_parts3.get("prefecture", ""),
-                "住所2": addr_parts3.get("city", ""),
-                "住所3": addr_parts3.get("remaining", "")
-            }
-            
-            # 種別／続柄２の判定に従って配置
-            if "保証人" in relationship_type2:
-                if result["guarantor1"]:
-                    result["guarantor2"] = common_data3
-                else:
-                    result["guarantor1"] = common_data3
-            elif "緊急連絡" in relationship_type2 or "(法)代表者１/" in relationship_type2:
-                if result["emergency1"]:
-                    result["emergency2"] = common_data3
-                else:
-                    result["emergency1"] = common_data3
+            # 名前2がある場合のみ処理
+            if name2:
+                name2_kana = self.remove_all_spaces(self.hankaku_to_zenkaku(self.safe_str_convert(row.get("名前2（カナ）", ""))))
+                
+                phone_result2 = self.process_phone_numbers(
+                    row.get("自宅TEL2", ""),
+                    row.get("携帯TEL2", "")
+                )
+                
+                address2 = self.safe_str_convert(row.get("自宅住所2", ""))
+                addr_parts2 = self.split_address(address2)
+                
+                common_data2 = {
+                    "氏名": name2,
+                    "カナ": name2_kana,
+                    "生年月日": self.safe_str_convert(row.get("生年月日2", "")),
+                    "続柄": "他",  # 固定値
+                    "自宅TEL": phone_result2["home"],
+                    "携帯TEL": phone_result2["mobile"],
+                    "郵便番号": addr_parts2.get("postal_code", ""),
+                    "住所1": addr_parts2.get("prefecture", ""),
+                    "住所2": addr_parts2.get("city", ""),
+                    "住所3": addr_parts2.get("remaining", "")
+                }
+                
+                # 判定処理
+                if "保証人" in relationship_type2:
+                    result["guarantor1"] = common_data2
+                elif "緊急連絡先" in relationship_type2:
+                    result["emergency1"] = common_data2
         
         return result
     
@@ -684,33 +648,6 @@ class DataConverter:
                 converted_row["緊急連絡人１現住所3"] = e1.get("住所3", "")
                 converted_row["緊急連絡人１TEL自宅"] = e1.get("自宅TEL", "")
                 converted_row["緊急連絡人１TEL携帯"] = e1.get("携帯TEL", "")
-            
-            # 保証人２の設定
-            if contact_info["guarantor2"]:
-                g2 = contact_info["guarantor2"]
-                converted_row["保証人２氏名"] = g2.get("氏名", "")
-                converted_row["保証人２カナ"] = g2.get("カナ", "")
-                converted_row["保証人２契約者との関係"] = g2.get("続柄", "")
-                converted_row["保証人２生年月日"] = g2.get("生年月日", "")
-                converted_row["保証人２TEL自宅"] = g2.get("自宅TEL", "")
-                converted_row["保証人２TEL携帯"] = g2.get("携帯TEL", "")
-                converted_row["保証人２郵便番号"] = g2.get("郵便番号", "")
-                converted_row["保証人２住所1"] = g2.get("住所1", "")
-                converted_row["保証人２住所2"] = g2.get("住所2", "")
-                converted_row["保証人２住所3"] = g2.get("住所3", "")
-            
-            # 緊急連絡人２の設定
-            if contact_info["emergency2"]:
-                e2 = contact_info["emergency2"]
-                converted_row["緊急連絡人２氏名"] = e2.get("氏名", "")
-                converted_row["緊急連絡人２カナ"] = e2.get("カナ", "")
-                converted_row["緊急連絡人２契約者との関係"] = e2.get("続柄", "")
-                converted_row["緊急連絡人２郵便番号"] = e2.get("郵便番号", "")
-                converted_row["緊急連絡人２現住所1"] = e2.get("住所1", "")
-                converted_row["緊急連絡人２現住所2"] = e2.get("住所2", "")
-                converted_row["緊急連絡人２現住所3"] = e2.get("住所3", "")
-                converted_row["緊急連絡人２TEL自宅"] = e2.get("自宅TEL", "")
-                converted_row["緊急連絡人２TEL携帯"] = e2.get("携帯TEL", "")
             
             # 12. 固定値設定（すべて適用）
             for key, value in ArkConfig.FIXED_VALUES.items():
