@@ -283,7 +283,7 @@ def extract_postal_code(address: str) -> Tuple[str, str]:
 
 
 def split_address(address: str) -> Dict[str, str]:
-    """住所を郵便番号、都道府県、市区町村、残り住所に分割（GitHubコード踏襲）"""
+    """住所を郵便番号、都道府県、市区町村、残り住所に分割（政令指定都市対応版）"""
     if pd.isna(address) or str(address).strip() == "":
         return {"postal_code": "", "prefecture": "", "city": "", "remaining": ""}
     
@@ -301,8 +301,8 @@ def split_address(address: str) -> Dict[str, str]:
     # 市区町村を抽出（改善版）
     city = ""
     
-    # 東京23区の特別処理
-    if prefecture == "東京都":
+    # 東京23区の特別処理（政令指定都市処理後に実行）
+    if prefecture == "東京都" and not city:
         tokyo_wards = [
             "千代田区", "中央区", "港区", "新宿区", "文京区", "台東区", "墨田区", "江東区",
             "品川区", "目黒区", "大田区", "世田谷区", "渋谷区", "中野区", "杉並区", "豊島区",
@@ -314,20 +314,27 @@ def split_address(address: str) -> Dict[str, str]:
                 addr = addr[len(ward):]
                 break
     
-    # 一般的な市区町村パターン
+    # 一般的な市区町村パターン（政令指定都市対応版）
     if not city:
-        city_patterns = [
-            r'^([^市区町村]+?[市])',
-            r'^([^市区町村]+?[区])',
-            r'^([^市区町村]+?[町])',  
-            r'^([^市区町村]+?[村])'
-        ]
-        for pattern in city_patterns:
-            match = re.match(pattern, addr)
-            if match:
-                city = match.group(1)
-                addr = addr[len(city):]
-                break
+        # 政令指定都市パターン（○○市○○区）を優先処理
+        designated_city_pattern = r'^([^市区町村]+?市[^市区町村]+?区)'
+        match = re.match(designated_city_pattern, addr)
+        if match:
+            city = match.group(1)  # 「千葉市美浜区」全体を市区町村とする
+            addr = addr[len(city):]
+        else:
+            # 一般市町村パターン
+            city_patterns = [
+                r'^([^市区町村]+?[市])',
+                r'^([^市区町村]+?[町])',  
+                r'^([^市区町村]+?[村])'
+            ]
+            for pattern in city_patterns:
+                match = re.match(pattern, addr)
+                if match:
+                    city = match.group(1)
+                    addr = addr[len(city):]
+                    break
     
     return {
         "postal_code": postal_code,
@@ -404,7 +411,12 @@ def calculate_exit_procedure_fee(rent: str, management_fee: str, parking_fee: st
 
 
 def process_guarantor_emergency_full(row: pd.Series) -> Dict[str, Dict[str, str]]:
-    """保証人・緊急連絡人判定（111列フル仕様）"""
+    """
+    保証人・緊急連絡人判定（111列フル仕様）
+    
+    注意: ContractListの実際の列名に合わせて修正が必要
+    現在は仮の列名で実装されている
+    """
     result = {
         "guarantor1": {},
         "guarantor2": {},
@@ -523,13 +535,13 @@ def transform_data_to_ark_format_full(report_df: pd.DataFrame, contract_df: pd.D
     for idx, row in report_df.iterrows():
         output_idx = idx
         
-        # 基本情報
+        # 基本情報（列名を実際のCSVヘッダーに修正）
         output_df.loc[output_idx, "引継番号"] = add_leading_zero(row.get("契約番号", ""))
-        output_df.loc[output_idx, "契約者氏名"] = remove_all_spaces(safe_str_convert(row.get("契約者氏名", "")))
-        output_df.loc[output_idx, "契約者カナ"] = remove_all_spaces(hankaku_to_zenkaku(safe_str_convert(row.get("契約者カナ", ""))))
-        output_df.loc[output_idx, "契約者生年月日"] = safe_str_convert(row.get("契約者生年月日", ""))
+        output_df.loc[output_idx, "契約者氏名"] = remove_all_spaces(safe_str_convert(row.get("契約元帳: 主契約者", "")))
+        output_df.loc[output_idx, "契約者カナ"] = remove_all_spaces(hankaku_to_zenkaku(safe_str_convert(row.get("主契約者（カナ）", ""))))
+        output_df.loc[output_idx, "契約者生年月日"] = safe_str_convert(row.get("生年月日", ""))
         
-        # 電話番号処理（GitHubコード踏襲）
+        # 電話番号処理（実際の列名に修正）
         phone_result = process_phone_numbers(
             row.get("自宅TEL1", ""),
             row.get("携帯TEL1", "")
@@ -537,8 +549,8 @@ def transform_data_to_ark_format_full(report_df: pd.DataFrame, contract_df: pd.D
         output_df.loc[output_idx, "契約者TEL自宅"] = phone_result["home"]
         output_df.loc[output_idx, "契約者TEL携帯"] = phone_result["mobile"]
         
-        # 住所分割（GitHubコード踏襲：郵便番号も抽出）
-        address1 = safe_str_convert(row.get("住所1", ""))
+        # 住所分割（契約者現住所は物件住所から取得）
+        address1 = safe_str_convert(row.get("物件住所", ""))
         addr_parts = split_address(address1)
         output_df.loc[output_idx, "契約者現住所郵便番号"] = addr_parts.get("postal_code", "")
         output_df.loc[output_idx, "契約者現住所1"] = addr_parts["prefecture"]
@@ -561,26 +573,30 @@ def transform_data_to_ark_format_full(report_df: pd.DataFrame, contract_df: pd.D
         else:
             output_df.loc[output_idx, "部屋番号"] = normalize_room_number(row.get("部屋番号", ""))
         
-        # 物件住所
-        property_address = safe_str_convert(row.get("物件住所", ""))
+        # 物件郵便番号（実際の列名に修正）
+        output_df.loc[output_idx, "物件住所郵便番号"] = safe_str_convert(row.get("物件郵便番号", ""))
+        
+        # 物件住所（物件住所1から取得）
+        property_address = safe_str_convert(row.get("物件住所1", ""))
         prop_addr_parts = split_address(property_address)
         output_df.loc[output_idx, "物件住所郵便番号"] = prop_addr_parts.get("postal_code", "")
         output_df.loc[output_idx, "物件住所1"] = prop_addr_parts["prefecture"]
         output_df.loc[output_idx, "物件住所2"] = prop_addr_parts["city"]
         output_df.loc[output_idx, "物件住所3"] = prop_addr_parts["remaining"]
         
-        # 金額
+        # 金額（実際の列名に修正）
         rent = safe_str_convert(row.get("賃料", "0")).replace(',', '')
-        management_fee = safe_str_convert(row.get("管理費", "0")).replace(',', '')
-        parking_fee = safe_str_convert(row.get("駐車場代", "0")).replace(',', '')
+        management_fee = safe_str_convert(row.get("管理共益費", "0")).replace(',', '')
+        parking_fee = safe_str_convert(row.get("駐車場料金", "0")).replace(',', '')
         
         output_df.loc[output_idx, "月額賃料"] = rent
-        output_df.loc[output_idx, "管理費"] = management_fee
+        output_df.loc[output_idx, "管理費"] = ""  # 仕様書の通り空白
+        output_df.loc[output_idx, "共益費"] = management_fee  # 管理共益費を共益費欄に設定
         output_df.loc[output_idx, "駐車場代"] = parking_fee
         
-        # その他費用
-        output_df.loc[output_idx, "その他費用1"] = safe_str_convert(row.get("その他費用1", "0"))
-        output_df.loc[output_idx, "その他費用2"] = safe_str_convert(row.get("その他費用2", "0"))
+        # その他費用（実際の列名に修正）
+        output_df.loc[output_idx, "その他費用1"] = safe_str_convert(row.get("その他料金", "0"))
+        output_df.loc[output_idx, "その他費用2"] = safe_str_convert(row.get("決済サービス料", "0"))
         output_df.loc[output_idx, "敷金"] = safe_str_convert(row.get("敷金", "0"))
         output_df.loc[output_idx, "礼金"] = safe_str_convert(row.get("礼金", "0"))
         
@@ -588,16 +604,20 @@ def transform_data_to_ark_format_full(report_df: pd.DataFrame, contract_df: pd.D
         exit_fee = calculate_exit_procedure_fee(rent, management_fee, parking_fee, "0")
         output_df.loc[output_idx, "退去手続き（実費）"] = str(exit_fee)
         
-        # 管理前滞納額
-        output_df.loc[output_idx, "管理前滞納額"] = safe_str_convert(row.get("滞納残債", "0"))
+        # 管理前滞納額（未収金額合計から取得）
+        output_df.loc[output_idx, "管理前滞納額"] = safe_str_convert(row.get("未収金額合計", "0"))
         
-        # 回収口座情報（固定値から設定）
+        # 勤務先情報（実際の列名に対応）
+        output_df.loc[output_idx, "契約者勤務先名"] = safe_str_convert(row.get("勤務偈1", ""))
+        output_df.loc[output_idx, "契約者勤務先TEL"] = safe_str_convert(row.get("勤務先TEL1", ""))
+        
+        # 回収口座情報（バーチャル口座情報を含む）
         output_df.loc[output_idx, "回収口座金融機関CD"] = ArkConfig.FIXED_VALUES["回収口座金融機関CD"]
         output_df.loc[output_idx, "回収口座金融機関名"] = ArkConfig.FIXED_VALUES["回収口座金融機関名"]
         output_df.loc[output_idx, "回収口座支店CD"] = ""  # 空
-        output_df.loc[output_idx, "回収口座支店名"] = ""  # 空
+        output_df.loc[output_idx, "回収口座支店名"] = safe_str_convert(row.get("バーチャル口座(支店)", ""))
         output_df.loc[output_idx, "回収口座種類"] = ArkConfig.FIXED_VALUES["回収口座種類"]
-        output_df.loc[output_idx, "回収口座番号"] = ""  # 空
+        output_df.loc[output_idx, "回収口座番号"] = safe_str_convert(row.get("バーチャル口座(口座番号)", ""))
         output_df.loc[output_idx, "回収口座名義"] = ArkConfig.FIXED_VALUES["回収口座名義"]
         
         # 固定値設定
