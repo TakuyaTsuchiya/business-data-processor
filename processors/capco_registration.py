@@ -1,24 +1,34 @@
+#!/usr/bin/env python3
 """
-CAPCO新規登録データ処理プロセッサー（完全版）
-GitHubの動作実績コード（capco_import_new_data）を完全踏襲
+カプコ新規登録プロセッサ（0から完全再構築版）
+正確な111列テンプレートヘッダー完全準拠
+
+入力ファイル:
+- カプコ元データ.csv (46列)
+- ContractList_*.csv (122列)
+
+出力ファイル:
+- ContractInfoSample.csv (111列) - 絶対変更禁止テンプレート準拠
+
+マージキー:
+- カプコ元データ「契約No」⟷ ContractList「引継番号」
 """
 
 import pandas as pd
 import io
 import re
-import unicodedata
-from datetime import datetime
-from typing import Tuple, Optional, Dict, List, Union
-import logging
 import chardet
+from datetime import datetime
+from typing import Tuple, List, Dict, Union
+import logging
 
 
 class CapcoConfig:
-    """CAPCO処理の設定・定数管理クラス（GitHub完全踏襲）"""
+    """カプコ新規登録設定・定数管理クラス"""
     
     OUTPUT_FILE_PREFIX = "カプコ新規登録"
     
-    # 111列の完全出力列定義（正確なテンプレートヘッダーに完全一致）
+    # 【最重要】正確な111列テンプレートヘッダー（絶対変更禁止）
     OUTPUT_COLUMNS = [
         "引継番号", "契約者氏名", "契約者カナ", "契約者生年月日",
         "契約者TEL自宅", "契約者TEL携帯", "契約者現住所郵便番号",
@@ -56,113 +66,73 @@ class CapcoConfig:
         "登録フラグ"  # 111番目
     ]
     
-    # ContractInfoSample（final）完全準拠 - 固定値設定
+    # 固定値設定
     FIXED_VALUES = {
+        # ステータス関連
         "入居ステータス": "入居中",
         "滞納ステータス": "未精算", 
         "受託状況": "契約中",
         "契約種類": "バックレント",
         "回収口座種類": "普通",
+        
+        # 手数料関連
         "退去済手数料": 25,
         "入居中滞納手数料": 0,
         "入居中正常手数料": 0,
         "回収口座金融機関CD": 9,
-        # 空白設定項目
+        
+        # 空白項目（費用関連）
         "契約者生年月日": "",
-        "月額賃料": "",
-        "管理費": "",
-        "共益費": "",
-        "水道代": "",
-        "駐車場代": "",
-        "その他費用1": "",
-        "その他費用2": "",
-        "敷金": "",
-        "礼金": "",
-        "契約確認日": "",
-        "更新契約手数料": "",
-        "退去手続き（実費）": "",
-        "初回振替月": "",
-        "保証開始日": "",
-        "パートナーCD": "",
+        "月額賃料": "", "管理費": "", "共益費": "", "水道代": "", "駐車場代": "",
+        "その他費用1": "", "その他費用2": "", "敷金": "", "礼金": "",
+        
+        # 空白項目（その他）
+        "契約確認日": "", "更新契約手数料": "", "保証開始日": "",
+        "パートナーCD": "", "引落預金種別": "", "登録フラグ": "",
+        
         # 勤務先情報（全て空白）
-        "契約者勤務先名": "",
-        "契約者勤務先カナ": "",
-        "契約者勤務先TEL": "",
-        "勤務先業種": "",
-        "契約者勤務先郵便番号": "",
-        "契約者勤務先住所1": "",
-        "契約者勤務先住所2": "",
-        "契約者勤務先住所3": "",
+        "契約者勤務先名": "", "契約者勤務先カナ": "", "契約者勤務先TEL": "", "勤務先業種": "",
+        "契約者勤務先郵便番号": "", "契約者勤務先住所1": "", "契約者勤務先住所2": "", "契約者勤務先住所3": "",
+        
         # 保証人1情報（全て空白）
-        "保証人１氏名": "",
-        "保証人１カナ": "",
-        "保証人１契約者との関係": "",
-        "保証人１生年月日": "",
-        "保証人１郵便番号": "",
-        "保証人１住所1": "",
-        "保証人１住所2": "",
-        "保証人１住所3": "",
-        "保証人１TEL自宅": "",
-        "保証人１TEL携帯": "",
+        "保証人１氏名": "", "保証人１カナ": "", "保証人１契約者との関係": "", "保証人１生年月日": "",
+        "保証人１郵便番号": "", "保証人１住所1": "", "保証人１住所2": "", "保証人１住所3": "",
+        "保証人１TEL自宅": "", "保証人１TEL携帯": "",
+        
         # 保証人2情報（全て空白）
-        "保証人２氏名": "",
-        "保証人２カナ": "",
-        "保証人２契約者との関係": "",
-        "保証人２生年月日": "",
-        "保証人２郵便番号": "",
-        "保証人２住所1": "",
-        "保証人２住所2": "",
-        "保証人２住所3": "",
-        "保証人２TEL自宅": "",
-        "保証人２TEL携帯": "",
+        "保証人２氏名": "", "保証人２カナ": "", "保証人２契約者との関係": "", "保証人２生年月日": "",
+        "保証人２郵便番号": "", "保証人２住所1": "", "保証人２住所2": "", "保証人２住所3": "",
+        "保証人２TEL自宅": "", "保証人２TEL携帯": "",
+        
         # 緊急連絡人1情報（全て空白）
-        "緊急連絡人１氏名": "",
-        "緊急連絡人１カナ": "",
-        "緊急連絡人１契約者との関係": "",
-        "緊急連絡人１郵便番号": "",
-        "緊急連絡人１現住所1": "",
-        "緊急連絡人１現住所2": "",
-        "緊急連絡人１現住所3": "",
-        "緊急連絡人１TEL自宅": "",
-        "緊急連絡人１TEL携帯": "",
+        "緊急連絡人１氏名": "", "緊急連絡人１カナ": "", "緊急連絡人１契約者との関係": "",
+        "緊急連絡人１郵便番号": "", "緊急連絡人１現住所1": "", "緊急連絡人１現住所2": "", "緊急連絡人１現住所3": "",
+        "緊急連絡人１TEL自宅": "", "緊急連絡人１TEL携帯": "",
+        
         # 緊急連絡人2情報（全て空白）
-        "緊急連絡人２氏名": "",
-        "緊急連絡人２カナ": "",
-        "緊急連絡人２契約者との関係": "",
-        "緊急連絡人２郵便番号": "",
-        "緊急連絡人２現住所1": "",
-        "緊急連絡人２現住所2": "",
-        "緊急連絡人２現住所3": "",
-        "緊急連絡人２TEL自宅": "",
-        "緊急連絡人２TEL携帯": "",
+        "緊急連絡人２氏名": "", "緊急連絡人２カナ": "", "緊急連絡人２契約者との関係": "",
+        "緊急連絡人２郵便番号": "", "緊急連絡人２現住所1": "", "緊急連絡人２現住所2": "", "緊急連絡人２現住所3": "",
+        "緊急連絡人２TEL自宅": "", "緊急連絡人２TEL携帯": "",
+        
         # 引落・その他情報（全て空白）
-        "保証入金日": "",
-        "保証入金者": "",
-        "引落銀行CD": "",
-        "引落銀行名": "",
-        "引落支店CD": "",
-        "引落支店名": "",
-        "引落預金種別": "",
-        "引落口座番号": "",
-        "引落口座名義": "",
-        "解約日": "",
-        "委託先法人ID": "",
-        "登録フラグ": ""
+        "保証入金日": "", "保証入金者": "",
+        "引落銀行CD": "", "引落銀行名": "", "引落支店CD": "", "引落支店名": "",
+        "引落口座番号": "", "引落口座名義": "", "解約日": ""
     }
     
-    # 支店コードマッピング（GitHub完全踏襲）
+    # 支店コードマッピング
     BRANCH_CODE_MAPPING = {
         "中央支店": "763",
         "東海支店": "730"
     }
     
-    # クライアントCDマッピング（ContractInfoSample final準拠）
+    # クライアントCDマッピング
     CLIENT_CD_MAPPING = {
-        "1004-01-01": "1",
-        "1005-01-01": "4"
+        "1004": "1",
+        "1005": "4"
     }
     
-    # 47都道府県リスト（GitHub完全踏襲）
+    # 47都道府県リスト
     PREFECTURES = [
         "北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県",
         "茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県",
@@ -175,39 +145,31 @@ class CapcoConfig:
 
 
 class DataLoader:
-    """データ読み込みクラス（GitHub完全踏襲）"""
+    """CSVファイル読み込みクラス"""
     
     def __init__(self):
         self.logger = logging.getLogger(__name__)
     
-    def detect_encoding(self, file_content: Union[bytes, str]) -> str:
-        """エンコーディング自動検出（改善版）"""
-        if isinstance(file_content, str):
-            # ファイルパスの場合
-            with open(file_content, 'rb') as f:
-                raw_data = f.read(10000)
-        else:
-            # バイトデータの場合
-            raw_data = file_content[:10000] if len(file_content) > 10000 else file_content
-        
+    def detect_encoding(self, file_content: bytes) -> str:
+        """エンコーディング自動検出（文字化け解消）"""
         # chardetで検出
-        result = chardet.detect(raw_data)
+        result = chardet.detect(file_content[:10000])
         detected_encoding = result['encoding']
         confidence = result.get('confidence', 0)
         
-        # エンコーディング候補リスト（拡張版）
+        # エンコーディング候補リスト（優先順位）
         encoding_candidates = ['cp932', 'shift_jis', 'utf-8-sig', 'utf-8', 'iso-2022-jp', 'euc-jp']
         
         # 信頼度が低い場合は代替エンコーディングを試す
         if confidence < 0.7:
             for encoding in encoding_candidates:
                 try:
-                    raw_data.decode(encoding)
+                    file_content.decode(encoding)
                     return encoding
                 except UnicodeDecodeError:
                     continue
         
-        # ヨくあるエンコーディングの修正
+        # よくあるエンコーディングの修正
         if detected_encoding in ['CP932', 'SHIFT_JIS', 'SHIFT-JIS']:
             return 'cp932'
         elif detected_encoding in ['UTF-8-SIG']:
@@ -215,11 +177,10 @@ class DataLoader:
         elif detected_encoding:
             return detected_encoding
         else:
-            # フォールバック
-            return 'cp932'
+            return 'cp932'  # フォールバック
     
     def load_csv_from_bytes(self, file_content: bytes) -> pd.DataFrame:
-        """バイト形式CSVファイル読み込み（改善版）"""
+        """バイト形式CSVファイル読み込み（エンコーディング自動対応）"""
         encoding = self.detect_encoding(file_content)
         
         # 複数のエンコーディングで試行
@@ -232,14 +193,14 @@ class DataLoader:
             except UnicodeDecodeError:
                 continue
             except Exception as e:
-                if try_encoding == encodings_to_try[-1]:  # 最後の試行の場合
+                if try_encoding == encodings_to_try[-1]:
                     raise ValueError(f"CSVファイルの読み込みに失敗: {str(e)}")
                 continue
         
         raise ValueError("対応するエンコーディングが見つかりませんでした")
     
     def load_capco_data(self, file_content: bytes) -> pd.DataFrame:
-        """カプコ元データ読み込み（GitHub完全踏襲）"""
+        """カプコ元データ読み込み"""
         df = self.load_csv_from_bytes(file_content)
         
         # 必須カラム確認
@@ -251,8 +212,8 @@ class DataLoader:
         
         return df
     
-    def load_contract_lists(self, file_content: bytes) -> pd.DataFrame:
-        """ContractList読み込み（GitHub完全踏襲）"""
+    def load_contract_list(self, file_content: bytes) -> pd.DataFrame:
+        """ContractList読み込み"""
         df = self.load_csv_from_bytes(file_content)
         
         if "引継番号" not in df.columns:
@@ -263,14 +224,14 @@ class DataLoader:
         return df
 
 
-class DataMatcher:
-    """データマッチング・重複チェッククラス（GitHub完全踏襲）"""
+class DuplicateChecker:
+    """重複チェッククラス"""
     
     def __init__(self):
         self.logger = logging.getLogger(__name__)
     
     def find_new_contracts(self, capco_df: pd.DataFrame, contract_df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, Dict[str, int]]:
-        """新規契約の特定（GitHub完全踏襲）"""
+        """新規契約の特定（マージキー照合）"""
         # キー項目を文字列に変換・正規化
         capco_df = capco_df.copy()
         capco_df["契約No"] = capco_df["契約No"].astype(str).str.strip()
@@ -297,23 +258,20 @@ class DataMatcher:
 
 
 class DataConverter:
-    """データ変換クラス（GitHub完全踏襲）"""
+    """データ変換クラス"""
     
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-        self.fixed_values = CapcoConfig.FIXED_VALUES
-        self.branch_code_mapping = CapcoConfig.BRANCH_CODE_MAPPING
-        self.client_cd_mapping = CapcoConfig.CLIENT_CD_MAPPING
         self.prefectures = CapcoConfig.PREFECTURES
     
-    def _convert_name(self, name: str) -> str:
-        """氏名変換（スペース除去）（GitHub完全踏襲）"""
+    def convert_name(self, name: str) -> str:
+        """氏名変換：スペース削除"""
         if pd.isna(name) or str(name).strip() == "":
             return ""
         return str(name).strip().replace(" ", "").replace("　", "")
     
-    def _convert_kana(self, kana: str) -> str:
-        """かな変換（ひらがな→カタカナ）（GitHub完全踏襲）"""
+    def convert_kana(self, kana: str) -> str:
+        """カナ変換：ひらがな→カタカナ + スペース削除"""
         if pd.isna(kana) or str(kana).strip() == "":
             return ""
         
@@ -326,11 +284,11 @@ class DataConverter:
         kana_map = str.maketrans(hiragana, katakana)
         katakana_result = kana_str.translate(kana_map)
         
-        # スペース除去
+        # スペース削除
         return katakana_result.replace(" ", "").replace("　", "")
     
-    def _process_phone_numbers(self, home_tel: str, mobile_tel: str) -> Tuple[str, str]:
-        """電話番号処理（GitHub完全踏襲）"""
+    def process_phone_numbers(self, home_tel: str, mobile_tel: str) -> Tuple[str, str]:
+        """電話番号処理：携帯優先ロジック"""
         home_clean = str(home_tel).strip() if pd.notna(home_tel) else ""
         mobile_clean = str(mobile_tel).strip() if pd.notna(mobile_tel) else ""
         
@@ -340,14 +298,16 @@ class DataConverter:
         
         return home_clean, mobile_clean
     
-    def _split_address(self, address: str) -> Dict[str, str]:
-        """住所分割（GitHub完全踏襲）"""
-        if pd.isna(address) or str(address).strip() == "":
-            return {"prefecture": "", "city": "", "remaining": ""}
+    def split_address(self, full_address: str, building_name: str, room_name: str) -> Dict[str, str]:
+        """住所分割処理"""
+        if pd.isna(full_address) or str(full_address).strip() == "":
+            return {"prefecture": "", "city": "", "address3": ""}
         
-        addr = str(address).strip()
+        addr = str(full_address).strip()
+        building = str(building_name).strip() if pd.notna(building_name) else ""
+        room = str(room_name).strip() if pd.notna(room_name) else ""
         
-        # 都道府県抽出
+        # 1. 都道府県抽出
         prefecture = ""
         for pref in self.prefectures:
             if addr.startswith(pref):
@@ -355,10 +315,10 @@ class DataConverter:
                 addr = addr[len(pref):]
                 break
         
-        # 市区町村抽出（政令指定都市の区まで含む）
+        # 2. 市区町村抽出（政令指定都市対応）
         city = ""
         city_patterns = [
-            r'([^市区町村]*市[^区]*区)',  # 政令指定都市の区（例：千葉市美浜区、横浜市港北区）
+            r'([^市区町村]*市[^区]*区)',  # 政令指定都市の区（例：横浜市港北区）
             r'([^市区町村]*[市])',       # 市
             r'([^市区町村]*[区])',       # 特別区（東京23区など）
             r'([^市区町村]*[町村])'      # 町村
@@ -371,149 +331,128 @@ class DataConverter:
                 addr = addr[len(city):]
                 break
         
+        # 3. 現住所3組み立て（市区町村以降 + 建物名 + 部屋名）
+        address3_parts = []
+        if addr.strip():
+            address3_parts.append(addr.strip())
+        if building:
+            address3_parts.append(building)
+        if room:
+            address3_parts.append(room)
+        
+        address3 = "　".join(address3_parts)  # 全角スペース結合
+        
+        # 物件住所3用（建物名・部屋名を除いた部分）
+        property_address3 = addr.strip()
+        
         return {
             "prefecture": prefecture,
             "city": city,
-            "remaining": addr.strip()
+            "address3": address3,
+            "property_address3": property_address3
         }
     
-    def _create_takeover_info(self, contract_start: str) -> str:
-        """引継情報生成（GitHub完全踏襲）"""
-        contract_start_clean = str(contract_start).strip() if pd.notna(contract_start) else ""
-        return f"カプコ一括登録　●保証開始日：{contract_start_clean}"
-    
-    def _get_branch_code(self, branch_name: str) -> str:
-        """支店コード取得（GitHub完全踏襲）"""
+    def get_branch_code(self, branch_name: str) -> str:
+        """支店コード取得"""
         if pd.isna(branch_name):
             return ""
-        return self.branch_code_mapping.get(str(branch_name).strip(), "")
+        return CapcoConfig.BRANCH_CODE_MAPPING.get(str(branch_name).strip(), "")
     
-    def _get_client_cd(self, yakutei_date: str) -> str:
-        """クライアントコード取得（ContractInfoSample final準拠）"""
+    def get_client_cd(self, yakutei_date: str) -> str:
+        """クライアントCD取得（約定日判定）"""
         if pd.isna(yakutei_date) or str(yakutei_date).strip() == "":
             return ""
         
         date_str = str(yakutei_date).strip()
         
-        # 日付の正規化と判定
-        try:
-            date_formats = ['%Y/%m/%d', '%Y-%m-%d', '%Y年%m月%d日']
-            for fmt in date_formats:
-                try:
-                    date_obj = datetime.strptime(date_str, fmt)
-                    formatted_date = date_obj.strftime('%Y-%m-%d')
-                    return self.client_cd_mapping.get(formatted_date, "")
-                except ValueError:
-                    continue
-            
-            # 直接的な文字列判定も追加
-            if "1004" in date_str and "01" in date_str and "01" in date_str:
-                return "1"
-            elif "1005" in date_str and "01" in date_str and "01" in date_str:
-                return "4"
-                
-        except Exception:
-            pass
+        # 約定日による判定
+        if "1004" in date_str:
+            return "1"
+        elif "1005" in date_str:
+            return "4"
         
         return ""
     
-    def convert_to_mirail_format(self, capco_df: pd.DataFrame) -> pd.DataFrame:
-        """カプコフォーマットからContractInfoSample（final）形式へ変換"""
-        output_df = pd.DataFrame()
+    def convert_new_contracts(self, new_contracts_df: pd.DataFrame) -> pd.DataFrame:
+        """新規契約データを111列テンプレートに変換"""
+        output_data = []
         
-        for _, row in capco_df.iterrows():
+        for _, row in new_contracts_df.iterrows():
             converted_row = {}
             
-            # 基本情報
+            # 1. 基本情報
             converted_row["引継番号"] = str(row.get("契約No", "")).strip()
-            converted_row["契約者氏名"] = self._convert_name(row.get("契約者名", ""))
-            converted_row["契約者カナ"] = self._convert_kana(row.get("契約者ふりがな", ""))
+            converted_row["契約者氏名"] = self.convert_name(row.get("契約者名", ""))
+            converted_row["契約者カナ"] = self.convert_kana(row.get("契約者ふりがな", ""))
             
-            # 電話番号処理
-            home_tel, mobile_tel = self._process_phone_numbers(
+            # 2. 電話番号処理
+            home_tel, mobile_tel = self.process_phone_numbers(
                 row.get("契約者：電話番号", ""),
                 row.get("契約者：携帯番号", "")
             )
             converted_row["契約者TEL自宅"] = home_tel
             converted_row["契約者TEL携帯"] = mobile_tel
             
-            # 住所情報
-            address_parts = self._split_address(row.get("建物：住所", ""))
+            # 3. 住所分割処理
+            address_parts = self.split_address(
+                row.get("建物：住所", ""),
+                row.get("建物名", ""),
+                row.get("部屋名", "")
+            )
+            
+            # 契約者現住所
             converted_row["契約者現住所郵便番号"] = str(row.get("建物：郵便番号", "")).strip()
             converted_row["契約者現住所1"] = address_parts["prefecture"]
             converted_row["契約者現住所2"] = address_parts["city"]
+            converted_row["契約者現住所3"] = address_parts["address3"]
             
-            # 現住所3 = 残り住所 + 建物名 + 部屋名
-            building_name = str(row.get("建物名", "")).strip()
-            room_name = str(row.get("部屋名", "")).strip()
+            # 4. 物件情報
+            converted_row["物件名"] = str(row.get("建物名", "")).strip()
+            converted_row["部屋番号"] = str(row.get("部屋名", "")).strip()
             
-            address_3_parts = [address_parts["remaining"]]
-            if building_name: address_3_parts.append(building_name)
-            if room_name: address_3_parts.append(room_name)
-            converted_row["契約者現住所3"] = " ".join(filter(None, address_3_parts))
-            
-            # 物件情報
-            converted_row["物件名"] = building_name
-            converted_row["部屋番号"] = room_name
-            
-            # 物件住所（契約者住所と同じだが物件住所3は建物名・部屋名除外）
+            # 物件住所（契約者住所をコピー + 物件住所3は建物名・部屋名除外）
             converted_row["物件住所郵便番号"] = converted_row["契約者現住所郵便番号"]
             converted_row["物件住所1"] = converted_row["契約者現住所1"]
             converted_row["物件住所2"] = converted_row["契約者現住所2"]
-            converted_row["物件住所3"] = address_parts["remaining"]  # 建物名、部屋名は除外
+            converted_row["物件住所3"] = address_parts["property_address3"]
             
-            # 引継情報（「カプコ一括登録　●保証開始日：」+ 契約開始）
+            # 5. 引継情報生成
             contract_start = str(row.get("契約開始", "")).strip()
             converted_row["引継情報"] = f"カプコ一括登録　●保証開始日：{contract_start}"
             
-            # 口座情報
+            # 6. 口座情報
             converted_row["回収口座金融機関名"] = str(row.get("V口座銀行名", "")).strip()
-            converted_row["回収口座支店CD"] = self._get_branch_code(row.get("V口振支店名", ""))
+            converted_row["回収口座支店CD"] = self.get_branch_code(row.get("V口振支店名", ""))
             converted_row["回収口座支店名"] = str(row.get("V口振支店名", "")).strip()
             converted_row["回収口座番号"] = str(row.get("V口振番号", "")).strip()
             converted_row["回収口座名義"] = str(row.get("V口座振込先", "")).strip()
             
-            # クライアントCD
-            client_cd = self._get_client_cd(row.get("約定日", ""))
-            converted_row["クライアントCD"] = client_cd
-            
-            # 管理会社（クライアントCD条件付き）
-            if client_cd == "1":
-                converted_row["管理会社"] = "株式会社前田"
-            else:
-                management_company = row.get("管理会社", "")
-                converted_row["管理会社"] = str(management_company).strip() if pd.notna(management_company) else ""
-            
-            # 管理前滞納額
-            arrears_amount = str(row.get("滞納額合計", "")).replace(',', '').replace('¥', '').strip()
-            converted_row["管理前滞納額"] = arrears_amount if arrears_amount.isdigit() else ""
-            
-            # 管理受託日（今日の日付）
+            # 7. 特殊項目
+            converted_row["クライアントCD"] = self.get_client_cd(row.get("約定日", ""))
+            converted_row["管理前滞納額"] = str(row.get("滞納額合計", "")).strip()
+            converted_row["管理会社"] = str(row.get("管理会社", "")).strip()
             converted_row["管理受託日"] = datetime.now().strftime("%Y/%m/%d")
             
-            # 固定値設定（111列対応）
-            for key, value in self.fixed_values.items():
+            # 8. 固定値設定（すべて適用）
+            for key, value in CapcoConfig.FIXED_VALUES.items():
                 converted_row[key] = value
             
-            output_df = pd.concat([output_df, pd.DataFrame([converted_row])], ignore_index=True)
+            output_data.append(converted_row)
         
-        # 111列の正確な順序でデータフレームを再構築
-        # CapcoConfig.OUTPUT_COLUMNSを使用してテンプレート厳守
+        # 111列の正確な順序でDataFrame構築
         final_df = pd.DataFrame()
         for col in CapcoConfig.OUTPUT_COLUMNS:
-            if col in output_df.columns:
-                final_df[col] = output_df[col]
+            if col == "":  # 空列の場合
+                final_df[col] = [""] * len(output_data)
             else:
-                # 列が存在しない場合は空文字列で埋める
-                final_df[col] = ""
+                final_df[col] = [row.get(col, "") for row in output_data]
         
         return final_df
 
 
 def process_capco_data(capco_content: bytes, contract_content: bytes) -> Tuple[pd.DataFrame, List[str], str]:
     """
-    CAPCO新規登録データ処理メイン関数（GitHub完全版）
-    GitHubのmain.pyの処理フローを完全踏襲
+    カプコ新規登録データ処理メイン関数
     
     Args:
         capco_content: カプコ元データ.csvの内容
@@ -522,7 +461,7 @@ def process_capco_data(capco_content: bytes, contract_content: bytes) -> Tuple[p
     Returns:
         tuple: (変換済みDF, 処理ログ, 出力ファイル名)
     """
-    # ログ設定（GitHub完全踏襲）
+    # ログ設定
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -533,39 +472,42 @@ def process_capco_data(capco_content: bytes, contract_content: bytes) -> Tuple[p
         logs = []
         start_time = datetime.now()
         
-        # GitHub処理フロー完全踏襲
-        logs.append("=== CAPCO新規登録処理開始 ===")
-        logger.info("CAPCO新規登録処理開始")
+        logs.append("=== カプコ新規登録処理開始 ===")
+        logger.info("カプコ新規登録処理開始")
         
-        # 1. データ読み込み（GitHubのDataLoaderクラス使用）
+        # 1. データ読み込み
         data_loader = DataLoader()
         capco_df = data_loader.load_capco_data(capco_content)
-        contract_df = data_loader.load_contract_lists(contract_content)
+        contract_df = data_loader.load_contract_list(contract_content)
         
         logs.append(f"ファイル読み込み完了: カプコ{len(capco_df)}件, ContractList{len(contract_df)}件")
         
-        # 2. 重複チェック（GitHubのDataMatcherクラス使用）
-        data_matcher = DataMatcher()
-        new_contracts, existing_contracts, match_stats = data_matcher.find_new_contracts(capco_df, contract_df)
+        # 2. 重複チェック（新規案件抽出）
+        duplicate_checker = DuplicateChecker()
+        new_contracts, existing_contracts, match_stats = duplicate_checker.find_new_contracts(capco_df, contract_df)
         
         logs.append(f"重複チェック結果: 新規{match_stats['new_contracts']}件, 既存{match_stats['existing_contracts']}件")
         
-        # 3. データ変換（GitHubのDataConverterクラス使用）
+        if len(new_contracts) == 0:
+            logs.append("⚠️ 新規案件が見つかりませんでした")
+            return pd.DataFrame(), logs, "no_new_contracts.csv"
+        
+        # 3. データ変換（111列テンプレート準拠）
         data_converter = DataConverter()
-        output_df = data_converter.convert_to_mirail_format(new_contracts)
+        output_df = data_converter.convert_new_contracts(new_contracts)
         
-        logs.append(f"データ変換完了: {len(output_df)}件")
+        logs.append(f"データ変換完了: {len(output_df)}件 → 111列テンプレート形式")
         
-        # 4. 出力ファイル名生成（GitHub命名規則踏襲）
+        # 4. 出力ファイル名生成
         today_str = datetime.now().strftime("%m%d")
         output_filename = f"{today_str}{CapcoConfig.OUTPUT_FILE_PREFIX}.csv"
         
-        # 5. 統計情報作成
+        # 5. 処理完了
         end_time = datetime.now()
         processing_time = (end_time - start_time).total_seconds()
         
         logs.append(f"=== 処理完了: {output_filename} ({processing_time:.2f}秒) ===")
-        logger.info(f"CAPCO処理完了: {len(output_df)}件出力")
+        logger.info(f"カプコ処理完了: {len(output_df)}件出力")
         
         return output_df, logs, output_filename
         
@@ -578,12 +520,11 @@ def process_capco_data(capco_content: bytes, contract_content: bytes) -> Tuple[p
         logger.error(error_msg)
         return pd.DataFrame(), [error_msg], "error.csv"
     except Exception as e:
-        error_msg = f"CAPCO処理エラー: {str(e)}"
+        error_msg = f"カプコ処理エラー: {str(e)}"
         logger.error(error_msg)
         return pd.DataFrame(), [error_msg], "error.csv"
 
 
 def get_sample_template() -> pd.DataFrame:
     """サンプルテンプレート（111列完全準拠）"""
-    # CapcoConfig.OUTPUT_COLUMNSを使用してテンプレート厳守
     return pd.DataFrame(columns=CapcoConfig.OUTPUT_COLUMNS)
