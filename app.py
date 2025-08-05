@@ -180,8 +180,9 @@ def main():
     
     # ミライル
     st.sidebar.markdown("**ミライル用オートコール**")
-    if st.sidebar.button("契約者（月初）", key="mirail_contract_monthly", use_container_width=True):
-        st.session_state.selected_processor = "🏢 ミライル契約者（月初）"
+    # 契約者（月初）は一時的に非表示
+    # if st.sidebar.button("契約者（月初）", key="mirail_contract_monthly", use_container_width=True):
+    #     st.session_state.selected_processor = "🏢 ミライル契約者（月初）"
     if st.sidebar.button("契約者（10,000円を除外するパターン）", key="mirail_contract_without10k", use_container_width=True):
         st.session_state.selected_processor = "🏢 ミライル契約者（10,000円を除外するパターン）"
     if st.sidebar.button("契約者（10,000円を除外しないパターン）", key="mirail_contract_with10k", use_container_width=True):
@@ -244,8 +245,8 @@ def main():
         processor_type == "🏠 トップ"):
         # ウェルカム画面
         show_welcome_screen()
-    elif processor_type == "🏢 ミライル契約者（月初）":
-        show_mirail_contract_monthly_processor()
+    # elif processor_type == "🏢 ミライル契約者（月初）":
+    #     show_mirail_contract_monthly_processor()
     elif processor_type == "🏢 ミライル契約者（10,000円を除外するパターン）":
         show_mirail_contract_without10k_processor()
     elif processor_type == "🏢 ミライル契約者（10,000円を除外しないパターン）":

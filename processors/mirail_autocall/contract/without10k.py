@@ -39,7 +39,8 @@ class MirailConfig:
         "管理番号": "管理番号",
         "契約者名（カナ）": "契約者カナ",
         "物件名": "物件名",
-        "クライアント": "クライアント名"
+        "クライアント": "クライアント名",
+        "残債": "滞納残債"  # J列「残債」にBT列「滞納残債」を格納
     }
     
     OUTPUT_FILE_PREFIX = "ミライル_without10k_契約者"
@@ -104,10 +105,10 @@ def apply_filters(df_input: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
         df["クライアントCD"] = pd.to_numeric(df["クライアントCD"], errors="coerce")
         df["滞納残債"] = pd.to_numeric(df["滞納残債"].astype(str).str.replace(',', ''), errors='coerce')
         
-        exclude_condition = (df["クライアントCD"] == 1) & \
+        exclude_condition = ((df["クライアントCD"] == 1) | (df["クライアントCD"] == 4)) & \
                            (df["滞納残債"].isin(filter_conditions["滞納残債_not_in"]))
         df = df[~exclude_condition]
-        logs.append(f"クライアントCD=1かつ残債10,000円・11,000円除外後: {len(df)}件")
+        logs.append(f"クライアントCD=1,4かつ残債10,000円・11,000円除外後: {len(df)}件")
     
     # TEL携帯のフィルタリング（契約者電話番号が必須）
     if "TEL携帯" in filter_conditions:

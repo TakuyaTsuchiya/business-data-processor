@@ -39,7 +39,8 @@ class MirailGuarantorConfig:
         "管理番号": "管理番号",
         "契約者名（カナ）": "契約者カナ",
         "物件名": "物件名",
-        "クライアント": "クライアント名"
+        "クライアント": "クライアント名",
+        "残債": "滞納残債"  # J列「残債」にBT列「滞納残債」を格納
     }
     
     OUTPUT_FILE_PREFIX = "ミライル_without10k_保証人"
@@ -66,7 +67,7 @@ def apply_mirail_guarantor_without10k_filters(df: pd.DataFrame) -> Tuple[pd.Data
     - 委託先法人ID: 空白と5
     - 入金予定日: 前日以前またはNaN（当日は除外）
     - 回収ランク: 弁護士介入を除外
-    - 残債除外: クライアントCD=1かつ滞納残債10,000円・11,000円のレコードのみ除外
+    - 残債除外: クライアントCD=1,4かつ滞納残債10,000円・11,000円のレコードのみ除外
     - TEL携帯.1: 空でない値のみ（保証人電話番号）
     """
     logs = []
@@ -92,16 +93,16 @@ def apply_mirail_guarantor_without10k_filters(df: pd.DataFrame) -> Tuple[pd.Data
         logs.append(f"回収ランクフィルタ後: {len(df)}件")
     
     # 4. 残債除外フィルタリング
-    # 「クライアントCD=1 かつ 滞納残債=10,000円・11,000円」のレコードのみ除外
-    # その他全てのレコードは対象（クライアントCD≠1や、CD=1でも残債が10k/11k以外）
+    # 「クライアントCD=1,4 かつ 滞納残債=10,000円・11,000円」のレコードのみ除外
+    # その他全てのレコードは対象（クライアントCD≠1,4や、CD=1,4でも残債が10k/11k以外）
     if "滞納残債_not_in" in MirailGuarantorConfig.FILTER_CONDITIONS:
         df["クライアントCD"] = pd.to_numeric(df["クライアントCD"], errors="coerce")
         df["滞納残債"] = pd.to_numeric(df["滞納残債"].astype(str).str.replace(',', ''), errors='coerce')
         
-        exclude_condition = (df["クライアントCD"] == 1) & \
+        exclude_condition = ((df["クライアントCD"] == 1) | (df["クライアントCD"] == 4)) & \
                            (df["滞納残債"].isin(MirailGuarantorConfig.FILTER_CONDITIONS["滞納残債_not_in"]))
         df = df[~exclude_condition]
-        logs.append(f"クライアントCD=1かつ残債10,000円・11,000円除外後: {len(df)}件")
+        logs.append(f"クライアントCD=1,4かつ残債10,000円・11,000円除外後: {len(df)}件")
     
     # 5. 入金予定金額のフィルタリング（2,3,5を除外）
     if "入金予定金額_not_in" in MirailGuarantorConfig.FILTER_CONDITIONS:
