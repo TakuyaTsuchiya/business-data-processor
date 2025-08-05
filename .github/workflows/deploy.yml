@@ -10,12 +10,6 @@ on:
       - 'docker-compose.yml'
       - '.github/workflows/**'
       - 'tests/**'
-  workflow_dispatch:
-    inputs:
-      force_deploy:
-        description: 'Force deploy even without changes'
-        required: false
-        type: boolean
 
 jobs:
   test:
