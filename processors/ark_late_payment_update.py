@@ -37,13 +37,9 @@ def detect_encoding(file_content: Union[bytes, str]) -> str:
     detected_encoding = result['encoding']
     confidence = result.get('confidence', 0)
     
-    if HAS_STREAMLIT:
-        st.info(f"📊 エンコーディング検出: {detected_encoding} (信頼度: {confidence:.2f})")
     
     # 信頼度が低い場合は代替エンコーディングを試す
     if confidence < 0.7:
-        if HAS_STREAMLIT:
-            st.warning(f"⚠️ エンコーディング信頼度が低いため、代替エンコーディングを試します")
         
         # ファイルパスがある場合のみ実際の読み込みテストが可能
         if file_path:
@@ -51,8 +47,6 @@ def detect_encoding(file_content: Union[bytes, str]) -> str:
                 try:
                     with open(file_path, 'r', encoding=encoding) as f:
                         f.read(1000)  # テスト読み込み
-                    if HAS_STREAMLIT:
-                        st.success(f"✅ エンコーディング '{encoding}' で読み込み成功")
                     return encoding
                 except UnicodeDecodeError:
                     continue
@@ -61,8 +55,6 @@ def detect_encoding(file_content: Union[bytes, str]) -> str:
             for encoding in ENCODING_CANDIDATES:
                 try:
                     raw_data.decode(encoding)
-                    if HAS_STREAMLIT:
-                        st.success(f"✅ エンコーディング '{encoding}' でデコード成功")
                     return encoding
                 except UnicodeDecodeError:
                     continue
@@ -76,8 +68,6 @@ def detect_encoding(file_content: Union[bytes, str]) -> str:
         return detected_encoding
     else:
         # フォールバック
-        if HAS_STREAMLIT:
-            st.warning("⚠️ エンコーディングを検出できません。cp932を使用します")
         return 'cp932'
 
 
@@ -138,10 +128,6 @@ def process_ark_late_payment_data(arc_file, contract_file) -> Optional[Tuple[pd.
             
             if HAS_STREAMLIT:
                 st.success(f"✅ アーク残債CSV読み込み完了: {len(arc_df):,}行")
-                # デバッグ情報：カラム名を表示
-                with st.expander("🔍 アーク残債CSVカラム一覧"):
-                    st.write(f"カラム数: {len(arc_df.columns)}")
-                    st.write(f"カラム名: {list(arc_df.columns)}")
         except Exception as e:
             if HAS_STREAMLIT:
                 st.error(f"❌ アーク残債CSVファイルの読み込みに失敗しました: {str(e)}")
@@ -165,10 +151,6 @@ def process_ark_late_payment_data(arc_file, contract_file) -> Optional[Tuple[pd.
             
             if HAS_STREAMLIT:
                 st.success(f"✅ ContractList読み込み完了: {len(contract_df):,}行")
-                # デバッグ情報：カラム名を表示
-                with st.expander("🔍 ContractListカラム一覧"):
-                    st.write(f"カラム数: {len(contract_df.columns)}")
-                    st.write(f"カラム名: {list(contract_df.columns)}")
         except Exception as e:
             if HAS_STREAMLIT:
                 st.error(f"❌ ContractListファイルの読み込みに失敗しました: {str(e)}")
