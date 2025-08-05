@@ -88,7 +88,13 @@ def apply_mirail_emergencycontact_with10k_filters(df: pd.DataFrame) -> Tuple[pd.
     logs.append("残債フィルタ: 除外なし（with10k版：10,000円・11,000円も含む全件処理）")
     logs.append("クライアントCDフィルタ: 除外なし（with10k版：全クライアント対象）")
     
-    # 5. 緊急連絡人１のTEL（携帯）のフィルタリング（緊急連絡人電話番号が必須）
+    # 5. 入金予定金額のフィルタリング（2,3,5,12を除外）
+    if "入金予定金額_not_in" in MirailEmergencyContactWith10kConfig.FILTER_CONDITIONS:
+        df["入金予定金額"] = pd.to_numeric(df["入金予定金額"], errors='coerce')
+        df = df[df["入金予定金額"].isna() | ~df["入金予定金額"].isin(MirailEmergencyContactWith10kConfig.FILTER_CONDITIONS["入金予定金額_not_in"])]
+        logs.append(f"入金予定金額フィルタ後: {len(df)}件")
+    
+    # 6. 緊急連絡人１のTEL（携帯）のフィルタリング（緊急連絡人電話番号が必須）
     if "緊急連絡人１のTEL（携帯）" in MirailEmergencyContactWith10kConfig.FILTER_CONDITIONS:
         df = df[
             df["緊急連絡人１のTEL（携帯）"].notna() &
