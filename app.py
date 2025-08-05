@@ -181,6 +181,8 @@ def main():
     
     # ミライル
     st.sidebar.markdown("**ミライル用オートコール**")
+    if st.sidebar.button("契約者（月初）", key="mirail_contract_monthly", use_container_width=True):
+        st.session_state.selected_processor = "🏢 ミライル契約者（月初）"
     if st.sidebar.button("契約者（10,000円を除外するパターン）", key="mirail_contract_without10k", use_container_width=True):
         st.session_state.selected_processor = "🏢 ミライル契約者（10,000円を除外するパターン）"
     if st.sidebar.button("契約者（10,000円を除外しないパターン）", key="mirail_contract_with10k", use_container_width=True):
@@ -243,6 +245,8 @@ def main():
         processor_type == "🏠 トップ"):
         # ウェルカム画面
         show_welcome_screen()
+    elif processor_type == "🏢 ミライル契約者（月初）":
+        show_mirail_contract_monthly_processor()
     elif processor_type == "🏢 ミライル契約者（10,000円を除外するパターン）":
         show_mirail_contract_without10k_processor()
     elif processor_type == "🏢 ミライル契約者（10,000円を除外しないパターン）":
@@ -337,6 +341,85 @@ def show_welcome_screen():
     - エンコーディング自動検出
     """)
     
+
+def show_mirail_contract_monthly_processor():
+    """ミライル契約者（月初）処理画面"""
+    st.markdown("## 契約者（月初）")
+    st.markdown("ContractListから契約者の電話番号を抽出し、オートコール用CSVを生成します（月初専用フィルタリング）")
+    
+    # フィルタリング条件の説明
+    st.markdown("### 📋 フィルタリング条件")
+    st.markdown("""
+    **ベース条件（without10kベース）:**
+    - 委託先法人ID: 空白と5
+    - 入金予定日: 前日以前またはNaN
+    - 回収ランク: 弁護士介入除外
+    - 残債除外: クライアントCD=1かつ10,000円・11,000円除外
+    - TEL携帯: 空でない値のみ
+    - 入金予定金額: 2,3,5,12除外
+    
+    **追加条件:**
+    - クライアントCD: 1,4,5,10,40のいずれか
+    - 滞納比率: 滞納残債÷月額賃料合計 ≥ 1.3（1.3未満を除外）
+    """)
+    
+    # ファイルアップロード
+    uploaded_file = st.file_uploader(
+        "ContractListファイルをアップロードしてください", 
+        type=['csv'],
+        key="mirail_contract_monthly_upload"
+    )
+    
+    if uploaded_file is not None:
+        # ファイル情報表示
+        file_size = len(uploaded_file.getvalue())
+        st.info(f"ファイルサイズ: {file_size:,} bytes")
+        
+        # 処理ボタン
+        if st.button("🚀 処理開始", key="mirail_monthly_process", type="primary"):
+            with st.spinner("データを処理中..."):
+                try:
+                    # ミライル月初プロセッサーをインポート
+                    from processors.mirail_autocall.contract.monthly import process_mirail_contract_monthly_data
+                    
+                    # ファイル内容を取得
+                    file_content = uploaded_file.getvalue()
+                    
+                    # データ処理実行
+                    df_filtered, df_output, logs, output_filename = process_mirail_contract_monthly_data(file_content)
+                    
+                    # 処理結果表示
+                    st.success("✅ 処理が完了しました！")
+                    
+                    # 処理ログ表示
+                    with st.expander("📋 処理ログ詳細", expanded=False):
+                        for log in logs:
+                            st.text(log)
+                    
+                    if not df_output.empty:
+                        # データプレビュー
+                        st.markdown("### 📊 処理結果プレビュー")
+                        st.dataframe(df_output.head(10), use_container_width=True)
+                        
+                        # CSVダウンロード
+                        csv_data = df_output.to_csv(index=False, encoding='cp932', errors='ignore')
+                        st.download_button(
+                            label="📥 CSVファイルをダウンロード",
+                            data=csv_data.encode('cp932', errors='ignore'),
+                            file_name=output_filename,
+                            mime="text/csv",
+                            key="mirail_monthly_download"
+                        )
+                        
+                        # 統計情報
+                        st.markdown("### 📈 処理統計")
+                        st.metric("最終出力件数", len(df_output))
+                    else:
+                        st.warning("⚠️ 条件に該当するデータがありませんでした")
+                        
+                except Exception as e:
+                    st.error(f"❌ エラーが発生しました: {str(e)}")
+
 
 def show_mirail_contract_without10k_processor():
     """ミライル契約者処理画面"""
