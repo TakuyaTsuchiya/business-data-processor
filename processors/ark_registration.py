@@ -98,7 +98,7 @@ class ArkConfig:
         "引落預金種別": "", 
         "登録フラグ": "",
         "管理会社": "",
-        "委託先法人ID": "",
+        # "委託先法人ID": "", # FIXED_VALUESから削除（重複回避のため個別設定）
         
         # 勤務先情報（基本空白、一部入力データから取得）
         "契約者勤務先カナ": "", 
@@ -676,23 +676,23 @@ class DataConverter:
                 converted_row["緊急連絡人１TEL自宅"] = e1.get("自宅TEL", "")
                 converted_row["緊急連絡人１TEL携帯"] = e1.get("携帯TEL", "")
             
-            # 12. 固定値設定（保証人・緊急連絡人以外のみ適用）
-            for key, value in ArkConfig.FIXED_VALUES.items():
-                # 既に設定済みの保証人１・緊急連絡人１データは上書きしない
-                if key not in converted_row or converted_row[key] == "":
-                    converted_row[key] = value
-            
-            # 13. 地域別設定
+            # 12. 地域別・個別設定（FIXED_VALUES処理前に実行して重複回避）
             # 更新契約手数料を地域別に設定
             converted_row["更新契約手数料"] = str(region_code)
             
-            # 14. 管理会社設定（アーク元データのH列「8. 取引先」をマッピング）
+            # 管理会社設定（アーク元データのH列「8. 取引先」をマッピング）
             # H列は8番目（0ベースで7番目）の列「取引先」
             management_company = self.safe_str_convert(row.get("取引先", ""))
             converted_row["管理会社"] = management_company
             
-            # 15. 委託先法人ID設定（固定値"5"）
+            # 委託先法人ID設定（固定値"5"）- ARK・CAPCO共通仕様
             converted_row["委託先法人ID"] = "5"
+            
+            # 13. 固定値設定（重複回避で安全処理）
+            for key, value in ArkConfig.FIXED_VALUES.items():
+                # 既に設定済みのデータは上書きしない（地域別設定・個別設定を優先）
+                if key not in converted_row or converted_row[key] == "":
+                    converted_row[key] = value
             
             output_data.append(converted_row)
         
