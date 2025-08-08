@@ -842,7 +842,7 @@ def show_ark_registration_tokyo():
                     st.warning("条件に合致するデータがありませんでした。")
         except Exception as e:
             st.error(f"エラーが発生しました: {str(e)}")
-    elif uploaded_files:
+    elif file1 or file2:
         st.warning("2つのCSVファイルをアップロードしてください。")
 
 def show_ark_registration_osaka():
@@ -892,7 +892,7 @@ def show_ark_registration_osaka():
                     st.warning("条件に合致するデータがありませんでした。")
         except Exception as e:
             st.error(f"エラーが発生しました: {str(e)}")
-    elif uploaded_files:
+    elif file1 or file2:
         st.warning("2つのCSVファイルをアップロードしてください。")
 
 def show_ark_registration_hokkaido():
@@ -942,7 +942,7 @@ def show_ark_registration_hokkaido():
                     st.warning("条件に合致するデータがありませんでした。")
         except Exception as e:
             st.error(f"エラーが発生しました: {str(e)}")
-    elif uploaded_files:
+    elif file1 or file2:
         st.warning("2つのCSVファイルをアップロードしてください。")
 
 def show_ark_registration_kitakanto():
@@ -992,7 +992,7 @@ def show_ark_registration_kitakanto():
                     st.warning("条件に合致するデータがありませんでした。")
         except Exception as e:
             st.error(f"エラーが発生しました: {str(e)}")
-    elif uploaded_files:
+    elif file1 or file2:
         st.warning("2つのCSVファイルをアップロードしてください。")
 
 def show_capco_registration():
@@ -1047,7 +1047,7 @@ def show_capco_registration():
                     st.warning("条件に合致するデータがありませんでした。")
         except Exception as e:
             st.error(f"エラーが発生しました: {str(e)}")
-    elif uploaded_files:
+    elif file1 or file2:
         st.warning("2つのCSVファイルをアップロードしてください。")
 
 def show_ark_late_payment():
@@ -1097,7 +1097,7 @@ def show_ark_late_payment():
                     st.warning("条件に合致するデータがありませんでした。")
         except Exception as e:
             st.error(f"エラーが発生しました: {str(e)}")
-    elif uploaded_files:
+    elif file1 or file2:
         st.warning("2つのCSVファイルをアップロードしてください。")
 
 if __name__ == "__main__":
