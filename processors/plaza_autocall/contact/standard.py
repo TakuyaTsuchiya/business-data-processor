@@ -1,7 +1,7 @@
 """
 プラザ緊急連絡人オートコール処理プロセッサー
 ミライル緊急連絡人（10,000円を除外しないパターン）ベースの処理
-プラザ固有条件：委託先法人ID=6、入金予定日=当日以前（当日含む）
+プラザ固有条件：委託先法人ID=6、入金予定日=前日以前（当日除外）
 """
 
 import pandas as pd
@@ -35,9 +35,9 @@ def apply_plaza_contact_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[st
     """
     プラザ緊急連絡人フィルタリング処理（ミライルwith10kベース + プラザ固有条件）
     
-    📋 フィルタリング条件:
+    フィルタリング条件:
     - 委託先法人ID: 6のみ（プラザ固有）
-    - 入金予定日: 当日以前またはNaN（当日も含む、プラザ固有）
+    - 入金予定日: 前日以前またはNaN（当日は除外、プラザ固有）
     - 回収ランク: 弁護士介入を除外
     - 残債: フィルタなし（10,000円・11,000円も含む全件処理）
     - 緊急連絡人１のTEL（携帯）: 空でない値のみ
@@ -51,10 +51,10 @@ def apply_plaza_contact_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[st
     df = df[df["委託先法人ID"].astype(str).str.strip() == "6"]
     logs.append(f"委託先法人ID（6のみ）フィルタ後: {len(df)}件")
     
-    # 2. 入金予定日のフィルタリング（当日以前またはNaN：当日も含む）
+    # 2. 入金予定日のフィルタリング（前日以前またはNaN：当日は除外）
     today = pd.Timestamp.now().normalize()
     df["入金予定日"] = pd.to_datetime(df["入金予定日"], errors='coerce')
-    df = df[df["入金予定日"].isna() | (df["入金予定日"] <= today)]
+    df = df[df["入金予定日"].isna() | (df["入金予定日"] < today)]
     logs.append(f"入金予定日フィルタ後: {len(df)}件")
     
     # 3. 回収ランクのフィルタリング（弁護士介入のみ除外）
@@ -123,9 +123,9 @@ def process_plaza_contact_data(file_content: bytes) -> Tuple[pd.DataFrame, pd.Da
     """
     プラザ緊急連絡人データの処理メイン関数
     
-    📋 フィルタリング条件:
+    フィルタリング条件:
     - 委託先法人ID: 6のみ（プラザ固有）
-    - 入金予定日: 当日以前またはNaN（当日も含む、プラザ固有）
+    - 入金予定日: 前日以前またはNaN（当日は除外、プラザ固有）
     - 回収ランク: 弁護士介入を除外
     - 残債: フィルタなし（10,000円・11,000円も含む全件処理）
     - 緊急連絡人１のTEL（携帯）: 空でない値のみ
