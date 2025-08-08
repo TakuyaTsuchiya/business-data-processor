@@ -797,16 +797,20 @@ def show_ark_registration_tokyo():
     st.markdown("**📊 出力**: 111列フル仕様（テンプレートヘッダー準拠、地域コード1:東京、その他費用、1含む）")
     st.info("📂 必要ファイル: 案件取込用レポート + ContractList（2ファイル処理）")
     
-    uploaded_files = st.file_uploader("CSVファイル2つをアップロードしてください", type="csv", accept_multiple_files=True, key="ark_registration_tokyo_files")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("**📄 ファイル1: 案件取込用レポート**")
+        file1 = st.file_uploader("案件取込用レポート.csvをアップロード", type="csv", key="ark_tokyo_file1")
+    with col2:
+        st.markdown("**📄 ファイル2: ContractList**")
+        file2 = st.file_uploader("ContractList_*.csvをアップロード", type="csv", key="ark_tokyo_file2")
     
-    if uploaded_files and len(uploaded_files) == 2:
+    if file1 and file2:
         try:
             # ファイル内容を読み取り
-            file_contents = []
-            for file in uploaded_files:
-                content = file.read()
-                file_contents.append(content)
-                st.success(f"{file.name}: ファイル読み込み完了")
+            file_contents = [file1.read(), file2.read()]
+            st.success(f"✅ {file1.name}: 読み込み完了")
+            st.success(f"✅ {file2.name}: 読み込み完了")
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
@@ -847,15 +851,19 @@ def show_ark_registration_osaka():
     st.markdown("**📊 出力**: 111列フル仕様（テンプレートヘッダー準拠、地域コード2:大阪、その他費用、1含む）")
     st.info("📂 必要ファイル: 案件取込用レポート + ContractList（2ファイル処理）")
     
-    uploaded_files = st.file_uploader("CSVファイル2つをアップロードしてください", type="csv", accept_multiple_files=True, key="ark_registration_osaka_files")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("**📄 ファイル1: 案件取込用レポート**")
+        file1 = st.file_uploader("案件取込用レポート.csvをアップロード", type="csv", key="ark_osaka_file1")
+    with col2:
+        st.markdown("**📄 ファイル2: ContractList**")
+        file2 = st.file_uploader("ContractList_*.csvをアップロード", type="csv", key="ark_osaka_file2")
     
-    if uploaded_files and len(uploaded_files) == 2:
+    if file1 and file2:
         try:
-            file_contents = []
-            for file in uploaded_files:
-                content = file.read()
-                file_contents.append(content)
-                st.success(f"{file.name}: ファイル読み込み完了")
+            file_contents = [file1.read(), file2.read()]
+            st.success(f"✅ {file1.name}: 読み込み完了")
+            st.success(f"✅ {file2.name}: 読み込み完了")
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
@@ -893,15 +901,19 @@ def show_ark_registration_hokkaido():
     st.markdown("**📊 出力**: 111列フル仕様（テンプレートヘッダー準拠、地域コード3:北海道、その他費用、1含む）")
     st.info("📂 必要ファイル: 案件取込用レポート + ContractList（2ファイル処理）")
     
-    uploaded_files = st.file_uploader("CSVファイル2つをアップロードしてください", type="csv", accept_multiple_files=True, key="ark_registration_hokkaido_files")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("**📄 ファイル1: 案件取込用レポート**")
+        file1 = st.file_uploader("案件取込用レポート.csvをアップロード", type="csv", key="ark_hokkaido_file1")
+    with col2:
+        st.markdown("**📄 ファイル2: ContractList**")
+        file2 = st.file_uploader("ContractList_*.csvをアップロード", type="csv", key="ark_hokkaido_file2")
     
-    if uploaded_files and len(uploaded_files) == 2:
+    if file1 and file2:
         try:
-            file_contents = []
-            for file in uploaded_files:
-                content = file.read()
-                file_contents.append(content)
-                st.success(f"{file.name}: ファイル読み込み完了")
+            file_contents = [file1.read(), file2.read()]
+            st.success(f"✅ {file1.name}: 読み込み完了")
+            st.success(f"✅ {file2.name}: 読み込み完了")
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
@@ -939,15 +951,19 @@ def show_ark_registration_kitakanto():
     st.markdown("**📊 出力**: 111列フル仕様（テンプレートヘッダー準拠、地域コード4:北関東、その他費用、1含む）")
     st.info("📂 必要ファイル: 案件取込用レポート + ContractList（2ファイル処理）")
     
-    uploaded_files = st.file_uploader("CSVファイル2つをアップロードしてください", type="csv", accept_multiple_files=True, key="ark_registration_kitakanto_files")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("**📄 ファイル1: 案件取込用レポート**")
+        file1 = st.file_uploader("案件取込用レポート.csvをアップロード", type="csv", key="ark_kitakanto_file1")
+    with col2:
+        st.markdown("**📄 ファイル2: ContractList**")
+        file2 = st.file_uploader("ContractList_*.csvをアップロード", type="csv", key="ark_kitakanto_file2")
     
-    if uploaded_files and len(uploaded_files) == 2:
+    if file1 and file2:
         try:
-            file_contents = []
-            for file in uploaded_files:
-                content = file.read()
-                file_contents.append(content)
-                st.success(f"{file.name}: ファイル読み込み完了")
+            file_contents = [file1.read(), file2.read()]
+            st.success(f"✅ {file1.name}: 読み込み完了")
+            st.success(f"✅ {file2.name}: 読み込み完了")
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
@@ -983,18 +999,22 @@ def show_capco_registration():
     st.header("📋 カプコ新規登録")
     st.markdown("**📋 フィルタ条件**: カプコデータと契約データの統合処理")
     st.markdown("**📊 出力**: 111列フル仕様（電話番号クリーニング機能付き、混入文字自動除去）")
-    st.info("📂 必要ファイル: カプコデータ + 契約データ（2ファイル処理）")
+    st.info("📂 必要ファイル: カプコデータ + ContractList（2ファイル処理）")
     
-    uploaded_files = st.file_uploader("CSVファイル2つをアップロードしてください", type="csv", accept_multiple_files=True, key="capco_registration_files")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("**📄 ファイル1: カプコデータ**")
+        file1 = st.file_uploader("カプコデータ.csvをアップロード", type="csv", key="capco_file1")
+    with col2:
+        st.markdown("**📄 ファイル2: ContractList**")
+        file2 = st.file_uploader("ContractList_*.csvをアップロード", type="csv", key="capco_file2")
     
-    if uploaded_files and len(uploaded_files) == 2:
+    if file1 and file2:
         try:
             # ファイル内容を読み取り
-            file_contents = []
-            for file in uploaded_files:
-                content = file.read()
-                file_contents.append(content)
-                st.success(f"{file.name}: ファイル読み込み完了")
+            file_contents = [file1.read(), file2.read()]
+            st.success(f"✅ {file1.name}: 読み込み完了")
+            st.success(f"✅ {file2.name}: 読み込み完了")
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
@@ -1034,17 +1054,23 @@ def show_ark_late_payment():
     st.header("💰 アーク残債更新")
     st.markdown("**📋 フィルタ条件**: アークデータと契約データの統合処理（管理番号マッチング）")
     st.markdown("**📊 出力**: 管理番号・管理前滞納額更新CSV（残債情報更新用）")
-    st.info("📂 必要ファイル: アークデータ + 契約データ（2ファイル処理）")
+    st.info("📂 必要ファイル: アークデータ + ContractList（2ファイル処理）")
     
-    uploaded_files = st.file_uploader("CSVファイル2つをアップロードしてください", type="csv", accept_multiple_files=True, key="ark_late_payment_files")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("**📄 ファイル1: アークデータ**")
+        file1 = st.file_uploader("アークデータ.csvをアップロード", type="csv", key="ark_late_file1")
+    with col2:
+        st.markdown("**📄 ファイル2: ContractList**")
+        file2 = st.file_uploader("ContractList_*.csvをアップロード", type="csv", key="ark_late_file2")
     
-    if uploaded_files and len(uploaded_files) == 2:
+    if file1 and file2:
         try:
-            dfs = []
-            for file in uploaded_files:
-                df = pd.read_csv(file, encoding='cp932')
-                dfs.append(df)
-                st.success(f"{file.name}: {df.shape[0]}行 × {df.shape[1]}列")
+            df1 = pd.read_csv(file1, encoding='cp932')
+            df2 = pd.read_csv(file2, encoding='cp932')
+            dfs = [df1, df2]
+            st.success(f"✅ {file1.name}: {df1.shape[0]}行 × {df1.shape[1]}列")
+            st.success(f"✅ {file2.name}: {df2.shape[0]}行 × {df2.shape[1]}列")
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):

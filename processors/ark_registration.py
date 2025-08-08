@@ -716,10 +716,11 @@ class DataConverter:
                 temp_columns.append(col)
                 temp_data[col] = [row.get(col, "") for row in output_data]
         
-        # DataFrameを一度に構築（パフォーマンス向上）
-        final_df = pd.DataFrame(temp_data, columns=temp_columns)
+        # DataFrameを一度に構築（空列対応で重複チェックを無効化）
+        final_df = pd.DataFrame(temp_data)
         
-        # 空列の仮名前を元の空文字列に戻す
+        # 列順を正しく設定し、空列の仮名前を元の空文字列に戻す
+        final_df = final_df.reindex(columns=temp_columns)
         final_df.columns = ArkConfig.OUTPUT_COLUMNS
         
         return final_df
