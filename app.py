@@ -60,6 +60,8 @@ from processors.plaza_autocall.contact.standard import process_plaza_contact_dat
 
 from processors.faith_sms.vacated_contract import process_faith_sms_vacated_contract_data
 from processors.ark_registration import process_ark_data
+from processors.ark_late_payment_update import process_ark_late_payment_data
+from processors.capco_registration import process_capco_data
 
 def main():
     st.set_page_config(
@@ -223,6 +225,13 @@ def main():
         st.markdown('<div class="sidebar-category">📋 新規登録用CSV加工</div>', unsafe_allow_html=True)
         if st.button("アーク新規登録", key="ark_registration", use_container_width=True):
             st.session_state.selected_processor = "ark_registration"
+        if st.button("カプコ新規登録", key="capco_registration", use_container_width=True):
+            st.session_state.selected_processor = "capco_registration"
+        
+        # 💰 残債の更新用CSV加工
+        st.markdown('<div class="sidebar-category">💰 残債の更新用CSV加工</div>', unsafe_allow_html=True)
+        if st.button("アーク残債更新", key="ark_late_payment", use_container_width=True):
+            st.session_state.selected_processor = "ark_late_payment"
     
     # メインコンテンツエリア
     if st.session_state.selected_processor is None:
@@ -289,6 +298,10 @@ def main():
         show_faith_sms_vacated()
     elif st.session_state.selected_processor == "ark_registration":
         show_ark_registration()
+    elif st.session_state.selected_processor == "capco_registration":
+        show_capco_registration()
+    elif st.session_state.selected_processor == "ark_late_payment":
+        show_ark_late_payment()
 
 # 以下、各処理画面の関数を実装
 
@@ -709,6 +722,91 @@ def show_ark_registration():
                     st.warning("条件に合致するデータがありませんでした。")
         except Exception as e:
             st.error(f"エラーが発生しました: {str(e)}")
+
+def show_capco_registration():
+    st.header("📋 カプコ新規登録")
+    st.markdown("**電話番号クリーニング機能付き**: 混入文字自動除去、111列フル仕様")
+    st.info("📂 必要ファイル: カプコデータ + 契約データ（2ファイル処理）")
+    
+    uploaded_files = st.file_uploader("CSVファイル2つをアップロードしてください", type="csv", accept_multiple_files=True, key="capco_registration_files")
+    
+    if uploaded_files and len(uploaded_files) == 2:
+        try:
+            # ファイル内容を読み取り
+            file_contents = []
+            for file in uploaded_files:
+                content = file.read()
+                file_contents.append(content)
+                st.success(f"{file.name}: ファイル読み込み完了")
+            
+            if st.button("処理を実行", type="primary"):
+                with st.spinner("処理中..."):
+                    result_df, validation_errors, stats = process_capco_data(file_contents[0], file_contents[1])
+                    
+                if not result_df.empty:
+                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
+                    
+                    # バリデーションエラーの表示
+                    if validation_errors:
+                        st.warning("⚠️ バリデーションエラー:")
+                        for error in validation_errors:
+                            st.write(f"• {error}")
+                    
+                    st.info(f"📊 統計情報: {stats}")
+                    
+                    # データプレビュー
+                    st.subheader("処理結果プレビュー")
+                    st.dataframe(result_df.head(10))
+                    
+                    # ダウンロード
+                    timestamp = datetime.now().strftime("%m%d")
+                    filename = f"{timestamp}カプコ_新規登録.csv"
+                    safe_csv_download(result_df, filename)
+                else:
+                    st.warning("条件に合致するデータがありませんでした。")
+        except Exception as e:
+            st.error(f"エラーが発生しました: {str(e)}")
+    elif uploaded_files:
+        st.warning("2つのCSVファイルをアップロードしてください。")
+
+def show_ark_late_payment():
+    st.header("💰 アーク残債更新")
+    st.markdown("**管理番号・管理前滞納額更新**: 2ファイル処理による残債情報更新")
+    st.info("📂 必要ファイル: アークデータ + 契約データ（2ファイル処理）")
+    
+    uploaded_files = st.file_uploader("CSVファイル2つをアップロードしてください", type="csv", accept_multiple_files=True, key="ark_late_payment_files")
+    
+    if uploaded_files and len(uploaded_files) == 2:
+        try:
+            dfs = []
+            for file in uploaded_files:
+                df = pd.read_csv(file, encoding='cp932')
+                dfs.append(df)
+                st.success(f"{file.name}: {df.shape[0]}行 × {df.shape[1]}列")
+            
+            if st.button("処理を実行", type="primary"):
+                with st.spinner("処理中..."):
+                    result = process_ark_late_payment_data(dfs[0], dfs[1])
+                    
+                if result is not None:
+                    result_df, stats = result
+                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
+                    st.info(f"📊 統計情報: {stats}")
+                    
+                    # データプレビュー
+                    st.subheader("処理結果プレビュー")
+                    st.dataframe(result_df.head(10))
+                    
+                    # ダウンロード
+                    timestamp = datetime.now().strftime("%m%d")
+                    filename = f"{timestamp}アーク_残債更新.csv"
+                    safe_csv_download(result_df, filename)
+                else:
+                    st.warning("条件に合致するデータがありませんでした。")
+        except Exception as e:
+            st.error(f"エラーが発生しました: {str(e)}")
+    elif uploaded_files:
+        st.warning("2つのCSVファイルをアップロードしてください。")
 
 if __name__ == "__main__":
     main()
