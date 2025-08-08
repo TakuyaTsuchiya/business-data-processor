@@ -23,14 +23,49 @@ import pandas as pd
 import io
 from datetime import datetime
 
+def safe_dataframe_display(df: pd.DataFrame):
+    """安全なDataFrame表示関数（空列重複エラー対応）"""
+    # DataFrameのコピーを作成して空列問題を回避
+    df_display = df.copy()
+    
+    # 空文字列のカラム名に一時的な名前を付ける
+    columns = list(df_display.columns)
+    empty_col_counter = 1
+    new_columns = []
+    for col in columns:
+        if col == "":
+            new_columns.append(f"空列{empty_col_counter}")
+            empty_col_counter += 1
+        else:
+            new_columns.append(col)
+    
+    # 一時的なカラム名を設定して表示
+    df_display.columns = new_columns
+    return st.dataframe(df_display)
+
 def safe_csv_download(df: pd.DataFrame, filename: str, label: str = "📥 CSVファイルをダウンロード"):
     """安全なCSVダウンロード関数（cp932エンコーディングエラー対応）"""
+    # DataFrameのコピーを作成して空列問題を回避
+    df_copy = df.copy()
+    
+    # 空文字列のカラム名に一時的な名前を付ける
+    columns = list(df_copy.columns)
+    empty_col_counter = 1
+    for i, col in enumerate(columns):
+        if col == "":
+            columns[i] = f"_empty_col_{empty_col_counter}_"
+            empty_col_counter += 1
+    
+    # 一時的なカラム名を設定
+    df_copy.columns = columns
+    
     try:
-        csv_data = df.to_csv(index=False, encoding='cp932', errors='replace')
+        # CSVとして出力する際に元のカラム名に戻す
+        csv_data = df_copy.to_csv(index=False, encoding='cp932', errors='replace', header=list(df.columns))
         csv_bytes = csv_data.encode('cp932', errors='replace')
     except UnicodeEncodeError:
         # cp932でエラーが出る場合はUTF-8で出力
-        csv_data = df.to_csv(index=False, encoding='utf-8-sig')
+        csv_data = df_copy.to_csv(index=False, encoding='utf-8-sig', header=list(df.columns))
         csv_bytes = csv_data.encode('utf-8-sig')
         st.warning("⚠️ 一部の文字がcp932に対応していないため、UTF-8で出力します")
     
@@ -343,7 +378,7 @@ def show_mirail_contract_without10k():
                     
                     # データプレビュー
                     st.subheader("処理結果プレビュー")
-                    st.dataframe(result_df.head(10))
+                    safe_dataframe_display(result_df.head(10))
                     
                     # ダウンロード
                     # filenameは関数から取得済み
@@ -379,7 +414,7 @@ def show_mirail_contract_with10k():
                     
                     # データプレビュー
                     st.subheader("処理結果プレビュー")
-                    st.dataframe(result_df.head(10))
+                    safe_dataframe_display(result_df.head(10))
                     
                     # ダウンロード
                     # filenameは関数から取得済み
@@ -414,7 +449,7 @@ def show_mirail_guarantor_without10k():
                                 st.write(f"• {log}")
                     
                     st.subheader("処理結果プレビュー")
-                    st.dataframe(result_df.head(10))
+                    safe_dataframe_display(result_df.head(10))
                     
                     # filenameは関数から取得済み
                     safe_csv_download(result_df, filename)
@@ -448,7 +483,7 @@ def show_mirail_guarantor_with10k():
                                 st.write(f"• {log}")
                     
                     st.subheader("処理結果プレビュー")
-                    st.dataframe(result_df.head(10))
+                    safe_dataframe_display(result_df.head(10))
                     
                     # filenameは関数から取得済み
                     safe_csv_download(result_df, filename)
@@ -482,7 +517,7 @@ def show_mirail_emergency_without10k():
                                 st.write(f"• {log}")
                     
                     st.subheader("処理結果プレビュー")
-                    st.dataframe(result_df.head(10))
+                    safe_dataframe_display(result_df.head(10))
                     
                     # filenameは関数から取得済み
                     safe_csv_download(result_df, filename)
@@ -516,7 +551,7 @@ def show_mirail_emergency_with10k():
                                 st.write(f"• {log}")
                     
                     st.subheader("処理結果プレビュー")
-                    st.dataframe(result_df.head(10))
+                    safe_dataframe_display(result_df.head(10))
                     
                     # filenameは関数から取得済み
                     safe_csv_download(result_df, filename)
@@ -550,7 +585,7 @@ def show_faith_contract():
                                 st.write(f"• {log}")
                     
                     st.subheader("処理結果プレビュー")
-                    st.dataframe(result_df.head(10))
+                    safe_dataframe_display(result_df.head(10))
                     
                     timestamp = datetime.now().strftime("%m%d")
                     filename = f"{timestamp}フェイス_契約者.csv"
@@ -585,7 +620,7 @@ def show_faith_guarantor():
                                 st.write(f"• {log}")
                     
                     st.subheader("処理結果プレビュー")
-                    st.dataframe(result_df.head(10))
+                    safe_dataframe_display(result_df.head(10))
                     
                     timestamp = datetime.now().strftime("%m%d")
                     filename = f"{timestamp}フェイス_保証人.csv"
@@ -620,7 +655,7 @@ def show_faith_emergency():
                                 st.write(f"• {log}")
                     
                     st.subheader("処理結果プレビュー")
-                    st.dataframe(result_df.head(10))
+                    safe_dataframe_display(result_df.head(10))
                     
                     timestamp = datetime.now().strftime("%m%d")
                     filename = f"{timestamp}フェイス_緊急連絡人.csv"
@@ -662,7 +697,7 @@ def show_plaza_main():
                             st.write(f"• {log}")
                     
                     st.subheader("処理結果プレビュー")
-                    st.dataframe(result_df.head(10))
+                    safe_dataframe_display(result_df.head(10))
                     
                     timestamp = datetime.now().strftime("%m%d")
                     filename = f"{timestamp}プラザ_契約者.csv"
@@ -704,7 +739,7 @@ def show_plaza_guarantor():
                             st.write(f"• {log}")
                     
                     st.subheader("処理結果プレビュー")
-                    st.dataframe(result_df.head(10))
+                    safe_dataframe_display(result_df.head(10))
                     
                     timestamp = datetime.now().strftime("%m%d")
                     filename = f"{timestamp}プラザ_保証人.csv"
@@ -746,7 +781,7 @@ def show_plaza_contact():
                             st.write(f"• {log}")
                     
                     st.subheader("処理結果プレビュー")
-                    st.dataframe(result_df.head(10))
+                    safe_dataframe_display(result_df.head(10))
                     
                     timestamp = datetime.now().strftime("%m%d")
                     filename = f"{timestamp}プラザ_緊急連絡人.csv"
@@ -781,7 +816,7 @@ def show_faith_sms_vacated():
                                 st.write(f"• {log}")
                     
                     st.subheader("処理結果プレビュー")
-                    st.dataframe(result_df.head(10))
+                    safe_dataframe_display(result_df.head(10))
                     
                     timestamp = datetime.now().strftime("%m%d")
                     filename = f"{timestamp}フェイス_SMS_退去済み.csv"
@@ -832,7 +867,7 @@ def show_ark_registration_tokyo():
                     
                     # データプレビュー
                     st.subheader("処理結果プレビュー")
-                    st.dataframe(result_df.head(10))
+                    safe_dataframe_display(result_df.head(10))
                     
                     # ダウンロード
                     timestamp = datetime.now().strftime("%m%d")
@@ -883,7 +918,7 @@ def show_ark_registration_osaka():
                             st.write(f"• {log}")
                     
                     st.subheader("処理結果プレビュー")
-                    st.dataframe(result_df.head(10))
+                    safe_dataframe_display(result_df.head(10))
                     
                     timestamp = datetime.now().strftime("%m%d")
                     filename = f"{timestamp}アーク_新規登録_大阪.csv"
@@ -933,7 +968,7 @@ def show_ark_registration_hokkaido():
                             st.write(f"• {log}")
                     
                     st.subheader("処理結果プレビュー")
-                    st.dataframe(result_df.head(10))
+                    safe_dataframe_display(result_df.head(10))
                     
                     timestamp = datetime.now().strftime("%m%d")
                     filename = f"{timestamp}アーク_新規登録_北海道.csv"
@@ -983,7 +1018,7 @@ def show_ark_registration_kitakanto():
                             st.write(f"• {log}")
                     
                     st.subheader("処理結果プレビュー")
-                    st.dataframe(result_df.head(10))
+                    safe_dataframe_display(result_df.head(10))
                     
                     timestamp = datetime.now().strftime("%m%d")
                     filename = f"{timestamp}アーク_新規登録_北関東.csv"
@@ -1035,7 +1070,7 @@ def show_capco_registration():
                     
                     # データプレビュー
                     st.subheader("処理結果プレビュー")
-                    st.dataframe(result_df.head(10))
+                    safe_dataframe_display(result_df.head(10))
                     
                     # ダウンロード
                     timestamp = datetime.now().strftime("%m%d")
@@ -1085,7 +1120,7 @@ def show_ark_late_payment():
                     
                     # データプレビュー
                     st.subheader("処理結果プレビュー")
-                    st.dataframe(result_df.head(10))
+                    safe_dataframe_display(result_df.head(10))
                     
                     # ダウンロード
                     timestamp = datetime.now().strftime("%m%d")
