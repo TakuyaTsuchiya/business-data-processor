@@ -223,8 +223,14 @@ def main():
         
         # 📋 新規登録用CSV加工
         st.markdown('<div class="sidebar-category">📋 新規登録用CSV加工</div>', unsafe_allow_html=True)
-        if st.button("アーク新規登録", key="ark_registration", use_container_width=True):
-            st.session_state.selected_processor = "ark_registration"
+        if st.button("アーク新規登録（東京）", key="ark_registration_tokyo", use_container_width=True):
+            st.session_state.selected_processor = "ark_registration_tokyo"
+        if st.button("アーク新規登録（大阪）", key="ark_registration_osaka", use_container_width=True):
+            st.session_state.selected_processor = "ark_registration_osaka"
+        if st.button("アーク新規登録（北海道）", key="ark_registration_hokkaido", use_container_width=True):
+            st.session_state.selected_processor = "ark_registration_hokkaido"
+        if st.button("アーク新規登録（北関東）", key="ark_registration_kitakanto", use_container_width=True):
+            st.session_state.selected_processor = "ark_registration_kitakanto"
         if st.button("カプコ新規登録", key="capco_registration", use_container_width=True):
             st.session_state.selected_processor = "capco_registration"
         
@@ -296,8 +302,14 @@ def main():
         show_plaza_contact()
     elif st.session_state.selected_processor == "faith_sms_vacated":
         show_faith_sms_vacated()
-    elif st.session_state.selected_processor == "ark_registration":
-        show_ark_registration()
+    elif st.session_state.selected_processor == "ark_registration_tokyo":
+        show_ark_registration_tokyo()
+    elif st.session_state.selected_processor == "ark_registration_osaka":
+        show_ark_registration_osaka()
+    elif st.session_state.selected_processor == "ark_registration_hokkaido":
+        show_ark_registration_hokkaido()
+    elif st.session_state.selected_processor == "ark_registration_kitakanto":
+        show_ark_registration_kitakanto()
     elif st.session_state.selected_processor == "capco_registration":
         show_capco_registration()
     elif st.session_state.selected_processor == "ark_late_payment":
@@ -691,24 +703,35 @@ def show_faith_sms_vacated():
         except Exception as e:
             st.error(f"エラーが発生しました: {str(e)}")
 
-def show_ark_registration():
-    st.header("📋 アーク新規登録")
-    st.markdown("**111列フル仕様**: 完全なテンプレートヘッダー準拠")
+def show_ark_registration_tokyo():
+    st.header("📋 アーク新規登録（東京）")
+    st.markdown("**111列フル仕様**: 完全なテンプレートヘッダー準拠、地域コード: 1（東京）")
+    st.info("📂 必要ファイル: 案件取込用レポート + ContractList（2ファイル処理）")
     
-    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="ark_registration_file")
+    uploaded_files = st.file_uploader("CSVファイル2つをアップロードしてください", type="csv", accept_multiple_files=True, key="ark_registration_tokyo_files")
     
-    if uploaded_file is not None:
+    if uploaded_files and len(uploaded_files) == 2:
         try:
-            df = pd.read_csv(uploaded_file, encoding='cp932')
-            st.success(f"ファイルを読み込みました: {df.shape[0]}行 × {df.shape[1]}列")
+            # ファイル内容を読み取り
+            file_contents = []
+            for file in uploaded_files:
+                content = file.read()
+                file_contents.append(content)
+                st.success(f"{file.name}: ファイル読み込み完了")
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, stats = process_ark_data(df)
+                    result_df, logs, stats = process_ark_data(file_contents[0], file_contents[1], region_code=1)
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
                     st.info(f"📊 統計情報: {stats}")
+                    
+                    # ログ表示
+                    if logs:
+                        st.info("処理ログ:")
+                        for log in logs:
+                            st.write(f"• {log}")
                     
                     # データプレビュー
                     st.subheader("処理結果プレビュー")
@@ -716,12 +739,137 @@ def show_ark_registration():
                     
                     # ダウンロード
                     timestamp = datetime.now().strftime("%m%d")
-                    filename = f"{timestamp}アーク_新規登録.csv"
+                    filename = f"{timestamp}アーク_新規登録_東京.csv"
                     safe_csv_download(result_df, filename)
                 else:
                     st.warning("条件に合致するデータがありませんでした。")
         except Exception as e:
             st.error(f"エラーが発生しました: {str(e)}")
+    elif uploaded_files:
+        st.warning("2つのCSVファイルをアップロードしてください。")
+
+def show_ark_registration_osaka():
+    st.header("📋 アーク新規登録（大阪）")
+    st.markdown("**111列フル仕様**: 完全なテンプレートヘッダー準拠、地域コード: 2（大阪）")
+    st.info("📂 必要ファイル: 案件取込用レポート + ContractList（2ファイル処理）")
+    
+    uploaded_files = st.file_uploader("CSVファイル2つをアップロードしてください", type="csv", accept_multiple_files=True, key="ark_registration_osaka_files")
+    
+    if uploaded_files and len(uploaded_files) == 2:
+        try:
+            file_contents = []
+            for file in uploaded_files:
+                content = file.read()
+                file_contents.append(content)
+                st.success(f"{file.name}: ファイル読み込み完了")
+            
+            if st.button("処理を実行", type="primary"):
+                with st.spinner("処理中..."):
+                    result_df, logs, stats = process_ark_data(file_contents[0], file_contents[1], region_code=2)
+                    
+                if not result_df.empty:
+                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
+                    st.info(f"📊 統計情報: {stats}")
+                    
+                    if logs:
+                        st.info("処理ログ:")
+                        for log in logs:
+                            st.write(f"• {log}")
+                    
+                    st.subheader("処理結果プレビュー")
+                    st.dataframe(result_df.head(10))
+                    
+                    timestamp = datetime.now().strftime("%m%d")
+                    filename = f"{timestamp}アーク_新規登録_大阪.csv"
+                    safe_csv_download(result_df, filename)
+                else:
+                    st.warning("条件に合致するデータがありませんでした。")
+        except Exception as e:
+            st.error(f"エラーが発生しました: {str(e)}")
+    elif uploaded_files:
+        st.warning("2つのCSVファイルをアップロードしてください。")
+
+def show_ark_registration_hokkaido():
+    st.header("📋 アーク新規登録（北海道）")
+    st.markdown("**111列フル仕様**: 完全なテンプレートヘッダー準拠、地域コード: 3（北海道）")
+    st.info("📂 必要ファイル: 案件取込用レポート + ContractList（2ファイル処理）")
+    
+    uploaded_files = st.file_uploader("CSVファイル2つをアップロードしてください", type="csv", accept_multiple_files=True, key="ark_registration_hokkaido_files")
+    
+    if uploaded_files and len(uploaded_files) == 2:
+        try:
+            file_contents = []
+            for file in uploaded_files:
+                content = file.read()
+                file_contents.append(content)
+                st.success(f"{file.name}: ファイル読み込み完了")
+            
+            if st.button("処理を実行", type="primary"):
+                with st.spinner("処理中..."):
+                    result_df, logs, stats = process_ark_data(file_contents[0], file_contents[1], region_code=3)
+                    
+                if not result_df.empty:
+                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
+                    st.info(f"📊 統計情報: {stats}")
+                    
+                    if logs:
+                        st.info("処理ログ:")
+                        for log in logs:
+                            st.write(f"• {log}")
+                    
+                    st.subheader("処理結果プレビュー")
+                    st.dataframe(result_df.head(10))
+                    
+                    timestamp = datetime.now().strftime("%m%d")
+                    filename = f"{timestamp}アーク_新規登録_北海道.csv"
+                    safe_csv_download(result_df, filename)
+                else:
+                    st.warning("条件に合致するデータがありませんでした。")
+        except Exception as e:
+            st.error(f"エラーが発生しました: {str(e)}")
+    elif uploaded_files:
+        st.warning("2つのCSVファイルをアップロードしてください。")
+
+def show_ark_registration_kitakanto():
+    st.header("📋 アーク新規登録（北関東）")
+    st.markdown("**111列フル仕様**: 完全なテンプレートヘッダー準拠、地域コード: 4（北関東）")
+    st.info("📂 必要ファイル: 案件取込用レポート + ContractList（2ファイル処理）")
+    
+    uploaded_files = st.file_uploader("CSVファイル2つをアップロードしてください", type="csv", accept_multiple_files=True, key="ark_registration_kitakanto_files")
+    
+    if uploaded_files and len(uploaded_files) == 2:
+        try:
+            file_contents = []
+            for file in uploaded_files:
+                content = file.read()
+                file_contents.append(content)
+                st.success(f"{file.name}: ファイル読み込み完了")
+            
+            if st.button("処理を実行", type="primary"):
+                with st.spinner("処理中..."):
+                    result_df, logs, stats = process_ark_data(file_contents[0], file_contents[1], region_code=4)
+                    
+                if not result_df.empty:
+                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
+                    st.info(f"📊 統計情報: {stats}")
+                    
+                    if logs:
+                        st.info("処理ログ:")
+                        for log in logs:
+                            st.write(f"• {log}")
+                    
+                    st.subheader("処理結果プレビュー")
+                    st.dataframe(result_df.head(10))
+                    
+                    timestamp = datetime.now().strftime("%m%d")
+                    filename = f"{timestamp}アーク_新規登録_北関東.csv"
+                    safe_csv_download(result_df, filename)
+                else:
+                    st.warning("条件に合致するデータがありませんでした。")
+        except Exception as e:
+            st.error(f"エラーが発生しました: {str(e)}")
+    elif uploaded_files:
+        st.warning("2つのCSVファイルをアップロードしてください。")
 
 def show_capco_registration():
     st.header("📋 カプコ新規登録")
