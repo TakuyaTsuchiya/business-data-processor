@@ -385,7 +385,7 @@ def show_mirail_contract_with10k():
 
 def show_mirail_guarantor_without10k():
     st.header("👥 ミライル保証人（10,000円を除外するパターン）")
-    st.markdown("**📋 フィルタ条件**: 委託先法人ID(空白&5), 入金予定日(前日以前), 回収ランク(弁護士介入除外), 滞納残債除外(CD=1,4かつ滞納残債10,000円・11,000円除外), 入金予定金額(2,3,5除外), TEL携帯.1必須")
+    st.markdown("**📋 フィルタ条件**: 委託先法人ID(空白&5), 入金予定日(前日以前), 回収ランク(弁護士介入除外), 滞納残債除外(CD=1,4かつ滞納残債10,000円・11,000円除外), 入金予定金額(2,3,5,12除外), TEL携帯.1必須")
     st.markdown("**📊 出力**: 28列統一フォーマット（残債列に滞納残債を格納、保証人電話番号使用）")
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_guarantor_without10k_file")
@@ -416,7 +416,7 @@ def show_mirail_guarantor_without10k():
 
 def show_mirail_guarantor_with10k():
     st.header("👥 ミライル保証人（10,000円を除外しないパターン）")
-    st.markdown("**📋 フィルタ条件**: 委託先法人ID(空白&5), 入金予定日(前日以前), 回収ランク(弁護士介入除外), 滞納残債フィルタなし(全件処理), 入金予定金額(2,3,5除外), TEL携帯.1必須")
+    st.markdown("**📋 フィルタ条件**: 委託先法人ID(空白&5), 入金予定日(前日以前), 回収ランク(弁護士介入除外), 滞納残債フィルタなし(全件処理), 入金予定金額(2,3,5,12除外), TEL携帯.1必須")
     st.markdown("**📊 出力**: 28列統一フォーマット（残債列に滞納残債を格納、保証人電話番号使用）")
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_guarantor_with10k_file")
@@ -447,7 +447,7 @@ def show_mirail_guarantor_with10k():
 
 def show_mirail_emergency_without10k():
     st.header("🆘 ミライル緊急連絡人（10,000円を除外するパターン）")
-    st.markdown("**📋 フィルタ条件**: 委託先法人ID(空白&5), 入金予定日(前日以前), 回収ランク(弁護士介入除外), 滞納残債除外(CD=1,4かつ滞納残債10,000円・11,000円除外), 入金予定金額(2,3,5除外), TEL携帯.2必須")
+    st.markdown("**📋 フィルタ条件**: 委託先法人ID(空白&5), 入金予定日(前日以前), 回収ランク(弁護士介入除外), 滞納残債除外(CD=1,4かつ滞納残債10,000円・11,000円除外), 入金予定金額(2,3,5,12除外), TEL携帯.2必須")
     st.markdown("**📊 出力**: 28列統一フォーマット（残債列に滞納残債を格納、緊急連絡人電話番号使用）")
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_emergency_without10k_file")
@@ -478,7 +478,7 @@ def show_mirail_emergency_without10k():
 
 def show_mirail_emergency_with10k():
     st.header("🆘 ミライル緊急連絡人（10,000円を除外しないパターン）")
-    st.markdown("**📋 フィルタ条件**: 委託先法人ID(空白&5), 入金予定日(前日以前), 回収ランク(弁護士介入除外), 滞納残債フィルタなし(全件処理), 入金予定金額(2,3,5除外), TEL携帯.2必須")
+    st.markdown("**📋 フィルタ条件**: 委託先法人ID(空白&5), 入金予定日(前日以前), 回収ランク(弁護士介入除外), 滞納残債フィルタなし(全件処理), 入金予定金額(2,3,5,12除外), TEL携帯.2必須")
     st.markdown("**📊 出力**: 28列統一フォーマット（残債列に滞納残債を格納、緊急連絡人電話番号使用）")
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_emergency_with10k_file")
@@ -509,7 +509,7 @@ def show_mirail_emergency_with10k():
 
 def show_faith_contract():
     st.header("📱 フェイス契約者用オートコール")
-    st.markdown("**📋 フィルタ条件**: 委託先法人ID(1-4), 入金予定日(前日以前とNaN), 回収ランク(弁護士介入除外), 入金予定金額(2,3,5除外), 滞納残債フィルタなし(全件処理), TEL携帯必須")
+    st.markdown("**📋 フィルタ条件**: 委託先法人ID(1-4), 入金予定日(前日以前とNaN), 回収ランク(弁護士介入除外), 入金予定金額(2,3,5,12除外), 滞納残債フィルタなし(全件処理), TEL携帯必須")
     st.markdown("**📊 出力**: 28列統一フォーマット（残債列に滞納残債を格納）")
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="faith_contract_file")
@@ -540,7 +540,7 @@ def show_faith_contract():
 
 def show_faith_guarantor():
     st.header("👥 フェイス保証人用オートコール")
-    st.markdown("**📋 フィルタ条件**: 委託先法人ID(1-4), 入金予定日(前日以前とNaN), 回収ランク(弁護士介入除外), 入金予定金額(2,3,5除外), 滞納残債フィルタなし(全件処理), TEL携帯.1必須")
+    st.markdown("**📋 フィルタ条件**: 委託先法人ID(1-4), 入金予定日(前日以前とNaN), 回収ランク(弁護士介入除外), 入金予定金額(2,3,5,12除外), 滞納残債フィルタなし(全件処理), TEL携帯.1必須")
     st.markdown("**📊 出力**: 28列統一フォーマット（残債列に滞納残債を格納、保証人電話番号使用）")
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="faith_guarantor_file")
@@ -571,7 +571,7 @@ def show_faith_guarantor():
 
 def show_faith_emergency():
     st.header("🆘 フェイス緊急連絡人用オートコール")
-    st.markdown("**📋 フィルタ条件**: 委託先法人ID(1-4), 入金予定日(前日以前とNaN), 回収ランク(弁護士介入除外), 入金予定金額(2,3,5除外), 滞納残債フィルタなし(全件処理), TEL携帯.2必須")
+    st.markdown("**📋 フィルタ条件**: 委託先法人ID(1-4), 入金予定日(前日以前とNaN), 回収ランク(弁護士介入除外), 入金予定金額(2,3,5,12除外), 滞納残債フィルタなし(全件処理), TEL携帯.2必須")
     st.markdown("**📊 出力**: 28列統一フォーマット（残債列に滞納残債を格納、緊急連絡人電話番号使用）")
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="faith_emergency_file")
