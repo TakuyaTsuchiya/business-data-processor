@@ -225,8 +225,14 @@ def main():
     
     # 新規登録カテゴリ
     st.sidebar.markdown("### 📋 新規登録用CSV加工")
-    if st.sidebar.button("アーク新規登録", key="ark_registration", use_container_width=True):
-        st.session_state.selected_processor = "📋 アーク新規登録"
+    if st.sidebar.button("アーク新規登録1（東京）", key="ark_registration_tokyo", use_container_width=True):
+        st.session_state.selected_processor = "📋 アーク新規登録1（東京）"
+    if st.sidebar.button("アーク新規登録2（大阪）", key="ark_registration_osaka", use_container_width=True):
+        st.session_state.selected_processor = "📋 アーク新規登録2（大阪）"
+    if st.sidebar.button("アーク新規登録3（北海道）", key="ark_registration_hokkaido", use_container_width=True):
+        st.session_state.selected_processor = "📋 アーク新規登録3（北海道）"
+    if st.sidebar.button("アーク新規登録4（北関東）", key="ark_registration_kitakanto", use_container_width=True):
+        st.session_state.selected_processor = "📋 アーク新規登録4（北関東）"
     if st.sidebar.button("カプコ新規登録", key="capco_registration", use_container_width=True):
         st.session_state.selected_processor = "📋 カプコ新規登録"
     
@@ -273,8 +279,14 @@ def main():
         show_plaza_contact_processor()
     elif processor_type == "📱 フェイス_契約者_退去済みSMS用":
         show_faith_sms_vacated_contract_processor()
-    elif processor_type == "📋 アーク新規登録":
-        show_ark_processor()
+    elif processor_type == "📋 アーク新規登録1（東京）":
+        show_ark_processor_tokyo()
+    elif processor_type == "📋 アーク新規登録2（大阪）":
+        show_ark_processor_osaka()
+    elif processor_type == "📋 アーク新規登録3（北海道）":
+        show_ark_processor_hokkaido()
+    elif processor_type == "📋 アーク新規登録4（北関東）":
+        show_ark_processor_kitakanto()
     elif processor_type == "📋 カプコ新規登録":
         show_capco_processor()
     elif processor_type == "アーク残債更新":
@@ -317,7 +329,10 @@ def show_welcome_screen():
         st.markdown("""
         ### 新規登録
         **対応システム:**
-        - アーク新規登録
+        - アーク新規登録1（東京）
+        - アーク新規登録2（大阪）
+        - アーク新規登録3（北海道）
+        - アーク新規登録4（北関東）
         - カプコ新規登録
         
         **機能:**
@@ -1139,10 +1154,10 @@ def show_faith_emergencycontact_processor():
                     with st.expander("エラー詳細"):
                         st.exception(e)
 
-def show_ark_processor():
-    """アーク新規登録処理画面"""
-    st.markdown("## アーク新規登録")
-    st.markdown("案件取込用レポートとContractListを統合し、アーク新規登録用のCSVを生成します")
+def show_ark_processor_tokyo():
+    """アーク新規登録1（東京）処理画面"""
+    st.markdown("## アーク新規登録1（東京）")
+    st.markdown("【東京支店】案件取込用レポートとContractListを統合し、アーク新規登録用のCSVを生成します")
     
     col1, col2 = st.columns(2)
     
@@ -1180,8 +1195,8 @@ def show_ark_processor():
                     report_content = report_file.getvalue()
                     contract_content = contract_file.getvalue()
                     
-                    # データ処理実行
-                    df_output, logs, output_filename = process_ark_data(report_content, contract_content)
+                    # データ処理実行（東京: region_code=1）
+                    df_output, logs, output_filename = process_ark_data(report_content, contract_content, 1)
                     
                     # 処理結果表示
                     st.success("✅ 処理が完了しました！")
@@ -1573,6 +1588,246 @@ def show_faith_sms_vacated_contract_processor():
                         file_name=output_filename,
                         mime="text/csv"
                     )
+                    
+                except Exception as e:
+                    st.error(f"❌ エラーが発生しました: {str(e)}")
+                    st.info("💡 ファイル形式やエンコーディングを確認してください")
+
+
+def show_ark_processor_osaka():
+    """アーク新規登録2（大阪）処理画面"""
+    st.markdown("## アーク新規登録2（大阪）")
+    st.markdown("【大阪支店】案件取込用レポートとContractListを統合し、アーク新規登録用のCSVを生成します")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("### 案件取込用レポート")
+        report_file = st.file_uploader(
+            "【大阪支店】①案件取込用レポート*.csv",
+            type=['csv'],
+            key="ark_report_osaka"
+        )
+        if report_file:
+            st.info(f"ファイルサイズ: {len(report_file.getvalue()):,} bytes")
+    
+    with col2:
+        st.markdown("### ContractList")
+        contract_file = st.file_uploader(
+            "ContractList_*.csv",
+            type=['csv'],
+            key="ark_contract_osaka"
+        )
+        if contract_file:
+            st.info(f"ファイルサイズ: {len(contract_file.getvalue()):,} bytes")
+    
+    if report_file is not None and contract_file is not None:
+        st.success("両方のファイルアップロード完了")
+        
+        # 処理ボタン
+        if st.button("処理開始", key="ark_process_osaka", type="primary"):
+            with st.spinner("データを統合・変換中..."):
+                try:
+                    # アークプロセッサーをインポート
+                    from processors.ark_registration import process_ark_data
+                    
+                    # ファイル内容を取得
+                    report_content = report_file.getvalue()
+                    contract_content = contract_file.getvalue()
+                    
+                    # データ処理実行（大阪: region_code=2）
+                    df_output, logs, output_filename = process_ark_data(report_content, contract_content, 2)
+                    
+                    # 処理結果表示
+                    st.success("✅ 処理が完了しました！")
+                    
+                    # 処理ログ表示
+                    with st.expander("📊 処理ログ"):
+                        for log in logs:
+                            st.text(log)
+                    
+                    # 結果統計
+                    if len(df_output) > 0:
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            st.metric("出力件数", len(df_output))
+                        with col2:
+                            phone_count = sum([
+                                df_output["契約者TEL自宅"].notna().sum(),
+                                df_output["契約者TEL携帯"].notna().sum()
+                            ])
+                            st.metric("電話番号あり", phone_count)
+                        with col3:
+                            if "登録フラグ" in df_output.columns:
+                                reg_count = (df_output["登録フラグ"] == "1").sum()
+                                st.metric("登録対象件数", reg_count)
+                    
+                    # プレビュー
+                    with st.expander("📄 データプレビュー"):
+                        st.dataframe(df_output.head(100))
+                    
+                    # ダウンロード
+                    safe_csv_download(df_output, output_filename)
+                    
+                except Exception as e:
+                    st.error(f"❌ エラーが発生しました: {str(e)}")
+                    st.info("💡 ファイル形式やエンコーディングを確認してください")
+
+
+def show_ark_processor_hokkaido():
+    """アーク新規登録3（北海道）処理画面"""
+    st.markdown("## アーク新規登録3（北海道）")
+    st.markdown("【北海道支店】案件取込用レポートとContractListを統合し、アーク新規登録用のCSVを生成します")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("### 案件取込用レポート")
+        report_file = st.file_uploader(
+            "【北海道支店】①案件取込用レポート*.csv",
+            type=['csv'],
+            key="ark_report_hokkaido"
+        )
+        if report_file:
+            st.info(f"ファイルサイズ: {len(report_file.getvalue()):,} bytes")
+    
+    with col2:
+        st.markdown("### ContractList")
+        contract_file = st.file_uploader(
+            "ContractList_*.csv",
+            type=['csv'],
+            key="ark_contract_hokkaido"
+        )
+        if contract_file:
+            st.info(f"ファイルサイズ: {len(contract_file.getvalue()):,} bytes")
+    
+    if report_file is not None and contract_file is not None:
+        st.success("両方のファイルアップロード完了")
+        
+        # 処理ボタン
+        if st.button("処理開始", key="ark_process_hokkaido", type="primary"):
+            with st.spinner("データを統合・変換中..."):
+                try:
+                    # アークプロセッサーをインポート
+                    from processors.ark_registration import process_ark_data
+                    
+                    # ファイル内容を取得
+                    report_content = report_file.getvalue()
+                    contract_content = contract_file.getvalue()
+                    
+                    # データ処理実行（北海道: region_code=3）
+                    df_output, logs, output_filename = process_ark_data(report_content, contract_content, 3)
+                    
+                    # 処理結果表示
+                    st.success("✅ 処理が完了しました！")
+                    
+                    # 処理ログ表示
+                    with st.expander("📊 処理ログ"):
+                        for log in logs:
+                            st.text(log)
+                    
+                    # 結果統計
+                    if len(df_output) > 0:
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            st.metric("出力件数", len(df_output))
+                        with col2:
+                            phone_count = sum([
+                                df_output["契約者TEL自宅"].notna().sum(),
+                                df_output["契約者TEL携帯"].notna().sum()
+                            ])
+                            st.metric("電話番号あり", phone_count)
+                        with col3:
+                            if "登録フラグ" in df_output.columns:
+                                reg_count = (df_output["登録フラグ"] == "1").sum()
+                                st.metric("登録対象件数", reg_count)
+                    
+                    # プレビュー
+                    with st.expander("📄 データプレビュー"):
+                        st.dataframe(df_output.head(100))
+                    
+                    # ダウンロード
+                    safe_csv_download(df_output, output_filename)
+                    
+                except Exception as e:
+                    st.error(f"❌ エラーが発生しました: {str(e)}")
+                    st.info("💡 ファイル形式やエンコーディングを確認してください")
+
+
+def show_ark_processor_kitakanto():
+    """アーク新規登録4（北関東）処理画面"""
+    st.markdown("## アーク新規登録4（北関東）")
+    st.markdown("【北関東支店】案件取込用レポートとContractListを統合し、アーク新規登録用のCSVを生成します")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("### 案件取込用レポート")
+        report_file = st.file_uploader(
+            "【北関東支店】①案件取込用レポート*.csv",
+            type=['csv'],
+            key="ark_report_kitakanto"
+        )
+        if report_file:
+            st.info(f"ファイルサイズ: {len(report_file.getvalue()):,} bytes")
+    
+    with col2:
+        st.markdown("### ContractList")
+        contract_file = st.file_uploader(
+            "ContractList_*.csv",
+            type=['csv'],
+            key="ark_contract_kitakanto"
+        )
+        if contract_file:
+            st.info(f"ファイルサイズ: {len(contract_file.getvalue()):,} bytes")
+    
+    if report_file is not None and contract_file is not None:
+        st.success("両方のファイルアップロード完了")
+        
+        # 処理ボタン
+        if st.button("処理開始", key="ark_process_kitakanto", type="primary"):
+            with st.spinner("データを統合・変換中..."):
+                try:
+                    # アークプロセッサーをインポート
+                    from processors.ark_registration import process_ark_data
+                    
+                    # ファイル内容を取得
+                    report_content = report_file.getvalue()
+                    contract_content = contract_file.getvalue()
+                    
+                    # データ処理実行（北関東: region_code=4）
+                    df_output, logs, output_filename = process_ark_data(report_content, contract_content, 4)
+                    
+                    # 処理結果表示
+                    st.success("✅ 処理が完了しました！")
+                    
+                    # 処理ログ表示
+                    with st.expander("📊 処理ログ"):
+                        for log in logs:
+                            st.text(log)
+                    
+                    # 結果統計
+                    if len(df_output) > 0:
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            st.metric("出力件数", len(df_output))
+                        with col2:
+                            phone_count = sum([
+                                df_output["契約者TEL自宅"].notna().sum(),
+                                df_output["契約者TEL携帯"].notna().sum()
+                            ])
+                            st.metric("電話番号あり", phone_count)
+                        with col3:
+                            if "登録フラグ" in df_output.columns:
+                                reg_count = (df_output["登録フラグ"] == "1").sum()
+                                st.metric("登録対象件数", reg_count)
+                    
+                    # プレビュー
+                    with st.expander("📄 データプレビュー"):
+                        st.dataframe(df_output.head(100))
+                    
+                    # ダウンロード
+                    safe_csv_download(df_output, output_filename)
                     
                 except Exception as e:
                     st.error(f"❌ エラーが発生しました: {str(e)}")
