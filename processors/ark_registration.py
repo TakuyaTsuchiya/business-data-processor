@@ -474,11 +474,14 @@ class DataConverter:
         
         return {"home": home, "mobile": mobile}
     
-    def calculate_exit_procedure_fee(self, rent: str, management_fee: str, parking_fee: str) -> int:
-        """退去手続き費用計算（最低70,000円）"""
+    def calculate_exit_procedure_fee(self, rent: str, management_fee: str, parking_fee: str, other_fee: str) -> int:
+        """退去手続き費用計算（最低70,000円）
+        
+        計算対象: 月額賃料 + 管理費 + 駐車場代 + その他料金
+        """
         try:
             total = 0
-            for fee in [rent, management_fee, parking_fee]:
+            for fee in [rent, management_fee, parking_fee, other_fee]:
                 if pd.notna(fee) and str(fee).strip():
                     # カンマを除去して数値変換
                     clean_fee = str(fee).replace(',', '').replace('￥', '').strip()
@@ -628,8 +631,9 @@ class DataConverter:
             converted_row["敷金"] = self.safe_str_convert(row.get("敷金", "0"))
             converted_row["礼金"] = self.safe_str_convert(row.get("礼金", "0"))
             
-            # 7. 退去手続き費用計算
-            exit_fee = self.calculate_exit_procedure_fee(rent, management_fee, parking_fee)
+            # 7. 退去手続き費用計算（その他料金を含む）
+            other_fee = self.safe_str_convert(row.get("その他料金", "0"))
+            exit_fee = self.calculate_exit_procedure_fee(rent, management_fee, parking_fee, other_fee)
             converted_row["退去手続き（実費）"] = str(exit_fee)
             
             # 8. その他情報
