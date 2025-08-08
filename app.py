@@ -1268,42 +1268,29 @@ def show_ark_processor_tokyo():
 def show_plaza_main_processor():
     """プラザ契約者処理画面"""
     st.markdown("## 🏪 プラザ契約者オートコール")
-    st.markdown("ContractListとExcel報告書を組み合わせて、プラザ契約者のオートコール用CSVを生成します")
+    st.markdown("ミライルwith10kベースの処理でプラザ契約者のオートコール用CSVを生成します")
     
     # 処理条件の表示
     st.markdown("**フィルタリング条件**")
     st.markdown("""
-    - **2ファイル処理**: ContractList + Excel報告書の結合処理
-    - **延滞額フィルター**: 0円、2円、3円、5円を除外
-    - **TEL無効除外**: "TEL無効"を含むレコードを除外
-    - **回収ランクフィルター**: 督促停止、弁護士介入を除外
-    - **契約者TEL携帯**: 空でない値のみ（動的列検出）
+    - **委託先法人ID**: 6のみ（プラザ固有）
+    - **入金予定日**: 当日以前またはNaN（当日も含む）
+    - **回収ランク**: 弁護士介入を除外
+    - **残債**: フィルタなし（10,000円・11,000円も含む全件処理）
+    - **TEL携帯**: 空でない値のみ（契約者電話番号）
+    - **入金予定金額**: 2,3,5,12円を除外
     """)
     
-    col1, col2 = st.columns(2)
+    # ファイルアップロード
+    uploaded_file = st.file_uploader(
+        "ContractList*.csv ファイルをアップロードしてください",
+        type="csv",
+        key="plaza_main_file"
+    )
     
-    with col1:
-        st.markdown("### 📄 ContractList")
-        contract_file = st.file_uploader(
-            "ContractList_*.csv",
-            type=['csv'],
-            key="plaza_main_contract"
-        )
-        if contract_file:
-            st.info(f"ファイルサイズ: {len(contract_file.getvalue()):,} bytes")
-    
-    with col2:
-        st.markdown("### 📊 Excel報告書")
-        report_file = st.file_uploader(
-            "Excel報告書ファイル (*.xlsx)",
-            type=['xlsx'],
-            key="plaza_main_report"
-        )
-        if report_file:
-            st.info(f"ファイルサイズ: {len(report_file.getvalue()):,} bytes")
-    
-    if contract_file is not None and report_file is not None:
-        st.success("✅ 両方のファイルアップロード完了")
+    if uploaded_file is not None:
+        st.success("✅ ファイルアップロード完了")
+        st.info(f"ファイルサイズ: {len(uploaded_file.getvalue()):,} bytes")
         
         # 処理ボタン
         if st.button("🚀 処理開始", key="plaza_main_process", type="primary"):
@@ -1313,11 +1300,10 @@ def show_plaza_main_processor():
                     from processors.plaza_autocall.main.standard import process_plaza_main_data
                     
                     # ファイル内容を取得
-                    contract_content = contract_file.getvalue()
-                    report_content = report_file.getvalue()
+                    file_content = uploaded_file.getvalue()
                     
                     # データ処理実行
-                    df_filtered, df_output, logs, output_filename = process_plaza_main_data(contract_content, report_content)
+                    df_filtered, df_output, logs, output_filename = process_plaza_main_data(file_content)
                     
                     # 処理結果表示
                     st.success("✅ 処理が完了しました！")
@@ -1356,43 +1342,29 @@ def show_plaza_main_processor():
 def show_plaza_guarantor_processor():
     """プラザ保証人処理画面"""
     st.markdown("## 👥 プラザ保証人オートコール")
-    st.markdown("ContractListとExcel報告書を組み合わせて、プラザ保証人のオートコール用CSVを生成します")
+    st.markdown("ミライルwith10kベースの処理でプラザ保証人のオートコール用CSVを生成します")
     
     # 処理条件の表示
     st.markdown("**フィルタリング条件**")
     st.markdown("""
-    - **2ファイル処理**: ContractList + Excel報告書の結合処理
-    - **延滞額フィルター**: 0円、2円、3円、5円を除外
-    - **TEL無効除外**: "TEL無効"を含むレコードを除外
-    - **回収ランクフィルター**: 督促停止、弁護士介入を除外
-    - **保証人電話番号**: 保証人TEL携帯列の空でない値のみ
-    - **出力形式**: 保証人名、契約者名、管理番号を含むオートコール用CSV
+    - **委託先法人ID**: 6のみ（プラザ固有）
+    - **入金予定日**: 当日以前またはNaN（当日も含む）
+    - **回収ランク**: 弁護士介入を除外
+    - **残債**: フィルタなし（10,000円・11,000円も含む全件処理）
+    - **TEL携帯.1**: 空でない値のみ（保証人電話番号）
+    - **入金予定金額**: 2,3,5,12円を除外
     """)
     
-    col1, col2 = st.columns(2)
+    # ファイルアップロード
+    uploaded_file = st.file_uploader(
+        "ContractList*.csv ファイルをアップロードしてください",
+        type="csv",
+        key="plaza_guarantor_file"
+    )
     
-    with col1:
-        st.markdown("### 📄 ContractList")
-        contract_file = st.file_uploader(
-            "ContractList_*.csv",
-            type=['csv'],
-            key="plaza_guarantor_contract"
-        )
-        if contract_file:
-            st.info(f"ファイルサイズ: {len(contract_file.getvalue()):,} bytes")
-    
-    with col2:
-        st.markdown("### 📊 Excel報告書")
-        report_file = st.file_uploader(
-            "Excel報告書ファイル (*.xlsx)",
-            type=['xlsx'],
-            key="plaza_guarantor_report"
-        )
-        if report_file:
-            st.info(f"ファイルサイズ: {len(report_file.getvalue()):,} bytes")
-    
-    if contract_file is not None and report_file is not None:
-        st.success("✅ 両方のファイルアップロード完了")
+    if uploaded_file is not None:
+        st.success("✅ ファイルアップロード完了")
+        st.info(f"ファイルサイズ: {len(uploaded_file.getvalue()):,} bytes")
         
         # 処理ボタン
         if st.button("🚀 処理開始", key="plaza_guarantor_process", type="primary"):
@@ -1402,11 +1374,10 @@ def show_plaza_guarantor_processor():
                     from processors.plaza_autocall.guarantor.standard import process_plaza_guarantor_data
                     
                     # ファイル内容を取得
-                    contract_content = contract_file.getvalue()
-                    report_content = report_file.getvalue()
+                    file_content = uploaded_file.getvalue()
                     
                     # データ処理実行
-                    df_filtered, df_output, logs, output_filename = process_plaza_guarantor_data(contract_content, report_content)
+                    df_filtered, df_output, logs, output_filename = process_plaza_guarantor_data(file_content)
                     
                     # 処理結果表示
                     st.success("✅ プラザ保証人データ処理が完了しました")
@@ -1445,42 +1416,29 @@ def show_plaza_guarantor_processor():
 def show_plaza_contact_processor():
     """プラザ緊急連絡人処理画面"""
     st.markdown("## 🚨 プラザ緊急連絡人オートコール")
-    st.markdown("ContractListとExcel報告書を組み合わせて、プラザ緊急連絡人のオートコール用CSVを生成します")
+    st.markdown("ミライルwith10kベースの処理でプラザ緊急連絡人のオートコール用CSVを生成します")
     
     # 処理条件の表示
     st.markdown("**フィルタリング条件**")
     st.markdown("""
-    - **2ファイル処理**: ContractList + Excel報告書の結合処理
-    - **延滞額フィルター**: 0円、2円、3円、5円を除外
-    - **TEL無効除外**: "TEL無効"を含むレコードを除外
-    - **回収ランクフィルター**: 督促停止、弁護士介入を除外
+    - **委託先法人ID**: 6のみ（プラザ固有）
+    - **入金予定日**: 当日以前またはNaN（当日も含む）
+    - **回収ランク**: 弁護士介入を除外
+    - **残債**: フィルタなし（10,000円・11,000円も含む全件処理）
     - **緊急連絡人１のTEL（携帯）**: 空でない値のみ
+    - **入金予定金額**: 2,3,5,12円を除外
     """)
     
-    col1, col2 = st.columns(2)
+    # ファイルアップロード
+    uploaded_file = st.file_uploader(
+        "ContractList*.csv ファイルをアップロードしてください",
+        type="csv",
+        key="plaza_contact_file"
+    )
     
-    with col1:
-        st.markdown("### 📄 ContractList")
-        contract_file = st.file_uploader(
-            "ContractList_*.csv",
-            type=['csv'],
-            key="plaza_contact_contract"
-        )
-        if contract_file:
-            st.info(f"ファイルサイズ: {len(contract_file.getvalue()):,} bytes")
-    
-    with col2:
-        st.markdown("### 📊 Excel報告書")
-        report_file = st.file_uploader(
-            "Excel報告書ファイル (*.xlsx)",
-            type=['xlsx'],
-            key="plaza_contact_report"
-        )
-        if report_file:
-            st.info(f"ファイルサイズ: {len(report_file.getvalue()):,} bytes")
-    
-    if contract_file is not None and report_file is not None:
-        st.success("✅ 両方のファイルアップロード完了")
+    if uploaded_file is not None:
+        st.success("✅ ファイルアップロード完了")
+        st.info(f"ファイルサイズ: {len(uploaded_file.getvalue()):,} bytes")
         
         # 処理ボタン
         if st.button("🚀 処理開始", key="plaza_contact_process", type="primary"):
@@ -1490,11 +1448,10 @@ def show_plaza_contact_processor():
                     from processors.plaza_autocall.contact.standard import process_plaza_contact_data
                     
                     # ファイル内容を取得
-                    contract_content = contract_file.getvalue()
-                    report_content = report_file.getvalue()
+                    file_content = uploaded_file.getvalue()
                     
                     # データ処理実行
-                    df_filtered, df_output, logs, output_filename = process_plaza_contact_data(contract_content, report_content)
+                    df_filtered, df_output, logs, output_filename = process_plaza_contact_data(file_content)
                     
                     # 処理結果表示
                     st.success("✅ 処理が完了しました！")

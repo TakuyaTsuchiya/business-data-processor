@@ -1,7 +1,7 @@
 """
-プラザ契約者（main）オートコール処理プロセッサー
-統合アプリ用に移植
-注意：プラザ処理は2つのファイル（ContractList + Excel報告書）が必要です
+プラザ契約者オートコール処理プロセッサー
+ミライル契約者（10,000円を除外しないパターン）ベースの処理
+プラザ固有条件：委託先法人ID=6、入金予定日=当日以前（当日含む）
 """
 
 import pandas as pd
@@ -31,63 +31,58 @@ def read_csv_auto_encoding(file_content: bytes) -> pd.DataFrame:
     raise ValueError("CSVファイルの読み込みに失敗しました。エンコーディングを確認してください。")
 
 
-def apply_plaza_main_filters(df_contract: pd.DataFrame, df_report: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
-    """プラザ契約者フィルタリング処理（ContractList + Excel報告書の結合処理）"""
+def apply_plaza_main_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
+    """
+    プラザ契約者フィルタリング処理（ミライルwith10kベース + プラザ固有条件）
+    
+    📋 フィルタリング条件:
+    - 委託先法人ID: 6のみ（プラザ固有）
+    - 入金予定日: 当日以前またはNaN（当日も含む、プラザ固有）
+    - 回収ランク: 弁護士介入を除外
+    - 残債: フィルタなし（10,000円・11,000円も含む全件処理）
+    - TEL携帯: 空でない値のみ（契約者電話番号）
+    - 入金予定金額: 2,3,5,12円を除外（手数料関連）
+    """
     logs = []
-    original_count = len(df_contract)
-    logs.append(f"元データ件数（ContractList）: {original_count}件")
-    logs.append(f"報告書件数: {len(df_report)}件")
+    original_count = len(df)
+    logs.append(f"元データ件数: {original_count}件")
     
-    # ContractListの管理番号を会員番号に変換（必要に応じて）
-    if "会員番号" not in df_contract.columns and "管理番号" in df_contract.columns:
-        df_contract = df_contract.rename(columns={"管理番号": "会員番号"})
+    # 1. 委託先法人IDが6のみ（プラザ固有）
+    df = df[df["委託先法人ID"].astype(str).str.strip() == "6"]
+    logs.append(f"委託先法人ID（6のみ）フィルタ後: {len(df)}件")
     
-    # 会員番号で結合
-    merged = df_contract.merge(
-        df_report[["会員番号", "延滞額合計", "緊急連絡人　電話番号"]],
-        on="会員番号",
-        how="left"
-    )
-    logs.append(f"結合後件数: {len(merged)}件")
+    # 2. 入金予定日のフィルタリング（当日以前またはNaN：当日も含む）
+    today = pd.Timestamp.now().normalize()
+    df["入金予定日"] = pd.to_datetime(df["入金予定日"], errors='coerce')
+    df = df[df["入金予定日"].isna() | (df["入金予定日"] <= today)]
+    logs.append(f"入金予定日フィルタ後: {len(df)}件")
     
-    # 1. 延滞額合計フィルター（0円、2円、3円、5円を除外）
-    drop_values = ["0", "2", "3", "5"]
-    merged = merged[~merged["延滞額合計"].isin(drop_values)]
-    logs.append(f"延滞額フィルタ後: {len(merged)}件")
+    # 3. 回収ランクのフィルタリング（弁護士介入案件は除外）
+    exclude_ranks = ["弁護士介入"]
+    df = df[~df["回収ランク"].isin(exclude_ranks)]
+    logs.append(f"回収ランクフィルタ後: {len(df)}件")
     
-    # 2. TEL無効を除外
-    merged = merged[~merged["緊急連絡人　電話番号"].str.contains("TEL無効", na=False)]
-    logs.append(f"TEL無効除外後: {len(merged)}件")
+    # 4. 残債のフィルタリング（with10k版では除外なし - 全件処理）
+    logs.append("残債フィルタ: 除外なし（with10k版：10,000円・11,000円も含む全件処理）")
+    logs.append("クライアントCDフィルタ: 除外なし（契約者版は全クライアント対象）")
     
-    # 3. 回収ランクフィルター（督促停止、弁護士介入を除外）
-    if "回収ランク" in merged.columns:
-        merged = merged[~merged["回収ランク"].isin(["督促停止", "弁護士介入"])]
-        logs.append(f"回収ランクフィルタ後: {len(merged)}件")
+    # 5. TEL携帯のフィルタリング（契約者電話番号が必須）
+    df = df[
+        df["TEL携帯"].notna() &
+        (~df["TEL携帯"].astype(str).str.strip().isin(["", "nan", "NaN"]))
+    ]
+    logs.append(f"TEL携帯フィルタ後: {len(df)}件")
     
-    # 4. TEL携帯のフィルタリング（電話番号が必須）
-    # TEL携帯列を探す（契約者TEL携帯、TEL携帯、TEL携帯.1など）
-    tel_columns = [col for col in merged.columns if 
-                   col == "契約者TEL携帯" or col == "TEL携帯" or
-                   col.startswith("契約者TEL携帯.") or col.startswith("TEL携帯.")]
-    if not tel_columns:
-        raise ValueError("TEL携帯列が見つかりません（契約者TEL携帯、TEL携帯、TEL携帯.1などの列が必要です）")
+    # 6. 入金予定金額のフィルタリング（手数料関連の2,3,5,12円を除外）
+    exclude_amounts = [2, 3, 5, 12]
+    df["入金予定金額"] = pd.to_numeric(df["入金予定金額"], errors='coerce')
+    df = df[~df["入金予定金額"].isin(exclude_amounts)]
+    logs.append(f"入金予定金額フィルタ後: {len(df)}件")
     
-    tel_column = tel_columns[0]  # 1つ目の列を使用
-    
-    # 電話番号の整形と空値除外
-    merged[tel_column] = (
-        merged[tel_column]
-        .fillna("")
-        .astype(str)
-        .apply(lambda x: x if x.startswith("0") else f"0{x}" if x else "")
-    )
-    merged = merged[merged[tel_column].str.strip() != ""]
-    logs.append(f"TEL携帯フィルタ後（{tel_column}使用）: {len(merged)}件")
-    
-    return merged, logs, tel_column
+    return df, logs
 
 
-def create_plaza_main_output(df_filtered: pd.DataFrame, tel_column: str) -> Tuple[pd.DataFrame, List[str]]:
+def create_plaza_main_output(df_filtered: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     """プラザ契約者出力データ作成（28列統一フォーマット）"""
     logs = []
     
@@ -95,8 +90,18 @@ def create_plaza_main_output(df_filtered: pd.DataFrame, tel_column: str) -> Tupl
     df_output = pd.DataFrame(index=range(len(df_filtered)), columns=AUTOCALL_OUTPUT_COLUMNS)
     df_output = df_output.fillna("")
     
-    # 電話番号にダブルクォーテーションを追加（Excel対策）
-    tel_series = df_filtered[tel_column].apply(lambda x: f'"{x}"' if x else "")
+    # 出力用のマッピング（ミライルwith10kと同じ）
+    mapping_rules = {
+        "電話番号": "TEL携帯",
+        "架電番号": "TEL携帯", 
+        "入居ステータス": "入居ステータス",
+        "滞納ステータス": "滞納ステータス",
+        "管理番号": "管理番号",
+        "契約者名（カナ）": "契約者カナ",
+        "物件名": "物件名",
+        "クライアント": "クライアント名",  # 入力データからマッピング
+        "残債": "滞納残債"  # J列「残債」にBT列「滞納残債」を格納
+    }
     
     # データが0件の場合
     if len(df_filtered) == 0:
@@ -105,27 +110,29 @@ def create_plaza_main_output(df_filtered: pd.DataFrame, tel_column: str) -> Tupl
     
     # データをマッピング
     for i, (_, row) in enumerate(df_filtered.iterrows()):
-        df_output.at[i, "電話番号"] = tel_series.iloc[i]
-        df_output.at[i, "架電番号"] = tel_series.iloc[i]
-        df_output.at[i, "管理番号"] = str(row.get("会員番号", ""))
-        df_output.at[i, "契約者名（カナ）"] = str(row.get("契約者カナ", ""))
-        df_output.at[i, "物件名"] = str(row.get("物件名", ""))
-        df_output.at[i, "クライアント"] = "プラザ賃貸管理保証"
-        df_output.at[i, "入居ステータス"] = "入居中"
-        df_output.at[i, "滞納ステータス"] = "未精算"
+        for output_col, input_col in mapping_rules.items():
+            if output_col in df_output.columns and input_col in row:
+                df_output.at[i, output_col] = str(row[input_col]) if pd.notna(row[input_col]) else ""
     
     logs.append(f"契約者出力データ作成完了: {len(df_output)}件")
     
     return df_output, logs
 
 
-def process_plaza_main_data(contract_content: bytes, report_content: bytes) -> Tuple[pd.DataFrame, pd.DataFrame, List[str], str]:
+def process_plaza_main_data(file_content: bytes) -> Tuple[pd.DataFrame, pd.DataFrame, List[str], str]:
     """
-    プラザ契約者（main）データの処理メイン関数
+    プラザ契約者データの処理メイン関数
+    
+    📋 フィルタリング条件:
+    - 委託先法人ID: 6のみ（プラザ固有）
+    - 入金予定日: 当日以前またはNaN（当日も含む、プラザ固有）
+    - 回収ランク: 弁護士介入を除外
+    - 残債: フィルタなし（10,000円・11,000円も含む全件処理）
+    - TEL携帯: 空でない値のみ（契約者電話番号）
+    - 入金予定金額: 2,3,5,12円を除外（手数料関連）
     
     Args:
-        contract_content: ContractListのファイル内容
-        report_content: Excel報告書のファイル内容
+        file_content: ContractListのファイル内容（bytes）
         
     Returns:
         tuple: (フィルタ済みDF, 出力DF, 処理ログ, 出力ファイル名)
@@ -134,36 +141,25 @@ def process_plaza_main_data(contract_content: bytes, report_content: bytes) -> T
         logs = []
         
         # 1. CSVファイル読み込み
-        logs.append("ContractList読み込み開始")
-        df_contract = read_csv_auto_encoding(contract_content)
-        logs.append(f"ContractList読み込み完了: {len(df_contract)}件")
-        
-        # 2. Excel報告書読み込み
-        logs.append("Excel報告書読み込み開始")
-        df_report = pd.read_excel(io.BytesIO(report_content), dtype=str)
-        logs.append(f"Excel報告書読み込み完了: {len(df_report)}件")
+        logs.append("ファイル読み込み開始")
+        df_input = read_csv_auto_encoding(file_content)
+        logs.append(f"読み込み完了: {len(df_input)}件")
         
         # 必須列チェック
-        required_contract_columns = ["会員番号", "管理番号"]  # どちらかがあればOK
-        required_report_columns = ["会員番号", "延滞額合計"]
+        required_columns = ["委託先法人ID", "TEL携帯", "回収ランク"]
+        missing_columns = [col for col in required_columns if col not in df_input.columns]
+        if missing_columns:
+            raise ValueError(f"必須列が不足しています: {missing_columns}")
         
-        contract_has_key = any(col in df_contract.columns for col in required_contract_columns)
-        if not contract_has_key:
-            raise ValueError(f"ContractListに必須列がありません: {required_contract_columns}")
-        
-        missing_report_columns = [col for col in required_report_columns if col not in df_report.columns]
-        if missing_report_columns:
-            raise ValueError(f"Excel報告書に必須列が不足しています: {missing_report_columns}")
-        
-        # 3. フィルタリング処理
-        df_filtered, filter_logs, tel_column = apply_plaza_main_filters(df_contract, df_report)
+        # 2. フィルタリング処理
+        df_filtered, filter_logs = apply_plaza_main_filters(df_input)
         logs.extend(filter_logs)
         
-        # 4. 出力データ作成
-        df_output, output_logs = create_plaza_main_output(df_filtered, tel_column)
+        # 3. 出力データ作成
+        df_output, output_logs = create_plaza_main_output(df_filtered)
         logs.extend(output_logs)
         
-        # 5. 出力ファイル名生成
+        # 4. 出力ファイル名生成
         today_str = datetime.now().strftime("%m%d")
         output_filename = f"{today_str}プラザ_契約者.csv"
         
@@ -176,7 +172,7 @@ def process_plaza_main_data(contract_content: bytes, report_content: bytes) -> T
 def get_sample_template() -> pd.DataFrame:
     """サンプルテンプレートを返す（デバッグ用）"""
     columns = [
-        "電話番号", "架電番号", "管理番号", "契約者名（カナ）",
-        "物件名", "クライアント", "入居ステータス", "滞納ステータス"
+        "電話番号", "架電番号", "入居ステータス", "滞納ステータス",
+        "管理番号", "契約者名（カナ）", "物件名", "クライアント"
     ]
     return pd.DataFrame(columns=columns)
