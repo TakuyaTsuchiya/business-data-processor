@@ -361,8 +361,7 @@ def show_mirail_contract_without10k():
     
     if uploaded_file is not None:
         try:
-            df = pd.read_csv(uploaded_file, encoding='cp932')
-            st.success(f"ファイルを読み込みました: {df.shape[0]}行 × {df.shape[1]}列")
+            st.success(f"✅ {uploaded_file.name}: 読み込み完了")
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
@@ -397,8 +396,7 @@ def show_mirail_contract_with10k():
     
     if uploaded_file is not None:
         try:
-            df = pd.read_csv(uploaded_file, encoding='cp932')
-            st.success(f"ファイルを読み込みました: {df.shape[0]}行 × {df.shape[1]}列")
+            st.success(f"✅ {uploaded_file.name}: 読み込み完了")
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
@@ -433,8 +431,7 @@ def show_mirail_guarantor_without10k():
     
     if uploaded_file is not None:
         try:
-            df = pd.read_csv(uploaded_file, encoding='cp932')
-            st.success(f"ファイルを読み込みました: {df.shape[0]}行 × {df.shape[1]}列")
+            st.success(f"✅ {uploaded_file.name}: 読み込み完了")
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
@@ -467,8 +464,7 @@ def show_mirail_guarantor_with10k():
     
     if uploaded_file is not None:
         try:
-            df = pd.read_csv(uploaded_file, encoding='cp932')
-            st.success(f"ファイルを読み込みました: {df.shape[0]}行 × {df.shape[1]}列")
+            st.success(f"✅ {uploaded_file.name}: 読み込み完了")
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
@@ -501,8 +497,7 @@ def show_mirail_emergency_without10k():
     
     if uploaded_file is not None:
         try:
-            df = pd.read_csv(uploaded_file, encoding='cp932')
-            st.success(f"ファイルを読み込みました: {df.shape[0]}行 × {df.shape[1]}列")
+            st.success(f"✅ {uploaded_file.name}: 読み込み完了")
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
@@ -535,8 +530,7 @@ def show_mirail_emergency_with10k():
     
     if uploaded_file is not None:
         try:
-            df = pd.read_csv(uploaded_file, encoding='cp932')
-            st.success(f"ファイルを読み込みました: {df.shape[0]}行 × {df.shape[1]}列")
+            st.success(f"✅ {uploaded_file.name}: 読み込み完了")
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
@@ -569,12 +563,11 @@ def show_faith_contract():
     
     if uploaded_file is not None:
         try:
-            df = pd.read_csv(uploaded_file, encoding='cp932')
-            st.success(f"ファイルを読み込みました: {df.shape[0]}行 × {df.shape[1]}列")
+            st.success(f"✅ {uploaded_file.name}: 読み込み完了")
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, stats = process_faith_contract_data(df)
+                    result_df, stats = process_faith_contract_data(uploaded_file.read())
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
@@ -604,12 +597,11 @@ def show_faith_guarantor():
     
     if uploaded_file is not None:
         try:
-            df = pd.read_csv(uploaded_file, encoding='cp932')
-            st.success(f"ファイルを読み込みました: {df.shape[0]}行 × {df.shape[1]}列")
+            st.success(f"✅ {uploaded_file.name}: 読み込み完了")
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, stats = process_faith_guarantor_data(df)
+                    result_df, stats = process_faith_guarantor_data(uploaded_file.read())
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
@@ -639,12 +631,11 @@ def show_faith_emergency():
     
     if uploaded_file is not None:
         try:
-            df = pd.read_csv(uploaded_file, encoding='cp932')
-            st.success(f"ファイルを読み込みました: {df.shape[0]}行 × {df.shape[1]}列")
+            st.success(f"✅ {uploaded_file.name}: 読み込み完了")
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, stats = process_faith_emergencycontact_data(df)
+                    result_df, stats = process_faith_emergencycontact_data(uploaded_file.read())
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
@@ -800,8 +791,7 @@ def show_faith_sms_vacated():
     
     if uploaded_file is not None:
         try:
-            df = pd.read_csv(uploaded_file, encoding='cp932')
-            st.success(f"ファイルを読み込みました: {df.shape[0]}行 × {df.shape[1]}列")
+            st.success(f"✅ {uploaded_file.name}: 読み込み完了")
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
@@ -1095,24 +1085,23 @@ def show_ark_late_payment():
     
     if file1 and file2:
         try:
-            df1 = pd.read_csv(file1, encoding='cp932')
-            df2 = pd.read_csv(file2, encoding='cp932')
-            dfs = [df1, df2]
-            st.success(f"✅ {file1.name}: {df1.shape[0]}行 × {df1.shape[1]}列")
-            st.success(f"✅ {file2.name}: {df2.shape[0]}行 × {df2.shape[1]}列")
+            # ファイル内容を読み取り
+            file_contents = [file1.read(), file2.read()]
+            st.success(f"✅ {file1.name}: 読み込み完了")
+            st.success(f"✅ {file2.name}: 読み込み完了")
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result = process_ark_late_payment_data(dfs[0], dfs[1])
+                    result = process_ark_late_payment_data(file_contents[0], file_contents[1])
                     
                 if result is not None:
                     result_df, stats = result
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
+                    # 統計情報表示
+                    if stats:
+                        with st.expander("📊 処理統計", expanded=True):
+                            for key, value in stats.items():
+                                st.write(f"• {key}: {value}")
                     
                     # データプレビュー
                     st.subheader("処理結果プレビュー")
