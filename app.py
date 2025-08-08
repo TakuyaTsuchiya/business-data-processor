@@ -331,19 +331,22 @@ def show_mirail_contract_without10k():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, stats = process_mirail_contract_without10k_data(df)
+                    result_df, filtered_df, logs, filename = process_mirail_contract_without10k_data(uploaded_file.read())
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    st.info(f"📊 統計情報: {stats}")
+                    # 処理ログ表示
+                    if logs:
+                        with st.expander("📊 処理ログ", expanded=False):
+                            for log in logs:
+                                st.write(f"• {log}")
                     
                     # データプレビュー
                     st.subheader("処理結果プレビュー")
                     st.dataframe(result_df.head(10))
                     
                     # ダウンロード
-                    timestamp = datetime.now().strftime("%m%d")
-                    filename = f"{timestamp}ミライル_契約者_without10k.csv"
+                    # filenameは関数から取得済み
                     safe_csv_download(result_df, filename)
                 else:
                     st.warning("条件に合致するデータがありませんでした。")
@@ -364,19 +367,22 @@ def show_mirail_contract_with10k():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, stats = process_mirail_contract_with10k_data(df)
+                    result_df, filtered_df, logs, filename = process_mirail_contract_with10k_data(uploaded_file.read())
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    st.info(f"📊 統計情報: {stats}")
+                    # 処理ログ表示
+                    if logs:
+                        with st.expander("📊 処理ログ", expanded=False):
+                            for log in logs:
+                                st.write(f"• {log}")
                     
                     # データプレビュー
                     st.subheader("処理結果プレビュー")
                     st.dataframe(result_df.head(10))
                     
                     # ダウンロード
-                    timestamp = datetime.now().strftime("%m%d")
-                    filename = f"{timestamp}ミライル_契約者_with10k.csv"
+                    # filenameは関数から取得済み
                     safe_csv_download(result_df, filename)
                 else:
                     st.warning("条件に合致するデータがありませんでした。")
@@ -397,17 +403,20 @@ def show_mirail_guarantor_without10k():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, stats = process_mirail_guarantor_without10k_data(df)
+                    result_df, filtered_df, logs, filename = process_mirail_guarantor_without10k_data(uploaded_file.read())
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    st.info(f"📊 統計情報: {stats}")
+                    # 処理ログ表示
+                    if logs:
+                        with st.expander("📊 処理ログ", expanded=False):
+                            for log in logs:
+                                st.write(f"• {log}")
                     
                     st.subheader("処理結果プレビュー")
                     st.dataframe(result_df.head(10))
                     
-                    timestamp = datetime.now().strftime("%m%d")
-                    filename = f"{timestamp}ミライル_保証人_without10k.csv"
+                    # filenameは関数から取得済み
                     safe_csv_download(result_df, filename)
                 else:
                     st.warning("条件に合致するデータがありませんでした。")
@@ -428,17 +437,20 @@ def show_mirail_guarantor_with10k():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, stats = process_mirail_guarantor_with10k_data(df)
+                    result_df, filtered_df, logs, filename = process_mirail_guarantor_with10k_data(uploaded_file.read())
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    st.info(f"📊 統計情報: {stats}")
+                    # 処理ログ表示
+                    if logs:
+                        with st.expander("📊 処理ログ", expanded=False):
+                            for log in logs:
+                                st.write(f"• {log}")
                     
                     st.subheader("処理結果プレビュー")
                     st.dataframe(result_df.head(10))
                     
-                    timestamp = datetime.now().strftime("%m%d")
-                    filename = f"{timestamp}ミライル_保証人_with10k.csv"
+                    # filenameは関数から取得済み
                     safe_csv_download(result_df, filename)
                 else:
                     st.warning("条件に合致するデータがありませんでした。")
@@ -459,17 +471,20 @@ def show_mirail_emergency_without10k():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, stats = process_mirail_emergencycontact_without10k_data(df)
+                    result_df, filtered_df, logs, filename = process_mirail_emergencycontact_without10k_data(uploaded_file.read())
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    st.info(f"📊 統計情報: {stats}")
+                    # 処理ログ表示
+                    if logs:
+                        with st.expander("📊 処理ログ", expanded=False):
+                            for log in logs:
+                                st.write(f"• {log}")
                     
                     st.subheader("処理結果プレビュー")
                     st.dataframe(result_df.head(10))
                     
-                    timestamp = datetime.now().strftime("%m%d")
-                    filename = f"{timestamp}ミライル_緊急連絡人_without10k.csv"
+                    # filenameは関数から取得済み
                     safe_csv_download(result_df, filename)
                 else:
                     st.warning("条件に合致するデータがありませんでした。")
@@ -490,17 +505,20 @@ def show_mirail_emergency_with10k():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, stats = process_mirail_emergencycontact_with10k_data(df)
+                    result_df, filtered_df, logs, filename = process_mirail_emergencycontact_with10k_data(uploaded_file.read())
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    st.info(f"📊 統計情報: {stats}")
+                    # 処理ログ表示
+                    if logs:
+                        with st.expander("📊 処理ログ", expanded=False):
+                            for log in logs:
+                                st.write(f"• {log}")
                     
                     st.subheader("処理結果プレビュー")
                     st.dataframe(result_df.head(10))
                     
-                    timestamp = datetime.now().strftime("%m%d")
-                    filename = f"{timestamp}ミライル_緊急連絡人_with10k.csv"
+                    # filenameは関数から取得済み
                     safe_csv_download(result_df, filename)
                 else:
                     st.warning("条件に合致するデータがありませんでした。")
@@ -525,7 +543,11 @@ def show_faith_contract():
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    st.info(f"📊 統計情報: {stats}")
+                    # 処理ログ表示
+                    if logs:
+                        with st.expander("📊 処理ログ", expanded=False):
+                            for log in logs:
+                                st.write(f"• {log}")
                     
                     st.subheader("処理結果プレビュー")
                     st.dataframe(result_df.head(10))
@@ -556,7 +578,11 @@ def show_faith_guarantor():
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    st.info(f"📊 統計情報: {stats}")
+                    # 処理ログ表示
+                    if logs:
+                        with st.expander("📊 処理ログ", expanded=False):
+                            for log in logs:
+                                st.write(f"• {log}")
                     
                     st.subheader("処理結果プレビュー")
                     st.dataframe(result_df.head(10))
@@ -587,7 +613,11 @@ def show_faith_emergency():
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    st.info(f"📊 統計情報: {stats}")
+                    # 処理ログ表示
+                    if logs:
+                        with st.expander("📊 処理ログ", expanded=False):
+                            for log in logs:
+                                st.write(f"• {log}")
                     
                     st.subheader("処理結果プレビュー")
                     st.dataframe(result_df.head(10))
@@ -619,7 +649,11 @@ def show_plaza_main():
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    st.info(f"📊 統計情報: {stats}")
+                    # 処理ログ表示
+                    if logs:
+                        with st.expander("📊 処理ログ", expanded=False):
+                            for log in logs:
+                                st.write(f"• {log}")
                     
                     # ログ表示
                     if logs:
@@ -657,7 +691,11 @@ def show_plaza_guarantor():
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    st.info(f"📊 統計情報: {stats}")
+                    # 処理ログ表示
+                    if logs:
+                        with st.expander("📊 処理ログ", expanded=False):
+                            for log in logs:
+                                st.write(f"• {log}")
                     
                     # ログ表示
                     if logs:
@@ -695,7 +733,11 @@ def show_plaza_contact():
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    st.info(f"📊 統計情報: {stats}")
+                    # 処理ログ表示
+                    if logs:
+                        with st.expander("📊 処理ログ", expanded=False):
+                            for log in logs:
+                                st.write(f"• {log}")
                     
                     # ログ表示
                     if logs:
@@ -732,7 +774,11 @@ def show_faith_sms_vacated():
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    st.info(f"📊 統計情報: {stats}")
+                    # 処理ログ表示
+                    if logs:
+                        with st.expander("📊 処理ログ", expanded=False):
+                            for log in logs:
+                                st.write(f"• {log}")
                     
                     st.subheader("処理結果プレビュー")
                     st.dataframe(result_df.head(10))
@@ -768,7 +814,11 @@ def show_ark_registration_tokyo():
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    st.info(f"📊 統計情報: {stats}")
+                    # 処理ログ表示
+                    if logs:
+                        with st.expander("📊 処理ログ", expanded=False):
+                            for log in logs:
+                                st.write(f"• {log}")
                     
                     # ログ表示
                     if logs:
@@ -813,7 +863,11 @@ def show_ark_registration_osaka():
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    st.info(f"📊 統計情報: {stats}")
+                    # 処理ログ表示
+                    if logs:
+                        with st.expander("📊 処理ログ", expanded=False):
+                            for log in logs:
+                                st.write(f"• {log}")
                     
                     if logs:
                         st.info("処理ログ:")
@@ -855,7 +909,11 @@ def show_ark_registration_hokkaido():
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    st.info(f"📊 統計情報: {stats}")
+                    # 処理ログ表示
+                    if logs:
+                        with st.expander("📊 処理ログ", expanded=False):
+                            for log in logs:
+                                st.write(f"• {log}")
                     
                     if logs:
                         st.info("処理ログ:")
@@ -897,7 +955,11 @@ def show_ark_registration_kitakanto():
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    st.info(f"📊 統計情報: {stats}")
+                    # 処理ログ表示
+                    if logs:
+                        with st.expander("📊 処理ログ", expanded=False):
+                            for log in logs:
+                                st.write(f"• {log}")
                     
                     if logs:
                         st.info("処理ログ:")
@@ -947,7 +1009,11 @@ def show_capco_registration():
                         for error in validation_errors:
                             st.write(f"• {error}")
                     
-                    st.info(f"📊 統計情報: {stats}")
+                    # 処理ログ表示
+                    if logs:
+                        with st.expander("📊 処理ログ", expanded=False):
+                            for log in logs:
+                                st.write(f"• {log}")
                     
                     # データプレビュー
                     st.subheader("処理結果プレビュー")
@@ -987,7 +1053,11 @@ def show_ark_late_payment():
                 if result is not None:
                     result_df, stats = result
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    st.info(f"📊 統計情報: {stats}")
+                    # 処理ログ表示
+                    if logs:
+                        with st.expander("📊 処理ログ", expanded=False):
+                            for log in logs:
+                                st.write(f"• {log}")
                     
                     # データプレビュー
                     st.subheader("処理結果プレビュー")
