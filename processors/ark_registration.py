@@ -11,7 +11,7 @@
 - MMDDアーク新規登録.csv (111列) - 絶対変更禁止テンプレート準拠
 
 重複チェック:
-- 案件取込用レポート「契約番号」⟷ ContractList「引継番号」（0付与後）
+- 案件取込用レポート「契約番号」⟷ ContractList「引継番号」
 """
 
 import pandas as pd
@@ -67,7 +67,7 @@ class ArkConfig:
         "登録フラグ"  # 111番目
     ]
     
-    # 固定値設定
+    # 固定値設定（地域別処理は関数内で実行）
     FIXED_VALUES = {
         # ステータス関連
         "入居ステータス": "入居中",
@@ -84,7 +84,7 @@ class ArkConfig:
         # その他固定値
         "クライアントCD": "10",
         "水道代": "0",
-        "更新契約手数料": "1",
+        # "更新契約手数料": "1",  # 地域別に設定するためコメントアウト
         "退去済手数料": "0",
         "入居中滞納手数料": "0",
         "入居中正常手数料": "0",
@@ -265,8 +265,8 @@ class DuplicateChecker:
         contract_df = contract_df.copy()
         contract_df["引継番号"] = contract_df["引継番号"].astype(str).str.strip()
         
-        # 案件取込用レポートの契約番号に0を付与して引継番号生成
-        report_df["引継番号_temp"] = "0" + report_df["契約番号"]
+        # 案件取込用レポートの契約番号を引継番号として使用
+        report_df["引継番号_temp"] = report_df["契約番号"]
         
         # 既存契約番号セット作成
         existing_contract_numbers = set(contract_df["引継番号"].tolist())
@@ -309,11 +309,6 @@ class DataConverter:
             return ""
         return text.replace(" ", "").replace("　", "")
     
-    def add_leading_zero(self, value: str) -> str:
-        """引継番号生成（契約番号の先頭に0を付与）"""
-        if pd.isna(value) or str(value).strip() == "":
-            return ""
-        return f"0{str(value).strip()}"
     
     def normalize_phone_number(self, value: str) -> str:
         """電話番号の正規化"""
@@ -552,15 +547,20 @@ class DataConverter:
         
         return result
     
-    def convert_new_contracts(self, new_contracts_df: pd.DataFrame) -> pd.DataFrame:
-        """新規契約データを111列テンプレートに変換"""
+    def convert_new_contracts(self, new_contracts_df: pd.DataFrame, region_code: int = 1) -> pd.DataFrame:
+        """新規契約データを111列テンプレートに変換
+        
+        Args:
+            new_contracts_df: 新規契約データ
+            region_code: 地域コード（1:東京, 2:大阪, 3:北海道, 4:北関東）
+        """
         output_data = []
         
         for _, row in new_contracts_df.iterrows():
             converted_row = {}
             
             # 1. 基本情報
-            converted_row["引継番号"] = self.add_leading_zero(row.get("契約番号", ""))
+            converted_row["引継番号"] = self.safe_str_convert(row.get("契約番号", ""))
             converted_row["契約者氏名"] = self.remove_all_spaces(self.safe_str_convert(row.get("契約元帳: 主契約者", "")))
             converted_row["契約者カナ"] = self.remove_all_spaces(self.hankaku_to_zenkaku(self.safe_str_convert(row.get("主契約者（カナ）", ""))))
             converted_row["契約者生年月日"] = self.safe_str_convert(row.get("生年月日1", ""))
@@ -682,6 +682,18 @@ class DataConverter:
                 if key not in converted_row or converted_row[key] == "":
                     converted_row[key] = value
             
+            # 13. 地域別設定
+            # 更新契約手数料を地域別に設定
+            converted_row["更新契約手数料"] = str(region_code)
+            
+            # 14. 管理会社設定（アーク元データのH列「8. 取引先」をマッピング）
+            # H列は8番目（0ベースで7番目）の列「取引先」
+            management_company = self.safe_str_convert(row.get("取引先", ""))
+            converted_row["管理会社"] = management_company
+            
+            # 15. 委託先法人ID設定（固定値"5"）
+            converted_row["委託先法人ID"] = "5"
+            
             output_data.append(converted_row)
         
         # 111列の正確な順序でDataFrame構築（空列対応）
@@ -713,13 +725,14 @@ class DataConverter:
         return final_df
 
 
-def process_ark_data(report_content: bytes, contract_content: bytes) -> Tuple[pd.DataFrame, List[str], str]:
+def process_ark_data(report_content: bytes, contract_content: bytes, region_code: int = 1) -> Tuple[pd.DataFrame, List[str], str]:
     """
     アーク新規登録データ処理メイン関数
     
     Args:
         report_content: 案件取込用レポート.csvの内容
         contract_content: ContractList_*.csvの内容
+        region_code: 地域コード（1:東京, 2:大阪, 3:北海道, 4:北関東）
         
     Returns:
         tuple: (変換済みDF, 処理ログ, 出力ファイル名)
@@ -757,7 +770,7 @@ def process_ark_data(report_content: bytes, contract_content: bytes) -> Tuple[pd
         
         # 3. データ変換（111列テンプレート準拠）
         data_converter = DataConverter()
-        output_df = data_converter.convert_new_contracts(new_contracts)
+        output_df = data_converter.convert_new_contracts(new_contracts, region_code)
         
         logs.append(f"データ変換完了: {len(output_df)}件 → 111列テンプレート形式")
         
