@@ -1018,19 +1018,17 @@ def show_capco_registration():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, validation_errors, stats = process_capco_data(file_contents[0], file_contents[1])
+                    result_df, logs, filename = process_capco_data(file_contents[0], file_contents[1])
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
                     
-                    # バリデーションエラーの表示
-                    if validation_errors:
-                        st.warning("⚠️ バリデーションエラー:")
-                        for error in validation_errors:
-                            st.write(f"• {error}")
-                    
                     # 処理ログ表示
                     if logs:
+                        st.warning("⚠️ バリデーションエラー:")
+                        for log in logs:
+                            st.write(f"• {log}")
+                        
                         with st.expander("📊 処理ログ", expanded=False):
                             for log in logs:
                                 st.write(f"• {log}")
