@@ -608,4 +608,17 @@ def process_capco_data(capco_content: bytes, contract_content: bytes) -> Tuple[p
 
 def get_sample_template() -> pd.DataFrame:
     """サンプルテンプレート（111列完全準拠）"""
-    return pd.DataFrame(columns=CapcoConfig.OUTPUT_COLUMNS)
+    # 空列対応: 一意な仮名前を使用してから最後にリネーム
+    temp_columns = []
+    empty_col_counter = 1
+    
+    for col in CapcoConfig.OUTPUT_COLUMNS:
+        if col == "":
+            temp_columns.append(f"__EMPTY_COL_{empty_col_counter}__")
+            empty_col_counter += 1
+        else:
+            temp_columns.append(col)
+    
+    df = pd.DataFrame(columns=temp_columns)
+    df.columns = CapcoConfig.OUTPUT_COLUMNS
+    return df
