@@ -169,7 +169,7 @@ class DataLoader:
         elif detected_encoding:
             return detected_encoding
         else:
-            return 'cp932'  # フォールバック
+            return 'utf-8-sig'  # UTF-8-sig優先フォールバック
     
     def load_csv_from_bytes(self, file_content: bytes) -> pd.DataFrame:
         """バイト形式CSVファイル読み込み（エンコーディング自動対応）"""

@@ -1,3 +1,15 @@
 __pycache__/
 *.pyc
 serena/
+.serena/
+
+# Debug files
+debug*.log
+debug*.csv
+*.backup
+*.bak
+
+# Local settings backups
+.claude/settings.local.json.backup
+.claude/settings.local.json.bak
+.mcp.json.bak
