@@ -169,7 +169,7 @@ class DataLoader:
         elif detected_encoding:
             return detected_encoding
         else:
-            return 'cp932'  # フォールバック
+            return 'utf-8-sig'  # DEBUG: 強制UTF-8で統一テスト
     
     def load_csv_from_bytes(self, file_content: bytes) -> pd.DataFrame:
         """バイト形式CSVファイル読み込み（エンコーディング自動対応）"""
@@ -713,7 +713,53 @@ class DataConverter:
                 temp_data[col] = [row.get(col, "") for row in output_data]
         
         # DataFrameを一度に構築（パフォーマンス向上）
-        final_df = pd.DataFrame(temp_data, columns=temp_columns)
+        # DEBUG: 詳細デバッグ用（ログファイル出力版）
+        debug_log = f"\n[DEBUG] ANALYSIS region_code={region_code}\n"
+        debug_log += f"   [INFO] Data Counts:\n"
+        debug_log += f"      - output_data rows: {len(output_data)}\n"
+        debug_log += f"      - temp_columns length: {len(temp_columns)}\n"
+        debug_log += f"      - temp_data keys count: {len(temp_data.keys())}\n"
+        debug_log += f"      - ArkConfig.OUTPUT_COLUMNS length: {len(ArkConfig.OUTPUT_COLUMNS)}\n"
+        
+        # 空列カウント
+        empty_count_temp = sum(1 for col in temp_columns if col.startswith("__EMPTY_COL_"))
+        empty_count_output = sum(1 for col in ArkConfig.OUTPUT_COLUMNS if col == "")
+        debug_log += f"      - Empty columns (temp): {empty_count_temp}\n"
+        debug_log += f"      - Empty columns (output): {empty_count_output}\n"
+        
+        # ログファイルに書き込み
+        with open("debug_ark_registration.log", "a", encoding="utf-8") as f:
+            f.write(debug_log)
+        
+        print(f"[DEBUG] region_code={region_code} - Details written to debug_ark_registration.log")
+        
+        # 重複チェック詳細
+        temp_columns_duplicates = [col for i, col in enumerate(temp_columns) if col in temp_columns[:i]]
+        if temp_columns_duplicates:
+            raise ValueError(f"[ERROR] temp_columns duplicate region_code={region_code}: {temp_columns_duplicates}")
+        
+        temp_data_keys = list(temp_data.keys())
+        temp_data_duplicates = [key for i, key in enumerate(temp_data_keys) if key in temp_data_keys[:i]]
+        if temp_data_duplicates:
+            raise ValueError(f"[ERROR] temp_data keys duplicate region_code={region_code}: {temp_data_duplicates}")
+            
+        output_columns_non_empty = [col for col in ArkConfig.OUTPUT_COLUMNS if col]
+        output_duplicates = [col for i, col in enumerate(output_columns_non_empty) if col in output_columns_non_empty[:i]]
+        if output_duplicates:
+            raise ValueError(f"[ERROR] OUTPUT_COLUMNS duplicate: {output_duplicates}")
+            
+        print(f"   [OK] Duplicate check completed")
+        
+        # DataFrameサイズ確認用
+        print(f"   [INFO] DataFrame construction starting...")
+        try:
+            final_df = pd.DataFrame(temp_data, columns=temp_columns)
+            print(f"   [SUCCESS] DataFrame construction: shape={final_df.shape}")
+        except Exception as e:
+            print(f"   [ERROR] DataFrame construction failed: {str(e)}")
+            print(f"      temp_columns[:5]: {temp_columns[:5]}")
+            print(f"      temp_data sample keys: {list(temp_data.keys())[:5]}")
+            raise
         
         # 空列の仮名前を元の空文字列に戻す
         final_df.columns = ArkConfig.OUTPUT_COLUMNS
@@ -722,6 +768,9 @@ class DataConverter:
 
 
 def process_ark_data(report_content: bytes, contract_content: bytes, region_code: int = 1) -> Tuple[pd.DataFrame, List[str], str]:
+    # 最初にログ出力（関数開始時点）
+    with open("debug_ark_registration.log", "a", encoding="utf-8") as f:
+        f.write(f"\n=== FUNCTION START region_code={region_code} ===\n")
     """
     アーク新規登録データ処理メイン関数
     
@@ -790,10 +839,16 @@ def process_ark_data(report_content: bytes, contract_content: bytes, region_code
     except ValueError as e:
         error_msg = f"データ形式エラー: {str(e)}"
         logger.error(error_msg)
+        # エラー詳細をログファイルに記録
+        with open("debug_ark_registration.log", "a", encoding="utf-8") as f:
+            f.write(f"[ERROR] ValueError region_code={region_code}: {str(e)}\n")
         return pd.DataFrame(), [error_msg], "error.csv"
     except Exception as e:
         error_msg = f"アーク処理エラー: {str(e)}"
         logger.error(error_msg)
+        # エラー詳細をログファイルに記録
+        with open("debug_ark_registration.log", "a", encoding="utf-8") as f:
+            f.write(f"[ERROR] Exception region_code={region_code}: {str(e)}\n")
         return pd.DataFrame(), [error_msg], "error.csv"
 
 
