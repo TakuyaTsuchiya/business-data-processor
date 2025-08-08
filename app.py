@@ -567,7 +567,7 @@ def show_faith_contract():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, stats = process_faith_contract_data(uploaded_file.read())
+                    filtered_df, result_df, logs, filename = process_faith_contract_data(uploaded_file.read())
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
@@ -580,8 +580,7 @@ def show_faith_contract():
                     st.subheader("処理結果プレビュー")
                     safe_dataframe_display(result_df.head(10))
                     
-                    timestamp = datetime.now().strftime("%m%d")
-                    filename = f"{timestamp}フェイス_契約者.csv"
+                    # filenameは関数から取得済み
                     safe_csv_download(result_df, filename)
                 else:
                     st.warning("条件に合致するデータがありませんでした。")
@@ -601,7 +600,7 @@ def show_faith_guarantor():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, stats = process_faith_guarantor_data(uploaded_file.read())
+                    filtered_df, result_df, logs, filename = process_faith_guarantor_data(uploaded_file.read())
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
@@ -614,8 +613,7 @@ def show_faith_guarantor():
                     st.subheader("処理結果プレビュー")
                     safe_dataframe_display(result_df.head(10))
                     
-                    timestamp = datetime.now().strftime("%m%d")
-                    filename = f"{timestamp}フェイス_保証人.csv"
+                    # filenameは関数から取得済み
                     safe_csv_download(result_df, filename)
                 else:
                     st.warning("条件に合致するデータがありませんでした。")
@@ -635,7 +633,7 @@ def show_faith_emergency():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, stats = process_faith_emergencycontact_data(uploaded_file.read())
+                    filtered_df, result_df, logs, filename = process_faith_emergencycontact_data(uploaded_file.read())
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
@@ -648,8 +646,7 @@ def show_faith_emergency():
                     st.subheader("処理結果プレビュー")
                     safe_dataframe_display(result_df.head(10))
                     
-                    timestamp = datetime.now().strftime("%m%d")
-                    filename = f"{timestamp}フェイス_緊急連絡人.csv"
+                    # filenameは関数から取得済み
                     safe_csv_download(result_df, filename)
                 else:
                     st.warning("条件に合致するデータがありませんでした。")
@@ -1095,22 +1092,15 @@ def show_ark_late_payment():
                     result = process_ark_late_payment_data(file_contents[0], file_contents[1])
                     
                 if result is not None:
-                    result_df, stats = result
+                    result_df, output_filename = result
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 統計情報表示
-                    if stats:
-                        with st.expander("📊 処理統計", expanded=True):
-                            for key, value in stats.items():
-                                st.write(f"• {key}: {value}")
                     
                     # データプレビュー
                     st.subheader("処理結果プレビュー")
                     safe_dataframe_display(result_df.head(10))
                     
                     # ダウンロード
-                    timestamp = datetime.now().strftime("%m%d")
-                    filename = f"{timestamp}アーク_残債更新.csv"
-                    safe_csv_download(result_df, filename)
+                    safe_csv_download(result_df, output_filename)
                 else:
                     st.warning("条件に合致するデータがありませんでした。")
         except Exception as e:
