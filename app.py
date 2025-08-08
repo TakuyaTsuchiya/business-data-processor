@@ -1656,22 +1656,54 @@ def show_ark_processor_osaka():
                                 df_output["契約者TEL自宅"].notna().sum(),
                                 df_output["契約者TEL携帯"].notna().sum()
                             ])
-                            st.metric("電話番号あり", phone_count)
+                            st.metric("電話番号件数", phone_count)
                         with col3:
-                            if "登録フラグ" in df_output.columns:
-                                reg_count = (df_output["登録フラグ"] == "1").sum()
-                                st.metric("登録対象件数", reg_count)
-                    
-                    # プレビュー
-                    with st.expander("📄 データプレビュー"):
-                        st.dataframe(df_output.head(100))
-                    
-                    # ダウンロード
-                    safe_csv_download(df_output, output_filename)
-                    
+                            room_count = df_output["部屋番号"].notna().sum()
+                            st.metric("部屋番号あり", room_count)
+                        
+                        # データプレビュー表示
+                        st.markdown("### 📋 出力データプレビュー（上位10件）")
+                        # 表示用に列を選択
+                        preview_columns = [
+                            "引継番号", "契約者氏名", "契約者カナ", 
+                            "契約者TEL携帯", "物件名", "部屋番号",
+                            "月額賃料", "退去手続き費用"
+                        ]
+                        available_columns = [col for col in preview_columns if col in df_output.columns]
+                        st.dataframe(df_output[available_columns].head(10), use_container_width=True)
+                        
+                        # CSVダウンロード
+                        safe_csv_download(df_output, output_filename)
+                        
+                        # 詳細統計情報
+                        with st.expander("📈 詳細統計情報"):
+                            st.markdown("#### データ品質統計")
+                            
+                            # 電話番号統計
+                            home_tel_count = df_output["契約者TEL自宅"].notna().sum()
+                            mobile_tel_count = df_output["契約者TEL携帯"].notna().sum()
+                            st.text(f"契約者TEL自宅: {home_tel_count}件")
+                            st.text(f"契約者TEL携帯: {mobile_tel_count}件")
+                            
+                            # 住所統計
+                            if "契約者現住所1" in df_output.columns:
+                                addr1_count = df_output["契約者現住所1"].notna().sum()
+                                st.text(f"都道府県あり: {addr1_count}件")
+                            
+                            # 金額統計
+                            if "月額賃料" in df_output.columns:
+                                rent_avg = pd.to_numeric(df_output["月額賃料"], errors='coerce').mean()
+                                if pd.notna(rent_avg):
+                                    st.text(f"平均賃料: {rent_avg:,.0f}円")
+                    else:
+                        st.warning("⚠️ 処理対象データがありませんでした")
+                        
+                except ImportError as e:
+                    st.error(f"モジュールインポートエラー: {e}")
                 except Exception as e:
-                    st.error(f"❌ エラーが発生しました: {str(e)}")
-                    st.info("💡 ファイル形式やエンコーディングを確認してください")
+                    st.error(f"❌ エラーが発生しました: {e}")
+                    with st.expander("エラー詳細"):
+                        st.exception(e)
 
 
 def show_ark_processor_hokkaido():
@@ -1736,22 +1768,54 @@ def show_ark_processor_hokkaido():
                                 df_output["契約者TEL自宅"].notna().sum(),
                                 df_output["契約者TEL携帯"].notna().sum()
                             ])
-                            st.metric("電話番号あり", phone_count)
+                            st.metric("電話番号件数", phone_count)
                         with col3:
-                            if "登録フラグ" in df_output.columns:
-                                reg_count = (df_output["登録フラグ"] == "1").sum()
-                                st.metric("登録対象件数", reg_count)
-                    
-                    # プレビュー
-                    with st.expander("📄 データプレビュー"):
-                        st.dataframe(df_output.head(100))
-                    
-                    # ダウンロード
-                    safe_csv_download(df_output, output_filename)
-                    
+                            room_count = df_output["部屋番号"].notna().sum()
+                            st.metric("部屋番号あり", room_count)
+                        
+                        # データプレビュー表示
+                        st.markdown("### 📋 出力データプレビュー（上位10件）")
+                        # 表示用に列を選択
+                        preview_columns = [
+                            "引継番号", "契約者氏名", "契約者カナ", 
+                            "契約者TEL携帯", "物件名", "部屋番号",
+                            "月額賃料", "退去手続き費用"
+                        ]
+                        available_columns = [col for col in preview_columns if col in df_output.columns]
+                        st.dataframe(df_output[available_columns].head(10), use_container_width=True)
+                        
+                        # CSVダウンロード
+                        safe_csv_download(df_output, output_filename)
+                        
+                        # 詳細統計情報
+                        with st.expander("📈 詳細統計情報"):
+                            st.markdown("#### データ品質統計")
+                            
+                            # 電話番号統計
+                            home_tel_count = df_output["契約者TEL自宅"].notna().sum()
+                            mobile_tel_count = df_output["契約者TEL携帯"].notna().sum()
+                            st.text(f"契約者TEL自宅: {home_tel_count}件")
+                            st.text(f"契約者TEL携帯: {mobile_tel_count}件")
+                            
+                            # 住所統計
+                            if "契約者現住所1" in df_output.columns:
+                                addr1_count = df_output["契約者現住所1"].notna().sum()
+                                st.text(f"都道府県あり: {addr1_count}件")
+                            
+                            # 金額統計
+                            if "月額賃料" in df_output.columns:
+                                rent_avg = pd.to_numeric(df_output["月額賃料"], errors='coerce').mean()
+                                if pd.notna(rent_avg):
+                                    st.text(f"平均賃料: {rent_avg:,.0f}円")
+                    else:
+                        st.warning("⚠️ 処理対象データがありませんでした")
+                        
+                except ImportError as e:
+                    st.error(f"モジュールインポートエラー: {e}")
                 except Exception as e:
-                    st.error(f"❌ エラーが発生しました: {str(e)}")
-                    st.info("💡 ファイル形式やエンコーディングを確認してください")
+                    st.error(f"❌ エラーが発生しました: {e}")
+                    with st.expander("エラー詳細"):
+                        st.exception(e)
 
 
 def show_ark_processor_kitakanto():
@@ -1816,22 +1880,54 @@ def show_ark_processor_kitakanto():
                                 df_output["契約者TEL自宅"].notna().sum(),
                                 df_output["契約者TEL携帯"].notna().sum()
                             ])
-                            st.metric("電話番号あり", phone_count)
+                            st.metric("電話番号件数", phone_count)
                         with col3:
-                            if "登録フラグ" in df_output.columns:
-                                reg_count = (df_output["登録フラグ"] == "1").sum()
-                                st.metric("登録対象件数", reg_count)
-                    
-                    # プレビュー
-                    with st.expander("📄 データプレビュー"):
-                        st.dataframe(df_output.head(100))
-                    
-                    # ダウンロード
-                    safe_csv_download(df_output, output_filename)
-                    
+                            room_count = df_output["部屋番号"].notna().sum()
+                            st.metric("部屋番号あり", room_count)
+                        
+                        # データプレビュー表示
+                        st.markdown("### 📋 出力データプレビュー（上位10件）")
+                        # 表示用に列を選択
+                        preview_columns = [
+                            "引継番号", "契約者氏名", "契約者カナ", 
+                            "契約者TEL携帯", "物件名", "部屋番号",
+                            "月額賃料", "退去手続き費用"
+                        ]
+                        available_columns = [col for col in preview_columns if col in df_output.columns]
+                        st.dataframe(df_output[available_columns].head(10), use_container_width=True)
+                        
+                        # CSVダウンロード
+                        safe_csv_download(df_output, output_filename)
+                        
+                        # 詳細統計情報
+                        with st.expander("📈 詳細統計情報"):
+                            st.markdown("#### データ品質統計")
+                            
+                            # 電話番号統計
+                            home_tel_count = df_output["契約者TEL自宅"].notna().sum()
+                            mobile_tel_count = df_output["契約者TEL携帯"].notna().sum()
+                            st.text(f"契約者TEL自宅: {home_tel_count}件")
+                            st.text(f"契約者TEL携帯: {mobile_tel_count}件")
+                            
+                            # 住所統計
+                            if "契約者現住所1" in df_output.columns:
+                                addr1_count = df_output["契約者現住所1"].notna().sum()
+                                st.text(f"都道府県あり: {addr1_count}件")
+                            
+                            # 金額統計
+                            if "月額賃料" in df_output.columns:
+                                rent_avg = pd.to_numeric(df_output["月額賃料"], errors='coerce').mean()
+                                if pd.notna(rent_avg):
+                                    st.text(f"平均賃料: {rent_avg:,.0f}円")
+                    else:
+                        st.warning("⚠️ 処理対象データがありませんでした")
+                        
+                except ImportError as e:
+                    st.error(f"モジュールインポートエラー: {e}")
                 except Exception as e:
-                    st.error(f"❌ エラーが発生しました: {str(e)}")
-                    st.info("💡 ファイル形式やエンコーディングを確認してください")
+                    st.error(f"❌ エラーが発生しました: {e}")
+                    with st.expander("エラー詳細"):
+                        st.exception(e)
 
 
 def show_capco_processor():
