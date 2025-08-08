@@ -290,10 +290,59 @@ class DataConverter:
         # スペース削除
         return katakana_result.replace(" ", "").replace("　", "")
     
+    def extract_clean_phone_number(self, phone_input: str) -> str:
+        """
+        混入文字を除去して電話番号のみを抽出
+        
+        Examples:
+            '未080-5787-5364' -> '080-5787-5364'
+            '×042-361-5460' -> '042-361-5460'  
+            '娘080-6868-0817' -> '080-6868-0817'
+        """
+        if pd.isna(phone_input) or str(phone_input).strip() == "":
+            return ""
+        
+        phone_str = str(phone_input).strip()
+        
+        # 日本の電話番号パターン（優先順位順）
+        phone_patterns = [
+            r'(\d{3}-\d{4}-\d{4})',         # 携帯: 080-1234-5678
+            r'(\d{2}-\d{4}-\d{4})',         # 固定: 03-1234-5678
+            r'(\d{3}-\d{3}-\d{4})',         # 固定: 042-123-4567
+            r'(\d{4}-\d{2}-\d{4})',         # 固定: 0123-45-6789
+            r'(\d{5}-\d{1}-\d{4})',         # 固定: 01234-5-6789
+            r'(\d{11})',                    # ハイフンなし11桁: 08012345678
+            r'(\d{10})',                    # ハイフンなし10桁: 0312345678
+        ]
+        
+        # 各パターンで電話番号を検索
+        for pattern in phone_patterns:
+            match = re.search(pattern, phone_str)
+            if match:
+                extracted_phone = match.group(1)
+                
+                # 11桁または10桁の数字のみの場合、適切な形式に変換
+                if extracted_phone.isdigit():
+                    if len(extracted_phone) == 11:
+                        # 11桁の場合（携帯）: 08012345678 -> 080-1234-5678
+                        return f"{extracted_phone[:3]}-{extracted_phone[3:7]}-{extracted_phone[7:]}"
+                    elif len(extracted_phone) == 10:
+                        # 10桁の場合（固定）: 0312345678 -> 03-1234-5678
+                        if extracted_phone.startswith('0'):
+                            if extracted_phone[1] in ['3', '4', '6']:  # 東京・大阪・福岡など2桁市外局番
+                                return f"{extracted_phone[:2]}-{extracted_phone[2:6]}-{extracted_phone[6:]}"
+                            else:  # 3桁市外局番
+                                return f"{extracted_phone[:3]}-{extracted_phone[3:6]}-{extracted_phone[6:]}"
+                
+                return extracted_phone
+        
+        return ""
+    
     def process_phone_numbers(self, home_tel: str, mobile_tel: str) -> Tuple[str, str]:
-        """電話番号処理：携帯優先ロジック"""
-        home_clean = str(home_tel).strip() if pd.notna(home_tel) else ""
-        mobile_clean = str(mobile_tel).strip() if pd.notna(mobile_tel) else ""
+        """電話番号処理：携帯優先ロジック + 混入文字除去"""
+        # 混入文字を除去してクリーンな電話番号を抽出
+        home_clean = self.extract_clean_phone_number(home_tel)
+        mobile_clean = self.extract_clean_phone_number(mobile_tel)
         
         # 携帯番号が空で自宅番号がある場合、自宅を携帯に移動
         if not mobile_clean and home_clean:
