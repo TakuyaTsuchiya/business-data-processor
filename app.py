@@ -1060,11 +1060,7 @@ def show_capco_registration():
                     
                     # 処理ログ表示
                     if logs:
-                        st.warning("⚠️ バリデーションエラー:")
-                        for log in logs:
-                            st.write(f"• {log}")
-                        
-                        with st.expander("📊 処理ログ", expanded=False):
+                        with st.expander("📊 処理ログ", expanded=True):
                             for log in logs:
                                 st.write(f"• {log}")
                     
