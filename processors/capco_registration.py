@@ -476,15 +476,7 @@ class DataConverter:
         final_df = pd.DataFrame(temp_data, columns=temp_columns)
         
         # 空列の仮名前を元に戻す
-        final_column_names = []
-        empty_col_counter = 1
-        for col in CapcoConfig.OUTPUT_COLUMNS:
-            if col == "":
-                final_column_names.append("")
-            else:
-                final_column_names.append(col)
-        
-        final_df.columns = final_column_names
+        final_df.columns = CapcoConfig.OUTPUT_COLUMNS
         
         return final_df
 

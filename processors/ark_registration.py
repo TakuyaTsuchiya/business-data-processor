@@ -716,11 +716,7 @@ class DataConverter:
         final_df = pd.DataFrame(temp_data, columns=temp_columns)
         
         # 空列の仮名前を元の空文字列に戻す
-        final_column_names = []
-        for col in ArkConfig.OUTPUT_COLUMNS:
-            final_column_names.append(col)  # 空文字列("")も含めてそのまま
-        
-        final_df.columns = final_column_names
+        final_df.columns = ArkConfig.OUTPUT_COLUMNS
         
         return final_df
 
