@@ -40,7 +40,9 @@
       "Bash(gh workflow:*)",
       "WebFetch(domain:docs.anthropic.com)",
       "Bash(ls:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(cp:*)",
+      "Bash(git fetch:*)"
     ],
     "deny": []
   }
