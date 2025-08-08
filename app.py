@@ -593,26 +593,29 @@ def show_faith_emergency():
 
 def show_plaza_main():
     st.header("🏪 プラザ契約者用オートコール")
-    st.markdown("**フィルタ条件**: 延滞額合計(0,2,3,5円除外), TEL無効除外, 回収ランク(督促停止・弁護士介入除外)")
-    st.info("📂 必要ファイル: ContractList + Excel報告書（2ファイル処理）")
+    st.markdown("**フィルタ条件**: 委託先法人ID=6, 入金予定日=当日以前とNaN, 延滞額合計(0,2,3,5円除外), TEL無効除外, 回収ランク(督促停止・弁護士介入除外)")
     
-    uploaded_files = st.file_uploader("CSVファイル2つをアップロードしてください", type="csv", accept_multiple_files=True, key="plaza_main_files")
+    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="plaza_main_file")
     
-    if uploaded_files and len(uploaded_files) == 2:
+    if uploaded_file is not None:
         try:
-            dfs = []
-            for file in uploaded_files:
-                df = pd.read_csv(file, encoding='cp932')
-                dfs.append(df)
-                st.success(f"{file.name}: {df.shape[0]}行 × {df.shape[1]}列")
+            # ファイル内容をbytesで読み取り
+            file_content = uploaded_file.read()
+            st.success(f"ファイルを読み込みました: {uploaded_file.name}")
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, stats = process_plaza_main_data(dfs[0], dfs[1])
+                    result_df, filtered_df, logs, stats = process_plaza_main_data(file_content)
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
                     st.info(f"📊 統計情報: {stats}")
+                    
+                    # ログ表示
+                    if logs:
+                        st.info("処理ログ:")
+                        for log in logs:
+                            st.write(f"• {log}")
                     
                     st.subheader("処理結果プレビュー")
                     st.dataframe(result_df.head(10))
@@ -624,41 +627,69 @@ def show_plaza_main():
                     st.warning("条件に合致するデータがありませんでした。")
         except Exception as e:
             st.error(f"エラーが発生しました: {str(e)}")
-    elif uploaded_files:
-        st.warning("2つのCSVファイルをアップロードしてください。")
 
 def show_plaza_guarantor():
     st.header("👥 プラザ保証人用オートコール")
-    st.markdown("**フィルタ条件**: 基本構造のみ（未実装）")
-    st.warning("⚠️ このプロセッサーは現在基本構造のみで、完全実装が必要です。")
+    st.markdown("**フィルタ条件**: 委託先法人ID=6, 入金予定日=前日以前とNaN, 延滞額合計(0,2,3,5円除外), TEL無効除外, 回収ランク(督促停止・弁護士介入除外)")
     
-    uploaded_files = st.file_uploader("CSVファイル2つをアップロードしてください", type="csv", accept_multiple_files=True, key="plaza_guarantor_files")
+    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="plaza_guarantor_file")
     
-    if uploaded_files and len(uploaded_files) == 2:
-        st.info("プラザ保証人プロセッサーの完全実装が必要です。")
-
-def show_plaza_contact():
-    st.header("🆘 プラザ緊急連絡人用オートコール")
-    st.markdown("**フィルタ条件**: 延滞額合計(0,2,3,5円除外), TEL無効除外, 回収ランク(督促停止・弁護士介入除外)")
-    st.info("📂 必要ファイル: ContractList + Excel報告書（2ファイル処理）")
-    
-    uploaded_files = st.file_uploader("CSVファイル2つをアップロードしてください", type="csv", accept_multiple_files=True, key="plaza_contact_files")
-    
-    if uploaded_files and len(uploaded_files) == 2:
+    if uploaded_file is not None:
         try:
-            dfs = []
-            for file in uploaded_files:
-                df = pd.read_csv(file, encoding='cp932')
-                dfs.append(df)
-                st.success(f"{file.name}: {df.shape[0]}行 × {df.shape[1]}列")
+            # ファイル内容をbytesで読み取り
+            file_content = uploaded_file.read()
+            st.success(f"ファイルを読み込みました: {uploaded_file.name}")
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, stats = process_plaza_contact_data(dfs[0], dfs[1])
+                    result_df, filtered_df, logs, stats = process_plaza_guarantor_data(file_content)
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
                     st.info(f"📊 統計情報: {stats}")
+                    
+                    # ログ表示
+                    if logs:
+                        st.info("処理ログ:")
+                        for log in logs:
+                            st.write(f"• {log}")
+                    
+                    st.subheader("処理結果プレビュー")
+                    st.dataframe(result_df.head(10))
+                    
+                    timestamp = datetime.now().strftime("%m%d")
+                    filename = f"{timestamp}プラザ_保証人.csv"
+                    safe_csv_download(result_df, filename)
+                else:
+                    st.warning("条件に合致するデータがありませんでした。")
+        except Exception as e:
+            st.error(f"エラーが発生しました: {str(e)}")
+
+def show_plaza_contact():
+    st.header("🆘 プラザ緊急連絡人用オートコール")
+    st.markdown("**フィルタ条件**: 委託先法人ID=6, 入金予定日=前日以前とNaN, 延滞額合計(0,2,3,5円除外), TEL無効除外, 回収ランク(督促停止・弁護士介入除外)")
+    
+    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="plaza_contact_file")
+    
+    if uploaded_file is not None:
+        try:
+            # ファイル内容をbytesで読み取り
+            file_content = uploaded_file.read()
+            st.success(f"ファイルを読み込みました: {uploaded_file.name}")
+            
+            if st.button("処理を実行", type="primary"):
+                with st.spinner("処理中..."):
+                    result_df, filtered_df, logs, stats = process_plaza_contact_data(file_content)
+                    
+                if not result_df.empty:
+                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
+                    st.info(f"📊 統計情報: {stats}")
+                    
+                    # ログ表示
+                    if logs:
+                        st.info("処理ログ:")
+                        for log in logs:
+                            st.write(f"• {log}")
                     
                     st.subheader("処理結果プレビュー")
                     st.dataframe(result_df.head(10))
@@ -670,8 +701,6 @@ def show_plaza_contact():
                     st.warning("条件に合致するデータがありませんでした。")
         except Exception as e:
             st.error(f"エラーが発生しました: {str(e)}")
-    elif uploaded_files:
-        st.warning("2つのCSVファイルをアップロードしてください。")
 
 def show_faith_sms_vacated():
     st.header("📱 フェイス_契約者_退去済みSMS用")
