@@ -159,7 +159,7 @@ def process_mirail_data(file_content: bytes) -> Tuple[pd.DataFrame, pd.DataFrame
         file_content: アップロードされたCSVファイルの内容
         
     Returns:
-        tuple: (フィルタリング済みDF, 最終出力DF, 処理ログ, 出力ファイル名)
+        tuple: (最終出力DF, フィルタリング済みDF, 処理ログ, 出力ファイル名)
     """
     try:
         # 1. CSVファイル読み込み
@@ -175,7 +175,7 @@ def process_mirail_data(file_content: bytes) -> Tuple[pd.DataFrame, pd.DataFrame
         today_str = datetime.now().strftime("%m%d")
         output_filename = f"{today_str}{MirailConfig.OUTPUT_FILE_PREFIX}.csv"
         
-        return df_filtered, df_output, logs, output_filename
+        return df_output, df_filtered, logs, output_filename
         
     except Exception as e:
         raise Exception(f"ミライルデータ処理エラー: {str(e)}")
@@ -194,13 +194,13 @@ def process_mirail_contract_without10k_data(file_content: bytes) -> Tuple[pd.Dat
         file_content: CSVファイルの内容（bytes）
         
     Returns:
-        Tuple[pd.DataFrame, pd.DataFrame, list, str]: (フィルタリング済みDF, 出力DF, ログ, ファイル名)
+        Tuple[pd.DataFrame, pd.DataFrame, list, str]: (出力DF, フィルタリング済みDF, ログ, ファイル名)
     """
     try:
         # メイン処理を実行
-        df_filtered, df_output, logs, output_filename = process_mirail_data(file_content)
+        df_output, df_filtered, logs, output_filename = process_mirail_data(file_content)
         
-        return df_filtered, df_output, logs, output_filename
+        return df_output, df_filtered, logs, output_filename
         
     except Exception as e:
         # エラー時は空のデータを返す
