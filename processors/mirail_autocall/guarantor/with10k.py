@@ -177,7 +177,7 @@ def process_mirail_guarantor_with10k_data(file_content: bytes) -> Tuple[pd.DataF
         file_content: ContractListのファイル内容（bytes）
         
     Returns:
-        tuple: (フィルタ済みDF, 出力DF, 処理ログ, 出力ファイル名)
+        tuple: (出力DF, フィルタ済みDF, 処理ログ, 出力ファイル名)
     """
     try:
         logs = []
@@ -205,7 +205,7 @@ def process_mirail_guarantor_with10k_data(file_content: bytes) -> Tuple[pd.DataF
         today_str = datetime.now().strftime("%m%d")
         output_filename = f"{today_str}ミライル_with10k_保証人.csv"
         
-        return df_filtered, df_output, logs, output_filename
+        return df_output, df_filtered, logs, output_filename
         
     except Exception as e:
         raise Exception(f"ミライル保証人（残債含む）データ処理エラー: {str(e)}")

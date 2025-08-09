@@ -134,8 +134,8 @@ processors/plaza_autocall/
 ├── main/standard.py              # 契約者オートコール（2ファイル処理）
 ├── guarantor/standard.py         # 保証人オートコール（2ファイル処理）
 └── contact/standard.py           # 緊急連絡人オートコール（2ファイル処理）
-📋 共通フィルタ条件: 延滞額合計(0,2,3,5円除外), TEL無効除外,
-                   回収ランク(督促停止・弁護士介入除外)
+📋 共通フィルタ条件: 入金予定金額(2,3,5,12円除外), TEL無効除外,
+                   回収ランク(「督促停止」「弁護士介入」除外)
 📂 必要ファイル: ContractList + Excel報告書
 ```
 

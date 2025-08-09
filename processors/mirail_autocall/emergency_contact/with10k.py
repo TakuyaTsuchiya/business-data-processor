@@ -151,7 +151,7 @@ def process_mirail_emergencycontact_with10k_data(file_content: bytes) -> Tuple[p
         file_content: ContractListのファイル内容
         
     Returns:
-        tuple: (フィルタ済みDF, 出力DF, 処理ログ, 出力ファイル名)
+        tuple: (出力DF, フィルタ済みDF, 処理ログ, 出力ファイル名)
     """
     try:
         logs = []
@@ -179,7 +179,7 @@ def process_mirail_emergencycontact_with10k_data(file_content: bytes) -> Tuple[p
         today_str = datetime.now().strftime("%m%d")
         output_filename = f"{today_str}ミライル_with10k_緊急連絡人.csv"
         
-        return df_filtered, df_output, logs, output_filename
+        return df_output, df_filtered, logs, output_filename
         
     except Exception as e:
         raise Exception(f"ミライル緊急連絡人（残債含む）データ処理エラー: {str(e)}")

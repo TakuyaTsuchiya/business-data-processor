@@ -42,7 +42,12 @@
       "Bash(ls:*)",
       "Bash(grep:*)",
       "Bash(cp:*)",
-      "Bash(git fetch:*)"
+      "Bash(git fetch:*)",
+      "Bash(pip3 install:*)",
+      "Bash(/Users/tchytky/Library/Python/3.9/bin/streamlit run app.py)",
+      "Bash(playwright install:*)",
+      "Bash(/Users/tchytky/Library/Python/3.9/bin/playwright install chromium)",
+      "Bash(gh auth:*)"
     ],
     "deny": []
   }
