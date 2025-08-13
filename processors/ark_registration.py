@@ -383,6 +383,14 @@ class DataConverter:
         # 市区町村を抽出（改善版）
         city = ""
         
+        # 市川市・市原市の特別処理
+        if addr.startswith("市川市"):
+            city = "市川市"
+            addr = addr[3:]
+        elif addr.startswith("市原市"):
+            city = "市原市"
+            addr = addr[3:]
+        
         # 東京23区の特別処理
         if prefecture == "東京都" and not city:
             tokyo_wards = [
