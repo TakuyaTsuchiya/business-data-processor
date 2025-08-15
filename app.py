@@ -16,6 +16,8 @@ Business Data Processor v2.3.0 - 革新的UIシステム完全版
 - フェイスSMS（1種類）
 - アーク新規登録
 - カプコ新規登録
+- アーク残債更新
+- カプコ残債の更新
 """
 
 import streamlit as st
@@ -273,6 +275,8 @@ def main():
         st.markdown('<div class="sidebar-category">💰 残債の更新用CSV加工</div>', unsafe_allow_html=True)
         if st.button("アーク残債更新", key="ark_late_payment", use_container_width=True):
             st.session_state.selected_processor = "ark_late_payment"
+        if st.button("カプコ残債の更新", key="capco_debt_update", use_container_width=True):
+            st.session_state.selected_processor = "capco_debt_update"
     
     # メインコンテンツエリア
     if st.session_state.selected_processor is None:
@@ -299,6 +303,11 @@ def main():
         
         #### 📋 新規登録用CSV加工
         - アーク新規登録（111列フル仕様）
+        - カプコ新規登録
+        
+        #### 💰 残債の更新用CSV加工
+        - アーク残債更新
+        - カプコ残債の更新
         
         ### 🚀 使用方法
         1. 左サイドバーから処理したい業務を選択
@@ -349,6 +358,8 @@ def main():
         show_capco_registration()
     elif st.session_state.selected_processor == "ark_late_payment":
         show_ark_late_payment()
+    elif st.session_state.selected_processor == "capco_debt_update":
+        show_capco_debt_update()
 
 # 以下、各処理画面の関数を実装
 
@@ -1107,6 +1118,22 @@ def show_ark_late_payment():
             st.error(f"エラーが発生しました: {str(e)}")
     elif file1 or file2:
         st.warning("2つのCSVファイルをアップロードしてください。")
+
+def show_capco_debt_update():
+    st.header("💰 カプコ残債の更新")
+    st.markdown("**📋 フィルタ条件**: カプコデータと契約データの統合処理")
+    st.markdown("**📊 出力**: 残債情報更新用CSV")
+    st.info("📂 必要ファイル: カプコデータ + ContractList（2ファイル処理）")
+    
+    st.warning("⚠️ この機能は現在開発中です。詳細な仕様が確定次第、実装されます。")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("**📄 ファイル1: カプコデータ**")
+        file1 = st.file_uploader("カプコデータ.csvをアップロード", type="csv", key="capco_debt_file1", disabled=True)
+    with col2:
+        st.markdown("**📄 ファイル2: ContractList**")
+        file2 = st.file_uploader("ContractList_*.csvをアップロード", type="csv", key="capco_debt_file2", disabled=True)
 
 if __name__ == "__main__":
     main()
