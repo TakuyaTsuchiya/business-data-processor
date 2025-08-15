@@ -100,7 +100,13 @@ def extract_arrear_data(df: pd.DataFrame) -> pd.DataFrame:
         required_data['契約No'] = required_data['契約No'].astype(str)
         logger.info(f"契約No列のデータ型: {required_data['契約No'].dtype}")
         
-        logger.info(f"滞納データから {len(required_data)} 件のデータを抽出しました")
+        # 契約Noの重複削除（最後の行を保持）
+        before_count = len(required_data)
+        required_data = required_data.drop_duplicates(subset=['契約No'], keep='last')
+        after_count = len(required_data)
+        
+        logger.info(f"重複削除: {before_count} -> {after_count} 件 (削除: {before_count - after_count} 件)")
+        logger.info(f"滞納データから {after_count} 件のデータを抽出しました")
         return required_data
         
     except Exception as e:
