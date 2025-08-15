@@ -87,6 +87,11 @@ def extract_arrear_data(df: pd.DataFrame) -> pd.DataFrame:
         # 契約No（A列 = インデックス0）
         if len(df.columns) > ARREAR_REQUIRED_COLUMNS['contract_no']:
             required_data['契約No'] = df.iloc[:, ARREAR_REQUIRED_COLUMNS['contract_no']]
+            # 文字列型に変換
+            required_data['契約No'] = required_data['契約No'].astype(str)
+            # 'nan'文字列を除外
+            required_data = required_data[required_data['契約No'] != 'nan']
+            logger.info(f"契約No列のデータ型: {required_data['契約No'].dtype}")
         else:
             raise ValueError(f"契約No列（{ARREAR_REQUIRED_COLUMNS['contract_no']+1}列目）が存在しません")
         
@@ -121,6 +126,11 @@ def extract_contract_data(df: pd.DataFrame) -> pd.DataFrame:
         # 引継番号（B列 = インデックス1）
         if len(df.columns) > CONTRACT_REQUIRED_COLUMNS['takeover_no']:
             required_data['引継番号'] = df.iloc[:, CONTRACT_REQUIRED_COLUMNS['takeover_no']]
+            # 文字列型に変換
+            required_data['引継番号'] = required_data['引継番号'].astype(str)
+            # 'nan'文字列を除外
+            required_data = required_data[required_data['引継番号'] != 'nan']
+            logger.info(f"引継番号列のデータ型: {required_data['引継番号'].dtype}")
         else:
             raise ValueError(f"引継番号列（{CONTRACT_REQUIRED_COLUMNS['takeover_no']+1}列目）が存在しません")
         
@@ -170,6 +180,21 @@ def merge_data(contract_data: pd.DataFrame, arrear_data: pd.DataFrame) -> pd.Dat
         logger.info(f"マッチング前 - ContractList: {len(contract_data)} 件")
         logger.info(f"マッチング前 - csv_arrear: {len(arrear_data)} 件")
         
+        # マージ前の型確認
+        logger.info(f"引継番号の型: {contract_data['引継番号'].dtype}")
+        logger.info(f"契約Noの型: {arrear_data['契約No'].dtype}")
+        
+        # 念のため、マージキー列を再度文字列型に統一
+        contract_data['引継番号'] = contract_data['引継番号'].astype(str)
+        arrear_data['契約No'] = arrear_data['契約No'].astype(str)
+        
+        # 空文字列や'nan'を除外（既に処理済みですが念のため）
+        contract_data = contract_data[contract_data['引継番号'].str.strip() != '']
+        arrear_data = arrear_data[arrear_data['契約No'].str.strip() != '']
+        
+        logger.info(f"型変換後 - 引継番号の型: {contract_data['引継番号'].dtype}")
+        logger.info(f"型変換後 - 契約Noの型: {arrear_data['契約No'].dtype}")
+        
         # 引継番号をキーにマッチング（left join）
         merged_df = pd.merge(
             contract_data,
@@ -199,6 +224,7 @@ def merge_data(contract_data: pd.DataFrame, arrear_data: pd.DataFrame) -> pd.Dat
         
     except Exception as e:
         logger.error(f"データマッチングエラー: {str(e)}")
+        logger.error(f"エラー詳細: {type(e).__name__}")
         raise
 
 def extract_changed_data(merged_df: pd.DataFrame) -> pd.DataFrame:
