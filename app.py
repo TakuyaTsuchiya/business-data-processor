@@ -1121,19 +1121,88 @@ def show_ark_late_payment():
 
 def show_capco_debt_update():
     st.header("💰 カプコ残債の更新")
-    st.markdown("**📋 フィルタ条件**: カプコデータと契約データの統合処理")
-    st.markdown("**📊 出力**: 残債情報更新用CSV")
-    st.info("📂 必要ファイル: カプコデータ + ContractList（2ファイル処理）")
+    st.markdown("**📋 処理内容**: カプコ滞納データとContractListから必要な列を抽出して統合")
+    st.markdown("**📊 出力**: 管理番号と管理前滞納額のCSV（2列）")
+    st.info("📂 必要ファイル: csv_arrear_*.csv + ContractList_*.csv（2ファイル処理）")
     
-    st.warning("⚠️ この機能は現在開発中です。詳細な仕様が確定次第、実装されます。")
+    st.markdown("""
+    ### 🔍 抽出する列情報
+    **csv_arrear_*.csv から**:
+    - A列: 契約No
+    - Y列: 滞納額合計
+    
+    **ContractList_*.csv から**:
+    - A列: 管理番号
+    - B列: 引継番号
+    - BT列: 滞納残債
+    - CT列: クライアントCD
+    """)
     
     col1, col2 = st.columns(2)
     with col1:
-        st.markdown("**📄 ファイル1: カプコデータ**")
-        file1 = st.file_uploader("カプコデータ.csvをアップロード", type="csv", key="capco_debt_file1", disabled=True)
+        st.markdown("**📄 ファイル1: カプコ滞納データ**")
+        file1 = st.file_uploader("csv_arrear_*.csvをアップロード", type="csv", key="capco_debt_file1")
     with col2:
         st.markdown("**📄 ファイル2: ContractList**")
-        file2 = st.file_uploader("ContractList_*.csvをアップロード", type="csv", key="capco_debt_file2", disabled=True)
+        file2 = st.file_uploader("ContractList_*.csvをアップロード", type="csv", key="capco_debt_file2")
+    
+    if file1 and file2:
+        try:
+            # ファイル内容を読み取り
+            file_contents = [file1.read(), file2.read()]
+            st.success(f"✅ {file1.name}: 読み込み完了")
+            st.success(f"✅ {file2.name}: 読み込み完了")
+            
+            if st.button("処理を実行", type="primary"):
+                with st.spinner("処理中..."):
+                    from processors.capco_debt_update import process_capco_debt_update
+                    result_df, output_filename = process_capco_debt_update(file_contents[0], file_contents[1])
+                    
+                if len(result_df) > 0:
+                    st.success(f"✅ 処理完了: {len(result_df)}件のデータを出力します")
+                    
+                    # 処理統計情報
+                    col_stat1, col_stat2, col_stat3 = st.columns(3)
+                    with col_stat1:
+                        st.metric("📊 更新対象件数", len(result_df))
+                    with col_stat2:
+                        st.metric("💰 最大残債額", f"{result_df['管理前滞納額'].max():,.0f}円" if len(result_df) > 0 else "0円")
+                    with col_stat3:
+                        st.metric("💰 平均残債額", f"{result_df['管理前滞納額'].mean():,.0f}円" if len(result_df) > 0 else "0円")
+                    
+                    # データプレビュー
+                    st.subheader("📋 処理結果プレビュー")
+                    safe_dataframe_display(result_df.head(10))
+                    
+                    if len(result_df) > 10:
+                        st.info(f"上位10件を表示しています。全{len(result_df)}件のデータをダウンロードできます。")
+                    
+                    # ダウンロード機能
+                    safe_csv_download(result_df, output_filename)
+                    
+                    # 処理詳細ログ
+                    with st.expander("🔍 処理詳細ログ", expanded=False):
+                        st.text("✅ Step 1: ファイル読み込み完了")
+                        st.text("✅ Step 2: 必要な列の抽出完了") 
+                        st.text("✅ Step 2.5: クライアントCD(1,4)フィルタリング完了")
+                        st.text("✅ Step 3: データマッチング完了（引継番号⇔契約No）")
+                        st.text("✅ Step 4: 差分データ抽出完了（変更ありのみ）")
+                        st.text("✅ Step 5: 最終出力データ作成完了")
+                        st.text(f"📁 出力ファイル名: {output_filename}")
+                        
+                else:
+                    st.warning("⚠️ 更新が必要なデータが存在しませんでした。")
+                    st.info("""
+                    以下の条件を確認してください：
+                    - クライアントCDが1または4のデータが存在するか
+                    - 新旧の残債額に差分があるデータが存在するか
+                    - ファイルのヘッダー形式が正しいか
+                    """)
+                    
+        except Exception as e:
+            st.error(f"エラーが発生しました: {str(e)}")
+    elif file1 or file2:
+        st.warning("2つのCSVファイルをアップロードしてください。")
 
 if __name__ == "__main__":
     main()
