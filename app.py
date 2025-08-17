@@ -1,13 +1,6 @@
 """
-Business Data Processor v2.3.0 - 革新的UIシステム完全版
+Business Data Processor v2.3.0
 統合データ処理システム
-
-🎯 v2.3.0 革新的UIシステム特徴:
-1. プルダウンレス常時表示メニュー
-2. 階層化された業務カテゴリ構造
-3. 固定ヘッダーシステム
-4. コンパクトボタン配置
-5. サイドバー固定
 
 対応システム:
 - ミライル用オートコール（6種類）
@@ -16,6 +9,8 @@ Business Data Processor v2.3.0 - 革新的UIシステム完全版
 - フェイスSMS（1種類）
 - アーク新規登録
 - カプコ新規登録
+- アーク残債更新
+- カプコ残債の更新
 """
 
 import streamlit as st
@@ -106,7 +101,7 @@ def main():
         initial_sidebar_state="expanded"
     )
     
-    # v2.3.0 革新的UIシステム CSS
+    # カスタムCSS
     st.markdown("""
     <style>
     /* タイトル固定ヘッダーシステム */
@@ -213,6 +208,7 @@ def main():
     
     # 固定ヘッダー
     st.title("📊 Business Data Processor")
+    st.markdown("**📊 Business Data Processor** - 業務データ処理統合システム")
     
     # セッション状態の初期化
     if 'selected_processor' not in st.session_state:
@@ -282,13 +278,14 @@ def main():
         st.markdown('<div class="sidebar-category">💰 残債の更新用CSV加工</div>', unsafe_allow_html=True)
         if st.button("アーク残債の更新", key="ark_late_payment", use_container_width=True):
             st.session_state.selected_processor = "ark_late_payment"
+        if st.button("カプコ残債の更新", key="capco_debt_update", use_container_width=True):
+            st.session_state.selected_processor = "capco_debt_update"
     
     # メインコンテンツエリア
     if st.session_state.selected_processor is None:
         # ウェルカム画面
         st.markdown("""
         ## Welcome to Business Data Processor
-        
         
         #### 📞 オートコール用CSV加工
         - **ミライル用** (6種類): 契約者・保証人・緊急連絡人 × 10,000円除外有無
@@ -304,6 +301,7 @@ def main():
         
         #### 💰 残債の更新用CSV加工
         - アーク残債の更新
+        - カプコ残債の更新
         
         """)
         return
@@ -347,6 +345,8 @@ def main():
         show_capco_registration()
     elif st.session_state.selected_processor == "ark_late_payment":
         show_ark_late_payment()
+    elif st.session_state.selected_processor == "capco_debt_update":
+        show_capco_debt_update()
 
 # 以下、各処理画面の関数を実装
 
@@ -1205,6 +1205,100 @@ def show_ark_late_payment():
             st.error(f"エラーが発生しました: {str(e)}")
     elif file1 or file2:
         st.warning("2つのCSVファイルをアップロードしてください。")
+
+def show_capco_debt_update():
+    st.header("💰 カプコ残債の更新")
+    st.markdown("**📋 処理内容**: カプコ滞納データとContractListから必要な列を抽出して統合")
+    st.markdown("**📊 出力**: 管理番号と管理前滞納額のCSV（2列）")
+    st.info("📂 必要ファイル: csv_arrear_*.csv + ContractList_*.csv（2ファイル処理）")
+    st.warning("⏱️ **処理時間**: 処理には5分ほどかかります。お待ちください。")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("**📄 ファイル1: カプコ滞納データ**")
+        file1 = st.file_uploader("csv_arrear_*.csvをアップロード", type="csv", key="capco_debt_file1")
+    with col2:
+        st.markdown("**📄 ファイル2: ContractList**")
+        file2 = st.file_uploader("ContractList_*.csvをアップロード", type="csv", key="capco_debt_file2")
+    
+    if file1 and file2:
+        st.success(f"✅ {file1.name}: 読み込み完了")
+        st.success(f"✅ {file2.name}: 読み込み完了")
+        
+        if st.button("処理を実行", type="primary"):
+            try:
+                # ファイル内容を読み取り
+                file_contents = [file1.read(), file2.read()]
+                with st.spinner("処理中..."):
+                    from processors.capco_debt_update import process_capco_debt_update
+                    result_df, output_filename, stats = process_capco_debt_update(file_contents[0], file_contents[1])
+                    
+                if len(result_df) > 0:
+                    st.success(f"✅ 処理完了: {len(result_df)}件のデータを出力します")
+                    
+                    # ダウンロード機能
+                    safe_csv_download(result_df, output_filename)
+                    
+                    # 処理統計情報の詳細表示
+                    with st.expander("📊 処理統計情報", expanded=True):
+                        st.markdown("**処理統計情報:**")
+                        st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+                        
+                        st.markdown("**Step 2: データ抽出**")
+                        st.markdown(f"• 滞納データ列数: {stats.get('arrear_columns', 0)}列")
+                        st.markdown(f"• 契約No重複削除: {stats.get('arrear_unique_before', 0):,} → {stats.get('arrear_unique_after', 0):,} 件")
+                        st.markdown(f"• 削除件数: {stats.get('arrear_duplicates_removed', 0):,} 件")
+                        
+                        st.markdown("**Step 2.5: フィルタリング**")
+                        st.markdown(f"• ContractList: {stats.get('contract_extracted', 0):,} 件")
+                        st.markdown(f"• CD=1,4抽出: {stats.get('client_cd_before', 0):,} → {stats.get('client_cd_after', 0):,} 件")
+                        st.markdown(f"• 除外件数: {stats.get('client_cd_excluded', 0):,} 件")
+                        
+                        st.markdown("**Step 3-4: マッチング**")
+                        st.markdown(f"• マッチ成功: {stats.get('match_success', 0):,} 件")
+                        st.markdown(f"• マッチ失敗: {stats.get('match_failed', 0):,} 件")
+                        st.markdown(f"• 残債増加: {stats.get('diff_increased', 0):,} 件")
+                        st.markdown(f"• 残債減少: {stats.get('diff_decreased', 0):,} 件")
+                        
+                        st.markdown('</div>', unsafe_allow_html=True)
+                    
+                        
+                else:
+                    st.warning("⚠️ 更新が必要なデータが存在しませんでした。")
+                    st.info("""
+                    以下の条件を確認してください：
+                    - クライアントCDが1または4のデータが存在するか
+                    - 新旧の残債額に差分があるデータが存在するか
+                    - ファイルのヘッダー形式が正しいか
+                    """)
+                    
+            except Exception as e:
+                st.error(f"エラーが発生しました: {str(e)}")
+    elif file1 or file2:
+        st.warning("2つのCSVファイルをアップロードしてください。")
+    
+    st.markdown("**フィルタ条件:**")
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    st.markdown("• データ抽出 → csv_arrear_*.csvから契約Noと滞納額合計")
+    st.markdown("• データ統合 → ContractListから管理番号・引継番号・滞納残債・クライアントCD")
+    st.markdown("• クライアントCD → 1,4のみ抽出")
+    st.markdown("• マッチング → 引継番号と契約Noで照合")
+    st.markdown("• 差分抽出 → 新旧残債額が異なるデータのみ")
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    st.markdown("""
+    ### 🔍 抽出する列情報
+    **csv_arrear_*.csv から**:
+    - A列: 契約No
+    - Y列: 滞納額合計
+    
+    **ContractList_*.csv から**:
+    - A列: 管理番号
+    - B列: 引継番号
+    - BT列: 滞納残債
+    - CT列: クライアントCD
+    """)
+    
 
 if __name__ == "__main__":
     main()
