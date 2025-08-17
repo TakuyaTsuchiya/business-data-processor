@@ -17,7 +17,7 @@ import pandas as pd
 import chardet
 from datetime import datetime
 import logging
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Dict
 import io
 
 # ロギング設定
@@ -279,7 +279,7 @@ def create_output_dataframe(changed_df: pd.DataFrame) -> pd.DataFrame:
         logger.error(f"出力データ作成エラー: {str(e)}")
         raise
 
-def process_capco_debt_update(arrear_file_content: bytes, contract_file_content: bytes) -> Tuple[pd.DataFrame, str]:
+def process_capco_debt_update(arrear_file_content: bytes, contract_file_content: bytes) -> Tuple[pd.DataFrame, str, Dict[str, any]]:
     """
     カプコ残債更新処理のメイン関数
     
@@ -288,45 +288,68 @@ def process_capco_debt_update(arrear_file_content: bytes, contract_file_content:
         contract_file_content: ContractList_*.csv のファイル内容
     
     Returns:
-        処理結果のDataFrameと出力ファイル名のタプル
+        処理結果のDataFrame、出力ファイル名、処理統計情報のタプル
     """
     try:
+        # 統計情報を保存する辞書
+        stats = {}
+        
         # Step 1: ファイルを読み込む
         logger.info("=== Step 1: ファイル読み込み開始 ===")
         arrear_df = read_csv_with_encoding(arrear_file_content, "csv_arrear_*.csv")
         contract_df = read_csv_with_encoding(contract_file_content, "ContractList_*.csv")
+        stats['arrear_total_rows'] = len(arrear_df)
+        stats['contract_total_rows'] = len(contract_df)
         
         # Step 2: 必要な列のみを抽出
         logger.info("=== Step 2: 必要な列の抽出 ===")
         arrear_data = extract_arrear_data(arrear_df)
         contract_data = extract_contract_data(contract_df)
+        stats['arrear_columns'] = len(arrear_df.columns)
+        stats['arrear_unique_before'] = len(arrear_df)
+        stats['arrear_unique_after'] = len(arrear_data)
+        stats['arrear_duplicates_removed'] = stats['arrear_unique_before'] - stats['arrear_unique_after']
+        stats['contract_extracted'] = len(contract_data)
         
         # Step 2.5: クライアントCDでフィルタリング
         logger.info("=== Step 2.5: クライアントCDフィルタリング ===")
         contract_filtered = filter_client_cd(contract_data)
+        stats['client_cd_before'] = len(contract_data)
+        stats['client_cd_after'] = len(contract_filtered)
+        stats['client_cd_excluded'] = stats['client_cd_before'] - stats['client_cd_after']
         
         if len(contract_filtered) == 0:
             logger.warning("クライアントCD=1,4のデータが存在しません")
             empty_df = pd.DataFrame(columns=OUTPUT_HEADERS)
             timestamp = datetime.now().strftime("%m%d")
             output_filename = f"{timestamp}カプコ残債の更新.csv"
-            return empty_df, output_filename
+            return empty_df, output_filename, stats
         
         # Step 3: データマッチング
         merged_df = merge_data(contract_filtered, arrear_data)
+        stats['match_contract_count'] = len(contract_filtered)
+        stats['match_arrear_count'] = len(arrear_data)
+        stats['match_success'] = merged_df['契約No'].notna().sum()
+        stats['match_failed'] = merged_df['契約No'].isna().sum()
         
         # Step 4: 差分データ抽出
         changed_df = extract_changed_data(merged_df)
+        stats['diff_total'] = len(merged_df)
+        stats['diff_changed'] = len(changed_df)
+        stats['diff_unchanged'] = stats['diff_total'] - stats['diff_changed']
+        stats['diff_increased'] = len(changed_df[changed_df['滞納額合計'] > changed_df['滞納残債']])
+        stats['diff_decreased'] = len(changed_df[changed_df['滞納額合計'] < changed_df['滞納残債']])
         
         if len(changed_df) == 0:
             logger.warning("更新が必要なデータが存在しません")
             empty_df = pd.DataFrame(columns=OUTPUT_HEADERS)
             timestamp = datetime.now().strftime("%m%d")
             output_filename = f"{timestamp}カプコ残債の更新.csv"
-            return empty_df, output_filename
+            return empty_df, output_filename, stats
         
         # Step 5: 最終出力データ作成
         result_df = create_output_dataframe(changed_df)
+        stats['output_count'] = len(result_df)
         
         # 出力ファイル名の生成
         timestamp = datetime.now().strftime("%m%d")
@@ -335,7 +358,7 @@ def process_capco_debt_update(arrear_file_content: bytes, contract_file_content:
         logger.info("=== 処理完了 ===")
         logger.info(f"出力ファイル名: {output_filename}")
         
-        return result_df, output_filename
+        return result_df, output_filename, stats
         
     except Exception as e:
         logger.error(f"処理中にエラーが発生しました: {str(e)}")

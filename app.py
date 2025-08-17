@@ -1213,6 +1213,79 @@ def show_capco_debt_update():
     st.info("📂 必要ファイル: csv_arrear_*.csv + ContractList_*.csv（2ファイル処理）")
     st.warning("⏱️ **処理時間**: 処理には5分ほどかかります。お待ちください。")
     
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("**📄 ファイル1: カプコ滞納データ**")
+        file1 = st.file_uploader("csv_arrear_*.csvをアップロード", type="csv", key="capco_debt_file1")
+    with col2:
+        st.markdown("**📄 ファイル2: ContractList**")
+        file2 = st.file_uploader("ContractList_*.csvをアップロード", type="csv", key="capco_debt_file2")
+    
+    if file1 and file2:
+        st.success(f"✅ {file1.name}: 読み込み完了")
+        st.success(f"✅ {file2.name}: 読み込み完了")
+        
+        if st.button("処理を実行", type="primary"):
+            try:
+                # ファイル内容を読み取り
+                file_contents = [file1.read(), file2.read()]
+                with st.spinner("処理中..."):
+                    from processors.capco_debt_update import process_capco_debt_update
+                    result_df, output_filename, stats = process_capco_debt_update(file_contents[0], file_contents[1])
+                    
+                if len(result_df) > 0:
+                    st.success(f"✅ 処理完了: {len(result_df)}件のデータを出力します")
+                    
+                    # ダウンロード機能
+                    safe_csv_download(result_df, output_filename)
+                    
+                    # 処理統計情報の詳細表示
+                    with st.expander("📊 処理統計情報", expanded=True):
+                        st.markdown("**処理統計情報:**")
+                        st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+                        
+                        st.markdown("**Step 2: データ抽出**")
+                        st.markdown(f"• 滞納データ列数: {stats.get('arrear_columns', 0)}列")
+                        st.markdown(f"• 契約No重複削除: {stats.get('arrear_unique_before', 0):,} → {stats.get('arrear_unique_after', 0):,} 件")
+                        st.markdown(f"• 削除件数: {stats.get('arrear_duplicates_removed', 0):,} 件")
+                        
+                        st.markdown("**Step 2.5: フィルタリング**")
+                        st.markdown(f"• ContractList: {stats.get('contract_extracted', 0):,} 件")
+                        st.markdown(f"• CD=1,4抽出: {stats.get('client_cd_before', 0):,} → {stats.get('client_cd_after', 0):,} 件")
+                        st.markdown(f"• 除外件数: {stats.get('client_cd_excluded', 0):,} 件")
+                        
+                        st.markdown("**Step 3-4: マッチング**")
+                        st.markdown(f"• マッチ成功: {stats.get('match_success', 0):,} 件")
+                        st.markdown(f"• マッチ失敗: {stats.get('match_failed', 0):,} 件")
+                        st.markdown(f"• 残債増加: {stats.get('diff_increased', 0):,} 件")
+                        st.markdown(f"• 残債減少: {stats.get('diff_decreased', 0):,} 件")
+                        
+                        st.markdown('</div>', unsafe_allow_html=True)
+                    
+                        
+                else:
+                    st.warning("⚠️ 更新が必要なデータが存在しませんでした。")
+                    st.info("""
+                    以下の条件を確認してください：
+                    - クライアントCDが1または4のデータが存在するか
+                    - 新旧の残債額に差分があるデータが存在するか
+                    - ファイルのヘッダー形式が正しいか
+                    """)
+                    
+            except Exception as e:
+                st.error(f"エラーが発生しました: {str(e)}")
+    elif file1 or file2:
+        st.warning("2つのCSVファイルをアップロードしてください。")
+    
+    st.markdown("**フィルタ条件:**")
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    st.markdown("• データ抽出 → csv_arrear_*.csvから契約Noと滞納額合計")
+    st.markdown("• データ統合 → ContractListから管理番号・引継番号・滞納残債・クライアントCD")
+    st.markdown("• クライアントCD → 1,4のみ抽出")
+    st.markdown("• マッチング → 引継番号と契約Noで照合")
+    st.markdown("• 差分抽出 → 新旧残債額が異なるデータのみ")
+    st.markdown('</div>', unsafe_allow_html=True)
+    
     st.markdown("""
     ### 🔍 抽出する列情報
     **csv_arrear_*.csv から**:
@@ -1226,71 +1299,6 @@ def show_capco_debt_update():
     - CT列: クライアントCD
     """)
     
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("**📄 ファイル1: カプコ滞納データ**")
-        file1 = st.file_uploader("csv_arrear_*.csvをアップロード", type="csv", key="capco_debt_file1")
-    with col2:
-        st.markdown("**📄 ファイル2: ContractList**")
-        file2 = st.file_uploader("ContractList_*.csvをアップロード", type="csv", key="capco_debt_file2")
-    
-    if file1 and file2:
-        try:
-            # ファイル内容を読み取り
-            file_contents = [file1.read(), file2.read()]
-            st.success(f"✅ {file1.name}: 読み込み完了")
-            st.success(f"✅ {file2.name}: 読み込み完了")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    from processors.capco_debt_update import process_capco_debt_update
-                    result_df, output_filename = process_capco_debt_update(file_contents[0], file_contents[1])
-                    
-                if len(result_df) > 0:
-                    st.success(f"✅ 処理完了: {len(result_df)}件のデータを出力します")
-                    
-                    # 処理統計情報
-                    col_stat1, col_stat2, col_stat3 = st.columns(3)
-                    with col_stat1:
-                        st.metric("📊 更新対象件数", len(result_df))
-                    with col_stat2:
-                        st.metric("💰 最大残債額", f"{result_df['管理前滞納額'].max():,.0f}円" if len(result_df) > 0 else "0円")
-                    with col_stat3:
-                        st.metric("💰 平均残債額", f"{result_df['管理前滞納額'].mean():,.0f}円" if len(result_df) > 0 else "0円")
-                    
-                    # データプレビュー
-                    st.subheader("📋 処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    if len(result_df) > 10:
-                        st.info(f"上位10件を表示しています。全{len(result_df)}件のデータをダウンロードできます。")
-                    
-                    # ダウンロード機能
-                    safe_csv_download(result_df, output_filename)
-                    
-                    # 処理詳細ログ
-                    with st.expander("🔍 処理詳細ログ", expanded=False):
-                        st.text("✅ Step 1: ファイル読み込み完了")
-                        st.text("✅ Step 2: 必要な列の抽出完了") 
-                        st.text("✅ Step 2.5: クライアントCD(1,4)フィルタリング完了")
-                        st.text("✅ Step 3: データマッチング完了（引継番号⇔契約No）")
-                        st.text("✅ Step 4: 差分データ抽出完了（変更ありのみ）")
-                        st.text("✅ Step 5: 最終出力データ作成完了")
-                        st.text(f"📁 出力ファイル名: {output_filename}")
-                        
-                else:
-                    st.warning("⚠️ 更新が必要なデータが存在しませんでした。")
-                    st.info("""
-                    以下の条件を確認してください：
-                    - クライアントCDが1または4のデータが存在するか
-                    - 新旧の残債額に差分があるデータが存在するか
-                    - ファイルのヘッダー形式が正しいか
-                    """)
-                    
-        except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
-    elif file1 or file2:
-        st.warning("2つのCSVファイルをアップロードしてください。")
 
 if __name__ == "__main__":
     main()
