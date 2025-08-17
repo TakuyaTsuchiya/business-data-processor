@@ -279,13 +279,14 @@ def create_output_dataframe(changed_df: pd.DataFrame) -> pd.DataFrame:
         logger.error(f"出力データ作成エラー: {str(e)}")
         raise
 
-def process_capco_debt_update(arrear_file_content: bytes, contract_file_content: bytes) -> Tuple[pd.DataFrame, str, Dict[str, any]]:
+def process_capco_debt_update(arrear_file_content: bytes, contract_file_content: bytes, progress_callback=None) -> Tuple[pd.DataFrame, str, Dict[str, any]]:
     """
     カプコ残債更新処理のメイン関数
     
     Args:
         arrear_file_content: csv_arrear_*.csv のファイル内容
         contract_file_content: ContractList_*.csv のファイル内容
+        progress_callback: 進捗を更新するコールバック関数
     
     Returns:
         処理結果のDataFrame、出力ファイル名、処理統計情報のタプル
@@ -296,6 +297,9 @@ def process_capco_debt_update(arrear_file_content: bytes, contract_file_content:
         
         # Step 1: ファイルを読み込む
         logger.info("=== Step 1: ファイル読み込み開始 ===")
+        if progress_callback:
+            progress_callback(0.1, "Step 1/5: ファイル読み込み中...")
+        
         arrear_df = read_csv_with_encoding(arrear_file_content, "csv_arrear_*.csv")
         contract_df = read_csv_with_encoding(contract_file_content, "ContractList_*.csv")
         stats['arrear_total_rows'] = len(arrear_df)
@@ -303,6 +307,9 @@ def process_capco_debt_update(arrear_file_content: bytes, contract_file_content:
         
         # Step 2: 必要な列のみを抽出
         logger.info("=== Step 2: 必要な列の抽出 ===")
+        if progress_callback:
+            progress_callback(0.3, "Step 2/5: データ抽出処理中...")
+        
         arrear_data = extract_arrear_data(arrear_df)
         contract_data = extract_contract_data(contract_df)
         stats['arrear_columns'] = len(arrear_df.columns)
@@ -313,6 +320,9 @@ def process_capco_debt_update(arrear_file_content: bytes, contract_file_content:
         
         # Step 2.5: クライアントCDでフィルタリング
         logger.info("=== Step 2.5: クライアントCDフィルタリング ===")
+        if progress_callback:
+            progress_callback(0.5, "Step 2.5/5: フィルタリング処理中...")
+        
         contract_filtered = filter_client_cd(contract_data)
         stats['client_cd_before'] = len(contract_data)
         stats['client_cd_after'] = len(contract_filtered)
@@ -326,6 +336,9 @@ def process_capco_debt_update(arrear_file_content: bytes, contract_file_content:
             return empty_df, output_filename, stats
         
         # Step 3: データマッチング
+        if progress_callback:
+            progress_callback(0.7, "Step 3/5: データマッチング処理中...")
+        
         merged_df = merge_data(contract_filtered, arrear_data)
         stats['match_contract_count'] = len(contract_filtered)
         stats['match_arrear_count'] = len(arrear_data)
@@ -333,6 +346,9 @@ def process_capco_debt_update(arrear_file_content: bytes, contract_file_content:
         stats['match_failed'] = merged_df['契約No'].isna().sum()
         
         # Step 4: 差分データ抽出
+        if progress_callback:
+            progress_callback(0.85, "Step 4/5: 差分データ抽出中...")
+        
         changed_df = extract_changed_data(merged_df)
         stats['diff_total'] = len(merged_df)
         stats['diff_changed'] = len(changed_df)
@@ -348,6 +364,9 @@ def process_capco_debt_update(arrear_file_content: bytes, contract_file_content:
             return empty_df, output_filename, stats
         
         # Step 5: 最終出力データ作成
+        if progress_callback:
+            progress_callback(0.95, "Step 5/5: 出力データ作成中...")
+        
         result_df = create_output_dataframe(changed_df)
         stats['output_count'] = len(result_df)
         

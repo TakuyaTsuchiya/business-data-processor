@@ -1227,9 +1227,32 @@ def show_capco_debt_update():
             try:
                 # ファイル内容を読み取り
                 file_contents = [file1.read(), file2.read()]
-                with st.spinner("処理中..."):
-                    from processors.capco_debt_update import process_capco_debt_update
-                    result_df, output_filename, stats = process_capco_debt_update(file_contents[0], file_contents[1])
+                
+                # プログレスバーとステータステキストを作成
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                
+                # プログレスコールバック関数
+                def update_progress(progress, message):
+                    progress_bar.progress(progress)
+                    status_text.text(message)
+                
+                from processors.capco_debt_update import process_capco_debt_update
+                result_df, output_filename, stats = process_capco_debt_update(
+                    file_contents[0], 
+                    file_contents[1], 
+                    progress_callback=update_progress
+                )
+                
+                # プログレスバーを完了状態に
+                progress_bar.progress(1.0)
+                status_text.text("処理完了！")
+                
+                # 少し待ってからプログレスバーを非表示に
+                import time
+                time.sleep(0.5)
+                progress_bar.empty()
+                status_text.empty()
                     
                 if len(result_df) > 0:
                     st.success(f"✅ 処理完了: {len(result_df)}件のデータを出力します")
