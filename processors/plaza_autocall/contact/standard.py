@@ -57,8 +57,8 @@ def apply_plaza_contact_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[st
     df = df[df["入金予定日"].isna() | (df["入金予定日"] < today)]
     logs.append(f"入金予定日フィルタ後: {len(df)}件")
     
-    # 3. 回収ランクのフィルタリング（弁護士介入のみ除外）
-    exclude_ranks = ["弁護士介入"]
+    # 3. 回収ランクのフィルタリング（督促停止・弁護士介入案件は除外）
+    exclude_ranks = ["督促停止", "弁護士介入"]
     df = df[~df["回収ランク"].isin(exclude_ranks)]
     logs.append(f"回収ランクフィルタ後: {len(df)}件")
     
@@ -135,7 +135,7 @@ def process_plaza_contact_data(file_content: bytes) -> Tuple[pd.DataFrame, pd.Da
         file_content: ContractListのファイル内容
         
     Returns:
-        tuple: (フィルタ済みDF, 出力DF, 処理ログ, 出力ファイル名)
+        tuple: (出力DF, フィルタ済みDF, 処理ログ, 出力ファイル名)
     """
     try:
         logs = []

@@ -95,7 +95,7 @@ from processors.capco_registration import process_capco_data
 
 def main():
     st.set_page_config(
-        page_title="Business Data Processor v2.3.0",
+        page_title="Business Data Processor",
         page_icon="📊",
         layout="wide",
         initial_sidebar_state="expanded"
@@ -193,11 +193,21 @@ def main():
         border-radius: 10px !important;
         padding: 1rem !important;
     }
+    
+    /* フィルタ条件の行間を狭くする */
+    .filter-condition {
+        margin-bottom: 0.1rem !important;
+        line-height: 1.2 !important;
+    }
+    .filter-condition p {
+        margin: 0.1rem 0 !important;
+        line-height: 1.2 !important;
+    }
     </style>
     """, unsafe_allow_html=True)
     
     # 固定ヘッダー
-    st.title("📊 Business Data Processor v2.3.0")
+    st.title("📊 Business Data Processor")
     st.markdown("**📊 Business Data Processor** - 業務データ処理統合システム")
     
     # セッション状態の初期化
@@ -230,25 +240,25 @@ def main():
         
         # フェイス用オートコール
         st.markdown('<div class="sidebar-subcategory">📱 フェイス用オートコール</div>', unsafe_allow_html=True)
-        if st.button("契約者用オートコール", key="faith_contract", use_container_width=True):
+        if st.button("契約者", key="faith_contract", use_container_width=True):
             st.session_state.selected_processor = "faith_contract"
-        if st.button("保証人用オートコール", key="faith_guarantor", use_container_width=True):
+        if st.button("保証人", key="faith_guarantor", use_container_width=True):
             st.session_state.selected_processor = "faith_guarantor"
-        if st.button("緊急連絡人用オートコール", key="faith_emergency", use_container_width=True):
+        if st.button("緊急連絡人", key="faith_emergency", use_container_width=True):
             st.session_state.selected_processor = "faith_emergency"
         
         # プラザ用オートコール
         st.markdown('<div class="sidebar-subcategory">🏪 プラザ用オートコール</div>', unsafe_allow_html=True)
-        if st.button("契約者用オートコール", key="plaza_main", use_container_width=True):
+        if st.button("契約者", key="plaza_main", use_container_width=True):
             st.session_state.selected_processor = "plaza_main"
-        if st.button("保証人用オートコール", key="plaza_guarantor", use_container_width=True):
+        if st.button("保証人", key="plaza_guarantor", use_container_width=True):
             st.session_state.selected_processor = "plaza_guarantor"
-        if st.button("緊急連絡人用オートコール", key="plaza_contact", use_container_width=True):
+        if st.button("緊急連絡人", key="plaza_contact", use_container_width=True):
             st.session_state.selected_processor = "plaza_contact"
         
         # 📱 SMS送信用CSV加工
         st.markdown('<div class="sidebar-category">📱 SMS送信用CSV加工</div>', unsafe_allow_html=True)
-        if st.button("フェイス_契約者_退去済みSMS用", key="faith_sms_vacated", use_container_width=True):
+        if st.button("フェイス　契約者　退去済み", key="faith_sms_vacated", use_container_width=True):
             st.session_state.selected_processor = "faith_sms_vacated"
         
         # 📋 新規登録用CSV加工
@@ -266,7 +276,7 @@ def main():
         
         # 💰 残債の更新用CSV加工
         st.markdown('<div class="sidebar-category">💰 残債の更新用CSV加工</div>', unsafe_allow_html=True)
-        if st.button("アーク残債更新", key="ark_late_payment", use_container_width=True):
+        if st.button("アーク残債の更新", key="ark_late_payment", use_container_width=True):
             st.session_state.selected_processor = "ark_late_payment"
         if st.button("カプコ残債の更新", key="capco_debt_update", use_container_width=True):
             st.session_state.selected_processor = "capco_debt_update"
@@ -275,33 +285,24 @@ def main():
     if st.session_state.selected_processor is None:
         # ウェルカム画面
         st.markdown("""
-        ## 🎉 Welcome to Business Data Processor v2.3.0
-        
-        ### 📊 対応システム（13種類）
+        ## Welcome to Business Data Processor
         
         #### 📞 オートコール用CSV加工
-        - **🏢 ミライル用** (6種類): 契約者・保証人・緊急連絡人 × 10,000円除外有無
-        - **📱 フェイス用** (3種類): 契約者・保証人・緊急連絡人
-        - **🏪 プラザ用** (3種類): 契約者・保証人・緊急連絡人
+        - **ミライル用** (6種類): 契約者・保証人・緊急連絡人 × 10,000円除外有無
+        - **フェイス用** (3種類): 契約者・保証人・緊急連絡人
+        - **プラザ用** (3種類): 契約者・保証人・緊急連絡人
         
         #### 📱 SMS送信用CSV加工
-        - フェイス退去済み契約者SMS用
+        - フェイス　契約者　退去済み
         
         #### 📋 新規登録用CSV加工
-        - アーク新規登録（111列フル仕様）
+        - アーク新規登録（東京・大阪・北海道・北関東）
         - カプコ新規登録
         
         #### 💰 残債の更新用CSV加工
-        - アーク残債更新
+        - アーク残債の更新
         - カプコ残債の更新
         
-        ### 🚀 使用方法
-        1. 左サイドバーから処理したい業務を選択
-        2. CSVファイルをアップロード
-        3. 自動変換処理を実行
-        4. 結果をダウンロード
-        
-        **左サイドバーからお好きな処理を選択してください！**
         """)
         return
     
@@ -350,9 +351,16 @@ def main():
 # 以下、各処理画面の関数を実装
 
 def show_mirail_contract_without10k():
-    st.header("🏢 ミライル契約者（10,000円を除外するパターン）")
-    st.markdown("**📋 フィルタ条件**: 委託先法人ID(空白&5), 入金予定日(前日以前), 回収ランク(弁護士介入除外), 残債除外(CD=1,4かつ滞納残債10,000円・11,000円除外), TEL携帯必須")
-    st.markdown("**📊 出力**: 28列統一フォーマット（残債列に滞納残債を格納）")
+    st.header("ミライル契約者（10,000円を除外するパターン）")
+    st.markdown("**フィルタ条件:**")
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    st.markdown("• 委託先法人ID → 空白&5")
+    st.markdown("• 入金予定日 → 前日以前とNaN")
+    st.markdown("• 回収ランク → 「弁護士介入」除外")
+    st.markdown("• 残債除外 → CD=1,4かつ滞納残債10,000円・11,000円除外")
+    st.markdown("• 入金予定金額 → 2,3,5,12除外")
+    st.markdown("• 「TEL携帯」 → 空でない値のみ")
+    st.markdown('</div>', unsafe_allow_html=True)
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_contract_without10k_file")
     
@@ -385,9 +393,16 @@ def show_mirail_contract_without10k():
             st.error(f"エラーが発生しました: {str(e)}")
 
 def show_mirail_contract_with10k():
-    st.header("🏢 ミライル契約者（10,000円を除外しないパターン）")
-    st.markdown("**📋 フィルタ条件**: 委託先法人ID(空白&5), 入金予定日(前日以前), 回収ランク(弁護士介入除外), 滞納残債フィルタなし(全件処理), TEL携帯必須")
-    st.markdown("**📊 出力**: 28列統一フォーマット（残債列に滞納残債を格納）")
+    st.header("ミライル契約者（10,000円を除外しないパターン）")
+    st.markdown("**フィルタ条件:**")
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    st.markdown("• 委託先法人ID → 空白&5")
+    st.markdown("• 入金予定日 → 前日以前とNaN")
+    st.markdown("• 回収ランク → 「弁護士介入」除外")
+    st.markdown("• 滞納残債フィルタ → なし（全件処理）")
+    st.markdown("• 入金予定金額 → 2,3,5,12除外")
+    st.markdown("• 「TEL携帯」 → 空でない値のみ")
+    st.markdown('</div>', unsafe_allow_html=True)
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_contract_with10k_file")
     
@@ -420,9 +435,16 @@ def show_mirail_contract_with10k():
             st.error(f"エラーが発生しました: {str(e)}")
 
 def show_mirail_guarantor_without10k():
-    st.header("👥 ミライル保証人（10,000円を除外するパターン）")
-    st.markdown("**📋 フィルタ条件**: 委託先法人ID(空白&5), 入金予定日(前日以前), 回収ランク(弁護士介入除外), 滞納残債除外(CD=1,4かつ滞納残債10,000円・11,000円除外), 入金予定金額(2,3,5,12除外), TEL携帯.1必須")
-    st.markdown("**📊 出力**: 28列統一フォーマット（残債列に滞納残債を格納、保証人電話番号使用）")
+    st.header("ミライル保証人（10,000円を除外するパターン）")
+    st.markdown("**フィルタ条件:**")
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    st.markdown("• 委託先法人ID → 空白&5")
+    st.markdown("• 入金予定日 → 前日以前とNaN")
+    st.markdown("• 回収ランク → 「弁護士介入」除外")
+    st.markdown("• 残債除外 → CD=1,4かつ滞納残債10,000円・11,000円除外")
+    st.markdown("• 入金予定金額 → 2,3,5,12除外")
+    st.markdown("• 「TEL携帯.1」 → 空でない値のみ")
+    st.markdown('</div>', unsafe_allow_html=True)
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_guarantor_without10k_file")
     
@@ -453,9 +475,16 @@ def show_mirail_guarantor_without10k():
             st.error(f"エラーが発生しました: {str(e)}")
 
 def show_mirail_guarantor_with10k():
-    st.header("👥 ミライル保証人（10,000円を除外しないパターン）")
-    st.markdown("**📋 フィルタ条件**: 委託先法人ID(空白&5), 入金予定日(前日以前), 回収ランク(弁護士介入除外), 滞納残債フィルタなし(全件処理), 入金予定金額(2,3,5,12除外), TEL携帯.1必須")
-    st.markdown("**📊 出力**: 28列統一フォーマット（残債列に滞納残債を格納、保証人電話番号使用）")
+    st.header("ミライル保証人（10,000円を除外しないパターン）")
+    st.markdown("**フィルタ条件:**")
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    st.markdown("• 委託先法人ID → 空白&5")
+    st.markdown("• 入金予定日 → 前日以前とNaN")
+    st.markdown("• 回収ランク → 「弁護士介入」除外")
+    st.markdown("• 滞納残債フィルタ → なし（全件処理）")
+    st.markdown("• 入金予定金額 → 2,3,5,12除外")
+    st.markdown("• 「TEL携帯.1」 → 空でない値のみ")
+    st.markdown('</div>', unsafe_allow_html=True)
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_guarantor_with10k_file")
     
@@ -486,9 +515,16 @@ def show_mirail_guarantor_with10k():
             st.error(f"エラーが発生しました: {str(e)}")
 
 def show_mirail_emergency_without10k():
-    st.header("🆘 ミライル緊急連絡人（10,000円を除外するパターン）")
-    st.markdown("**📋 フィルタ条件**: 委託先法人ID(空白&5), 入金予定日(前日以前), 回収ランク(弁護士介入除外), 滞納残債除外(CD=1,4かつ滞納残債10,000円・11,000円除外), 入金予定金額(2,3,5,12除外), TEL携帯.2必須")
-    st.markdown("**📊 出力**: 28列統一フォーマット（残債列に滞納残債を格納、緊急連絡人電話番号使用）")
+    st.header("ミライル緊急連絡人（10,000円を除外するパターン）")
+    st.markdown("**フィルタ条件:**")
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    st.markdown("• 委託先法人ID → 空白&5")
+    st.markdown("• 入金予定日 → 前日以前とNaN")
+    st.markdown("• 回収ランク → 「弁護士介入」除外")
+    st.markdown("• 残債除外 → CD=1,4かつ滞納残債10,000円・11,000円除外")
+    st.markdown("• 入金予定金額 → 2,3,5,12除外")
+    st.markdown("• 「TEL携帯.2」 → 空でない値のみ")
+    st.markdown('</div>', unsafe_allow_html=True)
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_emergency_without10k_file")
     
@@ -519,9 +555,16 @@ def show_mirail_emergency_without10k():
             st.error(f"エラーが発生しました: {str(e)}")
 
 def show_mirail_emergency_with10k():
-    st.header("🆘 ミライル緊急連絡人（10,000円を除外しないパターン）")
-    st.markdown("**📋 フィルタ条件**: 委託先法人ID(空白&5), 入金予定日(前日以前), 回収ランク(弁護士介入除外), 滞納残債フィルタなし(全件処理), 入金予定金額(2,3,5,12除外), TEL携帯.2必須")
-    st.markdown("**📊 出力**: 28列統一フォーマット（残債列に滞納残債を格納、緊急連絡人電話番号使用）")
+    st.header("ミライル緊急連絡人（10,000円を除外しないパターン）")
+    st.markdown("**フィルタ条件:**")
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    st.markdown("• 委託先法人ID → 空白&5")
+    st.markdown("• 入金予定日 → 前日以前とNaN")
+    st.markdown("• 回収ランク → 「弁護士介入」除外")
+    st.markdown("• 滞納残債フィルタ → なし（全件処理）")
+    st.markdown("• 入金予定金額 → 2,3,5,12除外")
+    st.markdown("• 「TEL携帯.2」 → 空でない値のみ")
+    st.markdown('</div>', unsafe_allow_html=True)
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_emergency_with10k_file")
     
@@ -552,9 +595,16 @@ def show_mirail_emergency_with10k():
             st.error(f"エラーが発生しました: {str(e)}")
 
 def show_faith_contract():
-    st.header("📱 フェイス契約者用オートコール")
-    st.markdown("**📋 フィルタ条件**: 委託先法人ID(1-4), 入金予定日(前日以前とNaN), 回収ランク(弁護士介入除外), 入金予定金額(2,3,5,12除外), 滞納残債フィルタなし(全件処理), TEL携帯必須")
-    st.markdown("**📊 出力**: 28列統一フォーマット（残債列に滞納残債を格納）")
+    st.header("フェイス契約者用オートコール")
+    st.markdown("**フィルタ条件:**")
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    st.markdown("• 委託先法人ID → 1-4")
+    st.markdown("• 入金予定日 → 前日以前とNaN")
+    st.markdown("• 回収ランク → 「弁護士介入」除外")
+    st.markdown("• 入金予定金額 → 2,3,5,12除外")
+    st.markdown("• 滞納残債フィルタ → なし（全件処理）")
+    st.markdown("• 「TEL携帯」 → 空でない値のみ")
+    st.markdown('</div>', unsafe_allow_html=True)
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="faith_contract_file")
     
@@ -585,9 +635,16 @@ def show_faith_contract():
             st.error(f"エラーが発生しました: {str(e)}")
 
 def show_faith_guarantor():
-    st.header("👥 フェイス保証人用オートコール")
-    st.markdown("**📋 フィルタ条件**: 委託先法人ID(1-4), 入金予定日(前日以前とNaN), 回収ランク(弁護士介入除外), 入金予定金額(2,3,5,12除外), 滞納残債フィルタなし(全件処理), TEL携帯.1必須")
-    st.markdown("**📊 出力**: 28列統一フォーマット（残債列に滞納残債を格納、保証人電話番号使用）")
+    st.header("フェイス保証人用オートコール")
+    st.markdown("**フィルタ条件:**")
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    st.markdown("• 委託先法人ID → 1-4")
+    st.markdown("• 入金予定日 → 前日以前とNaN")
+    st.markdown("• 回収ランク → 「弁護士介入」除外")
+    st.markdown("• 入金予定金額 → 2,3,5,12除外")
+    st.markdown("• 滞納残債フィルタ → なし（全件処理）")
+    st.markdown("• 「TEL携帯.1」 → 空でない値のみ")
+    st.markdown('</div>', unsafe_allow_html=True)
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="faith_guarantor_file")
     
@@ -618,9 +675,16 @@ def show_faith_guarantor():
             st.error(f"エラーが発生しました: {str(e)}")
 
 def show_faith_emergency():
-    st.header("🆘 フェイス緊急連絡人用オートコール")
-    st.markdown("**📋 フィルタ条件**: 委託先法人ID(1-4), 入金予定日(前日以前とNaN), 回収ランク(弁護士介入除外), 入金予定金額(2,3,5,12除外), 滞納残債フィルタなし(全件処理), TEL携帯.2必須")
-    st.markdown("**📊 出力**: 28列統一フォーマット（残債列に滞納残債を格納、緊急連絡人電話番号使用）")
+    st.header("フェイス緊急連絡人用オートコール")
+    st.markdown("**フィルタ条件:**")
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    st.markdown("• 委託先法人ID → 1-4")
+    st.markdown("• 入金予定日 → 前日以前とNaN")
+    st.markdown("• 回収ランク → 「弁護士介入」除外")
+    st.markdown("• 入金予定金額 → 2,3,5,12除外")
+    st.markdown("• 滞納残債フィルタ → なし（全件処理）")
+    st.markdown("• 「TEL携帯.2」 → 空でない値のみ")
+    st.markdown('</div>', unsafe_allow_html=True)
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="faith_emergency_file")
     
@@ -651,9 +715,15 @@ def show_faith_emergency():
             st.error(f"エラーが発生しました: {str(e)}")
 
 def show_plaza_main():
-    st.header("🏪 プラザ契約者用オートコール")
-    st.markdown("**📋 フィルタ条件**: 委託先法人ID=6, 入金予定日(当日以前とNaN), 延滞額合計(0,2,3,5円除外), TEL無効除外, 回収ランク(督促停止・弁護士介入除外)")
-    st.markdown("**📊 出力**: 28列統一フォーマット（ContractList 1ファイル処理）")
+    st.header("プラザ契約者用オートコール")
+    st.markdown("**フィルタ条件:**")
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    st.markdown("• 委託先法人ID → 6")
+    st.markdown("• 入金予定日 → <span style='color: red; font-weight: bold;'>当日</span>以前とNaN", unsafe_allow_html=True)
+    st.markdown("• 入金予定金額 → 2,3,5,12円除外")
+    st.markdown("• 「TEL携帯」 → 空でない値のみ")
+    st.markdown("• 回収ランク → 「督促停止」「弁護士介入」除外")
+    st.markdown('</div>', unsafe_allow_html=True)
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="plaza_main_file")
     
@@ -665,7 +735,7 @@ def show_plaza_main():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, filtered_df, logs, stats = process_plaza_main_data(file_content)
+                    filtered_df, result_df, logs, filename = process_plaza_main_data(file_content)
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
@@ -684,8 +754,7 @@ def show_plaza_main():
                     st.subheader("処理結果プレビュー")
                     safe_dataframe_display(result_df.head(10))
                     
-                    timestamp = datetime.now().strftime("%m%d")
-                    filename = f"{timestamp}プラザ_契約者.csv"
+                    # filenameは関数から取得済み
                     safe_csv_download(result_df, filename)
                 else:
                     st.warning("条件に合致するデータがありませんでした。")
@@ -693,9 +762,15 @@ def show_plaza_main():
             st.error(f"エラーが発生しました: {str(e)}")
 
 def show_plaza_guarantor():
-    st.header("👥 プラザ保証人用オートコール")
-    st.markdown("**📋 フィルタ条件**: 委託先法人ID=6, 入金予定日(前日以前とNaN), 延滞額合計(0,2,3,5円除外), TEL無効除外, 回収ランク(督促停止・弁護士介入除外)")
-    st.markdown("**📊 出力**: 28列統一フォーマット（ContractList 1ファイル処理、保証人電話番号使用）")
+    st.header("プラザ保証人用オートコール")
+    st.markdown("**フィルタ条件:**")
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    st.markdown("• 委託先法人ID → 6")
+    st.markdown("• 入金予定日 → 前日以前とNaN")
+    st.markdown("• 入金予定金額 → 2,3,5,12円除外")
+    st.markdown("• 「TEL携帯.1」 → 空でない値のみ")
+    st.markdown("• 回収ランク → 「督促停止」「弁護士介入」除外")
+    st.markdown('</div>', unsafe_allow_html=True)
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="plaza_guarantor_file")
     
@@ -707,7 +782,7 @@ def show_plaza_guarantor():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, filtered_df, logs, stats = process_plaza_guarantor_data(file_content)
+                    filtered_df, result_df, logs, filename = process_plaza_guarantor_data(file_content)
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
@@ -726,8 +801,7 @@ def show_plaza_guarantor():
                     st.subheader("処理結果プレビュー")
                     safe_dataframe_display(result_df.head(10))
                     
-                    timestamp = datetime.now().strftime("%m%d")
-                    filename = f"{timestamp}プラザ_保証人.csv"
+                    # filenameは関数から取得済み
                     safe_csv_download(result_df, filename)
                 else:
                     st.warning("条件に合致するデータがありませんでした。")
@@ -735,9 +809,15 @@ def show_plaza_guarantor():
             st.error(f"エラーが発生しました: {str(e)}")
 
 def show_plaza_contact():
-    st.header("🆘 プラザ緊急連絡人用オートコール")
-    st.markdown("**📋 フィルタ条件**: 委託先法人ID=6, 入金予定日(前日以前とNaN), 延滞額合計(0,2,3,5円除外), TEL無効除外, 回収ランク(督促停止・弁護士介入除外)")
-    st.markdown("**📊 出力**: 28列統一フォーマット（ContractList 1ファイル処理、緊急連絡人電話番号使用）")
+    st.header("プラザ緊急連絡人用オートコール")
+    st.markdown("**フィルタ条件:**")
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    st.markdown("• 委託先法人ID → 6")
+    st.markdown("• 入金予定日 → 前日以前とNaN")
+    st.markdown("• 入金予定金額 → 2,3,5,12円除外")
+    st.markdown("• 「緊急連絡人１のTEL（携帯）」 → 空でない値のみ")
+    st.markdown("• 回収ランク → 「督促停止」「弁護士介入」除外")
+    st.markdown('</div>', unsafe_allow_html=True)
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="plaza_contact_file")
     
@@ -749,7 +829,7 @@ def show_plaza_contact():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, filtered_df, logs, stats = process_plaza_contact_data(file_content)
+                    filtered_df, result_df, logs, filename = process_plaza_contact_data(file_content)
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
@@ -768,8 +848,7 @@ def show_plaza_contact():
                     st.subheader("処理結果プレビュー")
                     safe_dataframe_display(result_df.head(10))
                     
-                    timestamp = datetime.now().strftime("%m%d")
-                    filename = f"{timestamp}プラザ_緊急連絡人.csv"
+                    # filenameは関数から取得済み
                     safe_csv_download(result_df, filename)
                 else:
                     st.warning("条件に合致するデータがありませんでした。")
@@ -777,7 +856,7 @@ def show_plaza_contact():
             st.error(f"エラーが発生しました: {str(e)}")
 
 def show_faith_sms_vacated():
-    st.header("📱 フェイス_契約者_退去済みSMS用")
+    st.header("📱 フェイス　契約者　退去済み")
     st.markdown("**📋 フィルタ条件**: 入居ステータス(退去済み), 委託先法人ID(1-4), TEL携帯必須")
     st.markdown("**📊 出力**: SMS送信用フォーマット（退去済み契約者のSMS送信用）")
     
@@ -812,8 +891,12 @@ def show_faith_sms_vacated():
 
 def show_ark_registration_tokyo():
     st.header("📋 アーク新規登録（東京）")
-    st.markdown("**📋 フィルタ条件**: 案件取込用レポートとContractListの重複チェック（契約番号↔引継番号）")
-    st.markdown("**📊 出力**: 111列フル仕様（テンプレートヘッダー準拠、地域コード1:東京、その他費用、1含む）")
+    st.markdown("**フィルタ条件:**")
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    st.markdown("• 重複チェック → 契約番号（案件取込用レポート）↔引継番号（ContractList）")
+    st.markdown("• 新規データ → 重複除外後の案件取込用レポートデータのみ統合")
+    st.markdown("• 地域コード → 1（東京）")
+    st.markdown('</div>', unsafe_allow_html=True)
     st.info("📂 必要ファイル: 案件取込用レポート + ContractList（2ファイル処理）")
     
     col1, col2 = st.columns(2)
@@ -866,8 +949,12 @@ def show_ark_registration_tokyo():
 
 def show_ark_registration_osaka():
     st.header("📋 アーク新規登録（大阪）")
-    st.markdown("**📋 フィルタ条件**: 案件取込用レポートとContractListの重複チェック（契約番号↔引継番号）")
-    st.markdown("**📊 出力**: 111列フル仕様（テンプレートヘッダー準拠、地域コード2:大阪、その他費用、1含む）")
+    st.markdown("**フィルタ条件:**")
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    st.markdown("• 重複チェック → 契約番号（案件取込用レポート）↔引継番号（ContractList）")
+    st.markdown("• 新規データ → 重複除外後の案件取込用レポートデータのみ統合")
+    st.markdown("• 地域コード → 2（大阪）")
+    st.markdown('</div>', unsafe_allow_html=True)
     st.info("📂 必要ファイル: 案件取込用レポート + ContractList（2ファイル処理）")
     
     col1, col2 = st.columns(2)
@@ -916,8 +1003,12 @@ def show_ark_registration_osaka():
 
 def show_ark_registration_hokkaido():
     st.header("📋 アーク新規登録（北海道）")
-    st.markdown("**📋 フィルタ条件**: 案件取込用レポートとContractListの重複チェック（契約番号↔引継番号）")
-    st.markdown("**📊 出力**: 111列フル仕様（テンプレートヘッダー準拠、地域コード3:北海道、その他費用、1含む）")
+    st.markdown("**フィルタ条件:**")
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    st.markdown("• 重複チェック → 契約番号（案件取込用レポート）↔引継番号（ContractList）")
+    st.markdown("• 新規データ → 重複除外後の案件取込用レポートデータのみ統合")
+    st.markdown("• 地域コード → 3（北海道）")
+    st.markdown('</div>', unsafe_allow_html=True)
     st.info("📂 必要ファイル: 案件取込用レポート + ContractList（2ファイル処理）")
     
     col1, col2 = st.columns(2)
@@ -966,8 +1057,12 @@ def show_ark_registration_hokkaido():
 
 def show_ark_registration_kitakanto():
     st.header("📋 アーク新規登録（北関東）")
-    st.markdown("**📋 フィルタ条件**: 案件取込用レポートとContractListの重複チェック（契約番号↔引継番号）")
-    st.markdown("**📊 出力**: 111列フル仕様（テンプレートヘッダー準拠、地域コード4:北関東、その他費用、1含む）")
+    st.markdown("**フィルタ条件:**")
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    st.markdown("• 重複チェック → 契約番号（案件取込用レポート）↔引継番号（ContractList）")
+    st.markdown("• 新規データ → 重複除外後の案件取込用レポートデータのみ統合")
+    st.markdown("• 地域コード → 4（北関東）")
+    st.markdown('</div>', unsafe_allow_html=True)
     st.info("📂 必要ファイル: 案件取込用レポート + ContractList（2ファイル処理）")
     
     col1, col2 = st.columns(2)
@@ -1016,8 +1111,10 @@ def show_ark_registration_kitakanto():
 
 def show_capco_registration():
     st.header("📋 カプコ新規登録")
-    st.markdown("**📋 フィルタ条件**: カプコデータと契約データの統合処理")
-    st.markdown("**📊 出力**: 111列フル仕様（電話番号クリーニング機能付き、混入文字自動除去）")
+    st.markdown("**フィルタ条件:**")
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    st.markdown("• データ統合 → カプコデータ + ContractList の結合処理")
+    st.markdown('</div>', unsafe_allow_html=True)
     st.info("📂 必要ファイル: カプコデータ + ContractList（2ファイル処理）")
     
     col1, col2 = st.columns(2)
@@ -1064,9 +1161,13 @@ def show_capco_registration():
         st.warning("2つのCSVファイルをアップロードしてください。")
 
 def show_ark_late_payment():
-    st.header("💰 アーク残債更新")
-    st.markdown("**📋 フィルタ条件**: アークデータと契約データの統合処理（管理番号マッチング）")
-    st.markdown("**📊 出力**: 管理番号・管理前滞納額更新CSV（残債情報更新用）")
+    st.header("💰 アーク残債の更新")
+    st.markdown("**フィルタ条件:**")
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    st.markdown("• データ統合 → アークデータ + ContractList の結合処理")
+    st.markdown("• マッチング → 管理番号での照合処理")
+    st.markdown("• 残債更新 → 管理前滞納額の更新処理")
+    st.markdown('</div>', unsafe_allow_html=True)
     st.info("📂 必要ファイル: アークデータ + ContractList（2ファイル処理）")
     
     col1, col2 = st.columns(2)

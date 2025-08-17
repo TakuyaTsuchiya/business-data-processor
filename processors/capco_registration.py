@@ -369,19 +369,30 @@ class DataConverter:
         
         # 2. 市区町村抽出（政令指定都市対応）
         city = ""
-        city_patterns = [
-            r'([^市区町村]*市[^区]*区)',  # 政令指定都市の区（例：横浜市港北区）
-            r'([^市区町村]*[市])',       # 市
-            r'([^市区町村]*[区])',       # 特別区（東京23区など）
-            r'([^市区町村]*[町村])'      # 町村
-        ]
         
-        for pattern in city_patterns:
-            match = re.search(pattern, addr)
-            if match:
-                city = match.group(1)
-                addr = addr[len(city):]
-                break
+        # 市川市・市原市の特別処理
+        if addr.startswith("市川市"):
+            city = "市川市"
+            addr = addr[3:]
+        elif addr.startswith("市原市"):
+            city = "市原市"
+            addr = addr[3:]
+        
+        # 既存の処理
+        if not city:
+            city_patterns = [
+                r'([^市区町村]*市[^区]*区)',  # 政令指定都市の区（例：横浜市港北区）
+                r'([^市区町村]*[市])',       # 市
+                r'([^市区町村]*[区])',       # 特別区（東京23区など）
+                r'([^市区町村]*[町村])'      # 町村
+            ]
+            
+            for pattern in city_patterns:
+                match = re.search(pattern, addr)
+                if match:
+                    city = match.group(1)
+                    addr = addr[len(city):]
+                    break
         
         # 3. 現住所3組み立て（市区町村以降 + 建物名 + 部屋名）
         address3_parts = []
