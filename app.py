@@ -1,13 +1,6 @@
 """
-Business Data Processor v2.3.0 - 革新的UIシステム完全版
+Business Data Processor v2.3.0
 統合データ処理システム
-
-🎯 v2.3.0 革新的UIシステム特徴:
-1. プルダウンレス常時表示メニュー
-2. 階層化された業務カテゴリ構造
-3. 固定ヘッダーシステム
-4. コンパクトボタン配置
-5. サイドバー固定
 
 対応システム:
 - ミライル用オートコール（6種類）
@@ -108,7 +101,7 @@ def main():
         initial_sidebar_state="expanded"
     )
     
-    # v2.3.0 革新的UIシステム CSS
+    # カスタムCSS
     st.markdown("""
     <style>
     /* タイトル固定ヘッダーシステム */
@@ -205,7 +198,7 @@ def main():
     
     # 固定ヘッダー
     st.title("📊 Business Data Processor v2.3.0")
-    st.markdown("**🎯 革新的UIシステム** - プルダウンレス常時表示メニューによる効率的データ処理")
+    st.markdown("**📊 Business Data Processor** - 業務データ処理統合システム")
     
     # セッション状態の初期化
     if 'selected_processor' not in st.session_state:
@@ -283,13 +276,6 @@ def main():
         # ウェルカム画面
         st.markdown("""
         ## 🎉 Welcome to Business Data Processor v2.3.0
-        
-        ### 🎯 革新的UIシステム特徴
-        - **プルダウンレス常時表示メニュー**: 全選択肢が一目で確認可能
-        - **階層化された業務カテゴリ**: オートコール・SMS・新規登録の3カテゴリで整理
-        - **固定ヘッダーシステム**: スクロール時もナビゲーション迷いなし
-        - **コンパクトボタン配置**: 効率的な空間利用
-        - **サイドバー固定**: 誤操作による隠蔽を防止
         
         ### 📊 対応システム（13種類）
         
@@ -1124,6 +1110,7 @@ def show_capco_debt_update():
     st.markdown("**📋 処理内容**: カプコ滞納データとContractListから必要な列を抽出して統合")
     st.markdown("**📊 出力**: 管理番号と管理前滞納額のCSV（2列）")
     st.info("📂 必要ファイル: csv_arrear_*.csv + ContractList_*.csv（2ファイル処理）")
+    st.warning("⏱️ **処理時間**: 処理には5分ほどかかります。お待ちください。")
     
     st.markdown("""
     ### 🔍 抽出する列情報
