@@ -191,8 +191,8 @@ def merge_data(contract_data: pd.DataFrame, arrear_data: pd.DataFrame) -> pd.Dat
         logger.info(f"引継番号の型: {contract_data['引継番号'].dtype}")
         logger.info(f"契約Noの型: {arrear_data['契約No'].dtype}")
         
-        # 念のため、マージキー列を再度文字列型に統一
-        contract_data['引継番号'] = contract_data['引継番号'].astype(str)
+        # 念のため、マージキー列を再度文字列型に統一し、引継番号の.0を除去
+        contract_data['引継番号'] = contract_data['引継番号'].astype(str).str.replace('.0', '', regex=False)
         arrear_data['契約No'] = arrear_data['契約No'].astype(str)
         
         # 空文字列や'nan'を除外（既に処理済みですが念のため）
