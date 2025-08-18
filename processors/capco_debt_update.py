@@ -19,6 +19,7 @@ from datetime import datetime
 import logging
 from typing import Tuple, Optional, Dict
 import io
+import unicodedata
 
 # ロギング設定
 logging.basicConfig(level=logging.INFO)
@@ -45,6 +46,40 @@ CONTRACT_USECOLS = [0, 1, 71, 97]  # 管理番号(A列), 引継番号(B列), 滞
 
 # 出力ヘッダー（絶対に変更しない）
 OUTPUT_HEADERS = ['管理番号', '管理前滞納額']
+
+def clean_amount(x) -> Optional[str]:
+    """
+    金額文字列のクレンジング処理
+    
+    Args:
+        x: 金額を表す可能性のある値
+        
+    Returns:
+        クレンジング済み文字列（数値変換可能な形式）またはNone
+        
+    Examples:
+        "¥12,345" -> "12345"
+        "￥1,000円" -> "1000"
+        "(500)" -> "-500"
+        "12３45" -> "12345"  # 全角→半角
+    """
+    if pd.isna(x):
+        return None
+    s = str(x).strip()
+    if s == "":
+        return None
+    
+    # 全角→半角正規化
+    s = unicodedata.normalize("NFKC", s)
+    
+    # 通貨記号・カンマ・単位除去
+    s = s.replace("¥", "").replace("￥", "").replace("円", "").replace(",", "")
+    
+    # 括弧表記の負数処理 (123) → -123
+    if s.startswith("(") and s.endswith(")"):
+        s = "-" + s[1:-1]
+    
+    return s
 
 def detect_encoding(file_content: bytes) -> str:
     """ファイルのエンコーディングを自動検出する"""
@@ -73,12 +108,12 @@ def read_csv_with_encoding(file_content: bytes, file_name: str, usecols: Optiona
         # バイトデータをデコードしてテキストとして読み込む
         text_data = file_content.decode(encoding)
         
-        # usecolsパラメータがある場合は必要な列のみ読み込み
+        # usecolsパラメータがある場合は必要な列のみ読み込み（dtype=strで先頭ゼロを保持）
         if usecols is not None:
-            df = pd.read_csv(io.StringIO(text_data), usecols=usecols)
+            df = pd.read_csv(io.StringIO(text_data), usecols=usecols, dtype=str)
             logger.info(f"メモリ最適化: {len(usecols)} 列のみ読み込み（全列数は不明）")
         else:
-            df = pd.read_csv(io.StringIO(text_data))
+            df = pd.read_csv(io.StringIO(text_data), dtype=str)
             logger.info(f"全列読み込み: {len(df.columns)} 列")
         
         return df
@@ -232,12 +267,19 @@ def merge_data(contract_data: pd.DataFrame, arrear_data: pd.DataFrame) -> pd.Dat
             suffixes=('', '_arrear')
         )
         
-        # マッチしなかった場合（NaN）を0に変換
-        merged_df['滞納額合計'] = merged_df['滞納額合計'].fillna(0)
+        # マッチフラグを追加（未マッチレコードの識別用）
+        merged_df['is_matched'] = merged_df['契約No'].notna()
         
-        # 数値型に変換
-        merged_df['滞納額合計'] = pd.to_numeric(merged_df['滞納額合計'], errors='coerce').fillna(0)
-        merged_df['滞納残債'] = pd.to_numeric(merged_df['滞納残債'], errors='coerce').fillna(0)
+        # 金額クレンジング＆数値化（0埋めなし - 差分判定まではNaNのまま保持）
+        mask = merged_df['is_matched']
+        merged_df.loc[mask, '滞納額合計_num'] = pd.to_numeric(
+            merged_df.loc[mask, '滞納額合計'].map(clean_amount),
+            errors='coerce'
+        )
+        merged_df['滞納残債_num'] = pd.to_numeric(
+            merged_df['滞納残債'].map(clean_amount),
+            errors='coerce'
+        )
         
         # マッチング統計
         matched_count = merged_df['契約No'].notna().sum()
@@ -255,22 +297,43 @@ def merge_data(contract_data: pd.DataFrame, arrear_data: pd.DataFrame) -> pd.Dat
         raise
 
 def extract_changed_data(merged_df: pd.DataFrame) -> pd.DataFrame:
-    """新旧の残債額が異なるデータのみを抽出"""
+    """新旧の残債額が異なるデータのみを抽出（厳密な差分判定）"""
     try:
-        logger.info("=== Step 4: 差分データ抽出 ===")
+        logger.info("=== Step 4: 差分データ抽出（厳密判定） ===")
         
-        # 新旧の残債額が異なるデータのみを抽出
-        changed_df = merged_df[merged_df['滞納残債'] != merged_df['滞納額合計']].copy()
+        # 厳密な条件: マッチ済み AND 両方の金額が数値として有効
+        valid = (
+            merged_df['is_matched'] &
+            merged_df['滞納額合計_num'].notna() &
+            merged_df['滞納残債_num'].notna()
+        )
         
-        logger.info(f"差分抽出結果: {len(merged_df)} -> {len(changed_df)} 件")
-        logger.info(f"変更なしで除外: {len(merged_df) - len(changed_df)} 件")
+        logger.info(f"マッチ済み: {merged_df['is_matched'].sum()} 件")
+        logger.info(f"滞納額合計_num有効: {merged_df['滞納額合計_num'].notna().sum()} 件")
+        logger.info(f"滞納残債_num有効: {merged_df['滞納残債_num'].notna().sum()} 件")
+        logger.info(f"両方有効（差分判定対象）: {valid.sum()} 件")
         
-        # 詳細統計
-        increased = len(changed_df[changed_df['滞納額合計'] > changed_df['滞納残債']])
-        decreased = len(changed_df[changed_df['滞納額合計'] < changed_df['滞納残債']])
+        # 差分があるデータのみを抽出（厳密な数値比較）
+        changed_df = merged_df.loc[
+            valid & (merged_df['滞納残債_num'] != merged_df['滞納額合計_num'])
+        ].copy()
         
-        logger.info(f"  - 残債増加: {increased} 件")
-        logger.info(f"  - 残債減少: {decreased} 件")
+        logger.info(f"差分抽出結果: {len(merged_df)} -> {valid.sum()} (有効) -> {len(changed_df)} 件")
+        logger.info(f"未マッチで除外: {len(merged_df) - merged_df['is_matched'].sum()} 件")
+        logger.info(f"金額パース失敗で除外: {merged_df['is_matched'].sum() - valid.sum()} 件")
+        logger.info(f"変更なしで除外: {valid.sum() - len(changed_df)} 件")
+        
+        # 詳細統計（増減内訳）
+        if len(changed_df) > 0:
+            changed_df['__delta__'] = changed_df['滞納額合計_num'] - changed_df['滞納残債_num']
+            increased = int((changed_df['__delta__'] > 0).sum())  # 新 > 旧
+            decreased = int((changed_df['__delta__'] < 0).sum())  # 新 < 旧
+            
+            logger.info(f"  - 残債増加: {increased} 件")
+            logger.info(f"  - 残債減少: {decreased} 件")
+        else:
+            logger.info("  - 残債増加: 0 件")
+            logger.info("  - 残債減少: 0 件")
         
         return changed_df
         
@@ -279,14 +342,15 @@ def extract_changed_data(merged_df: pd.DataFrame) -> pd.DataFrame:
         raise
 
 def create_output_dataframe(changed_df: pd.DataFrame) -> pd.DataFrame:
-    """最終出力用のDataFrameを作成"""
+    """最終出力用のDataFrameを作成（出力直前のみ0埋め実行）"""
     try:
         logger.info("=== Step 5: 出力データ作成 ===")
         
         # 出力用のDataFrameを作成（ヘッダーは厳守）
         output_df = pd.DataFrame({
             OUTPUT_HEADERS[0]: changed_df['管理番号'],  # 管理番号
-            OUTPUT_HEADERS[1]: changed_df['滞納額合計']  # 管理前滞納額
+            # 出力直前のみ0埋め（差分判定が完了してから）
+            OUTPUT_HEADERS[1]: changed_df['滞納額合計_num'].fillna(0).round(0).astype('Int64')  # 管理前滞納額
         })
         
         # インデックスをリセット
@@ -379,10 +443,19 @@ def process_capco_debt_update(arrear_file_content: bytes, contract_file_content:
         
         changed_df = extract_changed_data(merged_df)
         stats['diff_total'] = len(merged_df)
+        stats['diff_matched'] = merged_df['is_matched'].sum()
+        stats['diff_valid'] = (merged_df['is_matched'] & merged_df['滞納額合計_num'].notna() & merged_df['滞納残債_num'].notna()).sum()
         stats['diff_changed'] = len(changed_df)
-        stats['diff_unchanged'] = stats['diff_total'] - stats['diff_changed']
-        stats['diff_increased'] = len(changed_df[changed_df['滞納額合計'] > changed_df['滞納残債']])
-        stats['diff_decreased'] = len(changed_df[changed_df['滞納額合計'] < changed_df['滞納残債']])
+        stats['diff_parse_failed'] = stats['diff_matched'] - stats['diff_valid']
+        stats['diff_unchanged'] = stats['diff_valid'] - stats['diff_changed']
+        
+        # 増減統計（_num列を使用）
+        if len(changed_df) > 0 and '__delta__' in changed_df.columns:
+            stats['diff_increased'] = int((changed_df['__delta__'] > 0).sum())
+            stats['diff_decreased'] = int((changed_df['__delta__'] < 0).sum())
+        else:
+            stats['diff_increased'] = 0
+            stats['diff_decreased'] = 0
         
         if len(changed_df) == 0:
             logger.warning("更新が必要なデータが存在しません")
