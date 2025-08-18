@@ -297,11 +297,11 @@ def merge_data(contract_data: pd.DataFrame, arrear_data: pd.DataFrame) -> pd.Dat
         raise
 
 def extract_changed_data(merged_df: pd.DataFrame) -> pd.DataFrame:
-    """新旧の残債額が異なるデータのみを抽出（厳密な差分判定）"""
+    """新旧の残債額が異なるデータのみを抽出（完済レコードも含む）"""
     try:
-        logger.info("=== Step 4: 差分データ抽出（厳密判定） ===")
+        logger.info("=== Step 4: 差分データ抽出（完済レコード含む） ===")
         
-        # 厳密な条件: マッチ済み AND 両方の金額が数値として有効
+        # 1. マッチしたレコードの差分抽出（既存ロジック）
         valid = (
             merged_df['is_matched'] &
             merged_df['滞納額合計_num'].notna() &
@@ -313,24 +313,50 @@ def extract_changed_data(merged_df: pd.DataFrame) -> pd.DataFrame:
         logger.info(f"滞納残債_num有効: {merged_df['滞納残債_num'].notna().sum()} 件")
         logger.info(f"両方有効（差分判定対象）: {valid.sum()} 件")
         
-        # 差分があるデータのみを抽出（厳密な数値比較）
-        changed_df = merged_df.loc[
+        # マッチして差分があるデータ
+        matched_changed = merged_df.loc[
             valid & (merged_df['滞納残債_num'] != merged_df['滞納額合計_num'])
         ].copy()
         
-        logger.info(f"差分抽出結果: {len(merged_df)} -> {valid.sum()} (有効) -> {len(changed_df)} 件")
-        logger.info(f"未マッチで除外: {len(merged_df) - merged_df['is_matched'].sum()} 件")
-        logger.info(f"金額パース失敗で除外: {merged_df['is_matched'].sum() - valid.sum()} 件")
-        logger.info(f"変更なしで除外: {valid.sum() - len(changed_df)} 件")
+        logger.info(f"マッチして差分あり: {len(matched_changed)} 件")
+        
+        # 2. 未マッチレコードの完済判定（新規追加）
+        unmatched = merged_df[~merged_df['is_matched']].copy()
+        
+        # 滞納残債 > 0 の未マッチレコードは完済として処理
+        completed_payments = unmatched[
+            (unmatched['滞納残債_num'] > 0) & 
+            unmatched['滞納残債_num'].notna()
+        ].copy()
+        
+        if len(completed_payments) > 0:
+            # 完済レコードは滞納額合計を0に設定
+            completed_payments['滞納額合計_num'] = 0
+            completed_payments['__delta__'] = -completed_payments['滞納残債_num']
+            logger.info(f"完済として処理: {len(completed_payments)} 件")
+        else:
+            logger.info("完済として処理: 0 件")
+        
+        # 3. 両方を結合
+        if len(completed_payments) > 0:
+            changed_df = pd.concat([matched_changed, completed_payments], ignore_index=True)
+        else:
+            changed_df = matched_changed
+        
+        logger.info(f"差分抽出結果（完済含む）: {len(merged_df)} -> {len(changed_df)} 件")
+        logger.info(f"  - マッチして差分あり: {len(matched_changed)} 件")
+        logger.info(f"  - 未マッチで完済扱い: {len(completed_payments)} 件")
         
         # 詳細統計（増減内訳）
         if len(changed_df) > 0:
-            changed_df['__delta__'] = changed_df['滞納額合計_num'] - changed_df['滞納残債_num']
+            if '__delta__' not in changed_df.columns:
+                changed_df['__delta__'] = changed_df['滞納額合計_num'] - changed_df['滞納残債_num']
+            
             increased = int((changed_df['__delta__'] > 0).sum())  # 新 > 旧
             decreased = int((changed_df['__delta__'] < 0).sum())  # 新 < 旧
             
             logger.info(f"  - 残債増加: {increased} 件")
-            logger.info(f"  - 残債減少: {decreased} 件")
+            logger.info(f"  - 残債減少（完済含む）: {decreased} 件")
         else:
             logger.info("  - 残債増加: 0 件")
             logger.info("  - 残債減少: 0 件")
@@ -447,7 +473,12 @@ def process_capco_debt_update(arrear_file_content: bytes, contract_file_content:
         stats['diff_valid'] = (merged_df['is_matched'] & merged_df['滞納額合計_num'].notna() & merged_df['滞納残債_num'].notna()).sum()
         stats['diff_changed'] = len(changed_df)
         stats['diff_parse_failed'] = stats['diff_matched'] - stats['diff_valid']
-        stats['diff_unchanged'] = stats['diff_valid'] - stats['diff_changed']
+        
+        # 完済件数を追加
+        unmatched = merged_df[~merged_df['is_matched']]
+        completed_count = len(unmatched[(unmatched['滞納残債_num'] > 0) & unmatched['滞納残債_num'].notna()])
+        stats['diff_completed'] = completed_count
+        stats['diff_unchanged'] = stats['diff_valid'] - (stats['diff_changed'] - completed_count)
         
         # 増減統計（_num列を使用）
         if len(changed_df) > 0 and '__delta__' in changed_df.columns:
