@@ -73,12 +73,12 @@ def read_csv_with_encoding(file_content: bytes, file_name: str, usecols: Optiona
         # バイトデータをデコードしてテキストとして読み込む
         text_data = file_content.decode(encoding)
         
-        # usecolsパラメータがある場合は必要な列のみ読み込み
+        # usecolsパラメータがある場合は必要な列のみ読み込み（dtype=strで先頭ゼロを保持）
         if usecols is not None:
-            df = pd.read_csv(io.StringIO(text_data), usecols=usecols)
+            df = pd.read_csv(io.StringIO(text_data), usecols=usecols, dtype=str)
             logger.info(f"メモリ最適化: {len(usecols)} 列のみ読み込み（全列数は不明）")
         else:
-            df = pd.read_csv(io.StringIO(text_data))
+            df = pd.read_csv(io.StringIO(text_data), dtype=str)
             logger.info(f"全列読み込み: {len(df.columns)} 列")
         
         return df
