@@ -39,6 +39,10 @@ CONTRACT_REQUIRED_COLUMNS = {
     'client_cd': 97        # CT列: クライアントCD（98列目なので、0ベースで97）
 }
 
+# メモリ最適化：読み込み対象列のリスト
+ARREAR_USECOLS = [0, 24]  # 契約No(A列), 滞納額合計(Y列)
+CONTRACT_USECOLS = [0, 1, 71, 97]  # 管理番号(A列), 引継番号(B列), 滞納残債(BT列), クライアントCD(CT列)
+
 # 出力ヘッダー（絶対に変更しない）
 OUTPUT_HEADERS = ['管理番号', '管理前滞納額']
 
@@ -60,7 +64,7 @@ def detect_encoding(file_content: bytes) -> str:
     
     return encoding or 'utf-8'
 
-def read_csv_with_encoding(file_content: bytes, file_name: str) -> pd.DataFrame:
+def read_csv_with_encoding(file_content: bytes, file_name: str, usecols: Optional[list] = None) -> pd.DataFrame:
     """エンコーディングを自動判定してCSVを読み込む"""
     try:
         encoding = detect_encoding(file_content)
@@ -68,7 +72,14 @@ def read_csv_with_encoding(file_content: bytes, file_name: str) -> pd.DataFrame:
         
         # バイトデータをデコードしてテキストとして読み込む
         text_data = file_content.decode(encoding)
-        df = pd.read_csv(io.StringIO(text_data))
+        
+        # usecolsパラメータがある場合は必要な列のみ読み込み
+        if usecols is not None:
+            df = pd.read_csv(io.StringIO(text_data), usecols=usecols)
+            logger.info(f"メモリ最適化: {len(usecols)} 列のみ読み込み（全列数は不明）")
+        else:
+            df = pd.read_csv(io.StringIO(text_data))
+            logger.info(f"全列読み込み: {len(df.columns)} 列")
         
         return df
     except Exception as e:
@@ -76,30 +87,28 @@ def read_csv_with_encoding(file_content: bytes, file_name: str) -> pd.DataFrame:
         raise
 
 def extract_arrear_data(df: pd.DataFrame) -> pd.DataFrame:
-    """csv_arrear_*.csv から必要な列のみを抽出"""
+    """csv_arrear_*.csv から必要な列のみを抽出（メモリ最適化版：既に必要列のみ読み込み済み）"""
     try:
-        # 列数の確認
-        logger.info(f"滞納データの列数: {len(df.columns)}")
+        # usecolsで読み込んだため、列数は必要最小限（2列）
+        logger.info(f"滞納データの読み込み列数: {len(df.columns)} 列（メモリ最適化済み）")
         
-        # 必要な列のみを抽出（列インデックスで指定）
+        # usecolsで読み込んだ場合、列番号は0, 1となる
+        if len(df.columns) != 2:
+            raise ValueError(f"期待される列数: 2列、実際の列数: {len(df.columns)}列")
+        
+        # 必要な列のみを抽出（usecolsで読み込んだ順序：0=契約No, 1=滞納額合計）
         required_data = pd.DataFrame()
         
-        # 契約No（A列 = インデックス0）
-        if len(df.columns) > ARREAR_REQUIRED_COLUMNS['contract_no']:
-            required_data['契約No'] = df.iloc[:, ARREAR_REQUIRED_COLUMNS['contract_no']]
-            # 文字列型に変換
-            required_data['契約No'] = required_data['契約No'].astype(str)
-            # 'nan'文字列を除外
-            required_data = required_data[required_data['契約No'] != 'nan']
-            logger.info(f"契約No列のデータ型: {required_data['契約No'].dtype}")
-        else:
-            raise ValueError(f"契約No列（{ARREAR_REQUIRED_COLUMNS['contract_no']+1}列目）が存在しません")
+        # 契約No（読み込み後の1列目 = インデックス0）
+        required_data['契約No'] = df.iloc[:, 0]
+        # 文字列型に変換
+        required_data['契約No'] = required_data['契約No'].astype(str)
+        # 'nan'文字列を除外
+        required_data = required_data[required_data['契約No'] != 'nan']
+        logger.info(f"契約No列のデータ型: {required_data['契約No'].dtype}")
         
-        # 滞納額合計（Y列 = インデックス24）
-        if len(df.columns) > ARREAR_REQUIRED_COLUMNS['total_arrears']:
-            required_data['滞納額合計'] = df.iloc[:, ARREAR_REQUIRED_COLUMNS['total_arrears']]
-        else:
-            raise ValueError(f"滞納額合計列（{ARREAR_REQUIRED_COLUMNS['total_arrears']+1}列目）が存在しません")
+        # 滞納額合計（読み込み後の2列目 = インデックス1）
+        required_data['滞納額合計'] = df.iloc[:, 1]
         
         # 契約Noの重複削除（最後の行を保持）
         before_count = len(required_data)
@@ -115,42 +124,34 @@ def extract_arrear_data(df: pd.DataFrame) -> pd.DataFrame:
         raise
 
 def extract_contract_data(df: pd.DataFrame) -> pd.DataFrame:
-    """ContractList_*.csv から必要な列のみを抽出"""
+    """ContractList_*.csv から必要な列のみを抽出（メモリ最適化版：既に必要列のみ読み込み済み）"""
     try:
-        # 列数の確認
-        logger.info(f"ContractListの列数: {len(df.columns)}")
+        # usecolsで読み込んだため、列数は必要最小限（4列）
+        logger.info(f"ContractListの読み込み列数: {len(df.columns)} 列（メモリ最適化済み）")
         
-        # 必要な列のみを抽出（列インデックスで指定）
+        # usecolsで読み込んだ場合、列番号は0, 1, 2, 3となる
+        if len(df.columns) != 4:
+            raise ValueError(f"期待される列数: 4列、実際の列数: {len(df.columns)}列")
+        
+        # 必要な列のみを抽出（usecolsで読み込んだ順序：0=管理番号, 1=引継番号, 2=滞納残債, 3=クライアントCD）
         required_data = pd.DataFrame()
         
-        # 管理番号（A列 = インデックス0）
-        if len(df.columns) > CONTRACT_REQUIRED_COLUMNS['management_no']:
-            required_data['管理番号'] = df.iloc[:, CONTRACT_REQUIRED_COLUMNS['management_no']]
-        else:
-            raise ValueError(f"管理番号列（{CONTRACT_REQUIRED_COLUMNS['management_no']+1}列目）が存在しません")
+        # 管理番号（読み込み後の1列目 = インデックス0）
+        required_data['管理番号'] = df.iloc[:, 0]
         
-        # 引継番号（B列 = インデックス1）
-        if len(df.columns) > CONTRACT_REQUIRED_COLUMNS['takeover_no']:
-            required_data['引継番号'] = df.iloc[:, CONTRACT_REQUIRED_COLUMNS['takeover_no']]
-            # 文字列型に変換
-            required_data['引継番号'] = required_data['引継番号'].astype(str)
-            # 'nan'文字列を除外
-            required_data = required_data[required_data['引継番号'] != 'nan']
-            logger.info(f"引継番号列のデータ型: {required_data['引継番号'].dtype}")
-        else:
-            raise ValueError(f"引継番号列（{CONTRACT_REQUIRED_COLUMNS['takeover_no']+1}列目）が存在しません")
+        # 引継番号（読み込み後の2列目 = インデックス1）
+        required_data['引継番号'] = df.iloc[:, 1]
+        # 文字列型に変換
+        required_data['引継番号'] = required_data['引継番号'].astype(str)
+        # 'nan'文字列を除外
+        required_data = required_data[required_data['引継番号'] != 'nan']
+        logger.info(f"引継番号列のデータ型: {required_data['引継番号'].dtype}")
         
-        # 滞納残債（BT列 = インデックス71）
-        if len(df.columns) > CONTRACT_REQUIRED_COLUMNS['arrears']:
-            required_data['滞納残債'] = df.iloc[:, CONTRACT_REQUIRED_COLUMNS['arrears']]
-        else:
-            raise ValueError(f"滞納残債列（{CONTRACT_REQUIRED_COLUMNS['arrears']+1}列目）が存在しません")
+        # 滞納残債（読み込み後の3列目 = インデックス2）
+        required_data['滞納残債'] = df.iloc[:, 2]
         
-        # クライアントCD（CT列 = インデックス97）
-        if len(df.columns) > CONTRACT_REQUIRED_COLUMNS['client_cd']:
-            required_data['クライアントCD'] = df.iloc[:, CONTRACT_REQUIRED_COLUMNS['client_cd']]
-        else:
-            raise ValueError(f"クライアントCD列（{CONTRACT_REQUIRED_COLUMNS['client_cd']+1}列目）が存在しません")
+        # クライアントCD（読み込み後の4列目 = インデックス3）
+        required_data['クライアントCD'] = df.iloc[:, 3]
         
         logger.info(f"ContractListから {len(required_data)} 件のデータを抽出しました")
         return required_data
@@ -295,15 +296,21 @@ def process_capco_debt_update(arrear_file_content: bytes, contract_file_content:
         # 統計情報を保存する辞書
         stats = {}
         
-        # Step 1: ファイルを読み込む
+        # Step 1: ファイルを読み込む（メモリ最適化：必要な列のみ）
         logger.info("=== Step 1: ファイル読み込み開始 ===")
         if progress_callback:
             progress_callback(0.1, "Step 1/5: ファイル読み込み中...")
         
-        arrear_df = read_csv_with_encoding(arrear_file_content, "csv_arrear_*.csv")
-        contract_df = read_csv_with_encoding(contract_file_content, "ContractList_*.csv")
+        # 必要な列のみを読み込んでメモリ使用量を大幅削減
+        arrear_df = read_csv_with_encoding(arrear_file_content, "csv_arrear_*.csv", usecols=ARREAR_USECOLS)
+        contract_df = read_csv_with_encoding(contract_file_content, "ContractList_*.csv", usecols=CONTRACT_USECOLS)
         stats['arrear_total_rows'] = len(arrear_df)
         stats['contract_total_rows'] = len(contract_df)
+        stats['arrear_columns_optimized'] = len(ARREAR_USECOLS)
+        stats['contract_columns_optimized'] = len(CONTRACT_USECOLS)
+        
+        logger.info(f"メモリ最適化完了 - 滞納データ: {stats['arrear_columns_optimized']}列読み込み")
+        logger.info(f"メモリ最適化完了 - ContractList: {stats['contract_columns_optimized']}列読み込み")
         
         # Step 2: 必要な列のみを抽出
         logger.info("=== Step 2: 必要な列の抽出 ===")
@@ -312,11 +319,12 @@ def process_capco_debt_update(arrear_file_content: bytes, contract_file_content:
         
         arrear_data = extract_arrear_data(arrear_df)
         contract_data = extract_contract_data(contract_df)
-        stats['arrear_columns'] = len(arrear_df.columns)
+        stats['arrear_columns'] = len(arrear_df.columns)  # メモリ最適化後の列数（2列）
         stats['arrear_unique_before'] = len(arrear_df)
         stats['arrear_unique_after'] = len(arrear_data)
         stats['arrear_duplicates_removed'] = stats['arrear_unique_before'] - stats['arrear_unique_after']
         stats['contract_extracted'] = len(contract_data)
+        stats['contract_columns'] = len(contract_df.columns)  # メモリ最適化後の列数（4列）
         
         # Step 2.5: クライアントCDでフィルタリング
         logger.info("=== Step 2.5: クライアントCDフィルタリング ===")
