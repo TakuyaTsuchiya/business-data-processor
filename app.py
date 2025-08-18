@@ -280,6 +280,8 @@ def main():
             st.session_state.selected_processor = "ark_late_payment"
         if st.button("カプコ残債の更新", key="capco_debt_update", use_container_width=True):
             st.session_state.selected_processor = "capco_debt_update"
+        if st.button("カプコ残債の更新（軽量版）", key="capco_debt_update_light", use_container_width=True):
+            st.session_state.selected_processor = "capco_debt_update_light"
     
     # メインコンテンツエリア
     if st.session_state.selected_processor is None:
@@ -347,6 +349,8 @@ def main():
         show_ark_late_payment()
     elif st.session_state.selected_processor == "capco_debt_update":
         show_capco_debt_update()
+    elif st.session_state.selected_processor == "capco_debt_update_light":
+        show_capco_debt_update_light()
 
 # 以下、各処理画面の関数を実装
 
@@ -1319,7 +1323,128 @@ def show_capco_debt_update():
     - BT列: 滞納残債
     - CT列: クライアントCD
     """)
+
+def show_capco_debt_update_light():
+    st.header("⚡ カプコ残債の更新（軽量版）")
+    st.info("📂 必要ファイル: 手動前処理済みCSV（2ファイル処理）")
+    st.success("🚀 **処理時間**: 大幅短縮！軽量ファイルで高速処理")
     
+    # 前処理の説明
+    st.markdown("### 📋 事前準備（手動）")
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    st.markdown("**1. 滞納データCSV作成**")
+    st.markdown("• csv_arrear_*.csvから契約No（A列）と滞納額合計（Y列）のみ抽出")
+    st.markdown("• 列名: 契約No, 滞納額合計")
+    st.markdown("")
+    st.markdown("**2. 契約データCSV作成**")
+    st.markdown("• ContractListから管理番号（A列）、引継番号（B列）、滞納残債（BT列）、クライアントCD（CT列）のみ抽出")
+    st.markdown("• クライアントCD=1,4のデータのみに絞り込み")
+    st.markdown("• 列名: 管理番号, 引継番号, 滞納残債, クライアントCD")
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("**📄 ファイル1: 前処理済み滞納データ**")
+        file1 = st.file_uploader("契約No, 滞納額合計のCSVをアップロード", type="csv", key="capco_light_file1")
+    with col2:
+        st.markdown("**📄 ファイル2: 前処理済み契約データ**")
+        file2 = st.file_uploader("管理番号, 引継番号, 滞納残債, クライアントCDのCSVをアップロード", type="csv", key="capco_light_file2")
+    
+    if file1 and file2:
+        st.success(f"✅ {file1.name}: 読み込み完了")
+        st.success(f"✅ {file2.name}: 読み込み完了")
+        
+        if st.button("軽量処理を実行", type="primary"):
+            try:
+                # ファイル内容を読み取り
+                file_contents = [file1.read(), file2.read()]
+                
+                # プログレスバーとステータステキストを作成
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                
+                # プログレスコールバック関数
+                def update_progress(progress, message):
+                    progress_bar.progress(progress)
+                    status_text.text(message)
+                
+                from processors.capco_debt_update_light import process_capco_debt_update_light
+                result_df, output_filename, stats = process_capco_debt_update_light(
+                    file_contents[0], 
+                    file_contents[1], 
+                    progress_callback=update_progress
+                )
+                
+                # プログレスバーを完了状態に
+                progress_bar.progress(1.0)
+                status_text.text("軽量処理完了！")
+                
+                st.balloons()
+                st.success(f"🎉 **処理完了**: {output_filename}")
+                
+                if len(result_df) > 0:
+                    # データプレビュー
+                    st.subheader("📊 処理結果プレビュー")
+                    safe_dataframe_display(result_df)
+                    
+                    # 統計情報表示
+                    with st.expander("📈 処理統計情報", expanded=True):
+                        col1, col2, col3 = st.columns(3)
+                        
+                        with col1:
+                            st.metric("入力データ件数", f"{stats.get('arrear_total_rows', 0):,} + {stats.get('contract_total_rows', 0):,}")
+                            st.metric("マッチ成功", f"{stats.get('match_success', 0):,}")
+                        
+                        with col2:
+                            st.metric("差分検出", f"{stats.get('diff_changed', 0):,}")
+                            st.metric("残債増加", f"{stats.get('diff_increased', 0):,}")
+                        
+                        with col3:
+                            st.metric("最終出力", f"{stats.get('output_count', 0):,}")
+                            st.metric("残債減少", f"{stats.get('diff_decreased', 0):,}")
+                        
+                        st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+                        
+                        st.markdown("**Step 1: 軽量ファイル読み込み**")
+                        st.markdown(f"• 滞納データ: {stats.get('arrear_total_rows', 0):,} 行（前処理済み）")
+                        st.markdown(f"• 契約データ: {stats.get('contract_total_rows', 0):,} 行（前処理済み）")
+                        
+                        st.markdown("**Step 2: データ検証**")
+                        st.markdown(f"• 滞納データ検証: {stats.get('arrear_validated', 0):,} 件")
+                        st.markdown(f"• 契約データ検証: {stats.get('contract_validated', 0):,} 件")
+                        
+                        st.markdown("**Step 3-4: マッチング・差分**")
+                        st.markdown(f"• マッチ成功: {stats.get('match_success', 0):,} 件")
+                        st.markdown(f"• マッチ失敗: {stats.get('match_failed', 0):,} 件")
+                        st.markdown(f"• 残債増加: {stats.get('diff_increased', 0):,} 件")
+                        st.markdown(f"• 残債減少: {stats.get('diff_decreased', 0):,} 件")
+                        
+                        st.markdown('</div>', unsafe_allow_html=True)
+                    
+                    # ダウンロード
+                    safe_csv_download(result_df, output_filename)
+                else:
+                    st.warning("⚠️ 更新が必要なデータが存在しませんでした。")
+                    st.info("""
+                    以下の条件を確認してください：
+                    - 前処理でクライアントCD=1,4のデータが存在するか
+                    - 新旧の残債額に差分があるデータが存在するか
+                    - ファイルの列名が正しいか（契約No, 滞納額合計 / 管理番号, 引継番号, 滞納残債, クライアントCD）
+                    """)
+                    
+            except Exception as e:
+                st.error(f"エラーが発生しました: {str(e)}")
+    elif file1 or file2:
+        st.warning("2つの前処理済みCSVファイルをアップロードしてください。")
+    
+    st.markdown("**軽量版の特徴:**")
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    st.markdown("• 前処理済みファイル使用 → メモリ使用量大幅削減")
+    st.markdown("• 大容量ファイル対応 → VPS環境でも安定動作")
+    st.markdown("• 高速処理 → 処理時間大幅短縮")
+    st.markdown("• 分業方式 → 手動前処理 + プログラム処理")
+    st.markdown('</div>', unsafe_allow_html=True)
+
 
 if __name__ == "__main__":
     main()
