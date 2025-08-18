@@ -202,6 +202,26 @@ def merge_data(contract_data: pd.DataFrame, arrear_data: pd.DataFrame) -> pd.Dat
         logger.info(f"型変換後 - 引継番号の型: {contract_data['引継番号'].dtype}")
         logger.info(f"型変換後 - 契約Noの型: {arrear_data['契約No'].dtype}")
         
+        # === 診断コード: 実際のデータ確認 ===
+        logger.info("=== 実際のデータ確認 ===")
+        logger.info(f"引継番号サンプル（10件）: {contract_data['引継番号'].head(10).tolist()}")
+        logger.info(f"引継番号の実際の型: {type(contract_data['引継番号'].iloc[0])}")
+        logger.info(f"契約Noサンプル（10件）: {arrear_data['契約No'].head(10).tolist()}")  
+        logger.info(f"契約Noの実際の型: {type(arrear_data['契約No'].iloc[0])}")
+
+        # 実際に共通する値があるか確認
+        contract_set = set(contract_data['引継番号'])
+        arrear_set = set(arrear_data['契約No'])
+        common_values = contract_set & arrear_set
+        logger.info(f"共通する値の数: {len(common_values)}")
+        if common_values:
+            logger.info(f"共通する値（例）: {sorted(list(common_values))[:10]}")
+        else:
+            logger.info("共通する値が存在しません")
+            # サンプル比較
+            logger.info(f"引継番号の例（ソート済み最初の5件）: {sorted(list(contract_set))[:5]}")
+            logger.info(f"契約Noの例（ソート済み最初の5件）: {sorted(list(arrear_set))[:5]}")
+        
         # 引継番号をキーにマッチング（left join）
         merged_df = pd.merge(
             contract_data,
