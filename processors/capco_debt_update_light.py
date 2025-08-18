@@ -38,25 +38,105 @@ CONTRACT_EXPECTED_COLUMNS = ['管理番号', '引継番号', '滞納残債', '�
 OUTPUT_HEADERS = ['管理番号', '管理前滞納額']
 
 def detect_encoding(file_content: bytes) -> str:
-    """ファイルのエンコーディングを自動検出する"""
+    """ファイルのエンコーディングを自動検出する（改善版）"""
     # まずバイナリデータとして読み込んでエンコーディングを検出
     detection = chardet.detect(file_content)
-    encoding = detection['encoding']
+    detected_encoding = detection['encoding']
+    confidence = detection['confidence']
     
-    # 信頼度が低い場合は一般的なエンコーディングを試す
-    if detection['confidence'] < 0.7:
-        encodings = ['cp932', 'shift_jis', 'utf-8-sig', 'utf-8']
-        for enc in encodings:
-            try:
-                file_content.decode(enc)
+    logger.info(f"エンコーディング自動検出: {detected_encoding} (信頼度: {confidence:.2f})")
+    
+    # 日本語CSVでよく使われるエンコーディングを優先的に試行
+    # 信頼度が低い場合や、より確実にするために全て試行
+    encodings_to_try = [
+        'cp932',        # Windows標準（Excel標準保存）
+        'shift_jis',    # Shift_JIS
+        'utf-8-sig',    # UTF-8 with BOM
+        'utf-8',        # UTF-8
+        'iso-2022-jp',  # JIS
+        'euc-jp'        # EUC-JP
+    ]
+    
+    # 検出されたエンコーディングがリストにある場合は最優先にする
+    if detected_encoding and detected_encoding.lower() in [enc.lower() for enc in encodings_to_try]:
+        encodings_to_try.remove(detected_encoding)
+        encodings_to_try.insert(0, detected_encoding)
+    
+    # 各エンコーディングを順番に試行
+    for enc in encodings_to_try:
+        try:
+            decoded_text = file_content.decode(enc)
+            # 日本語文字が含まれているかチェック（列名が日本語の場合）
+            if '契約' in decoded_text or '滞納' in decoded_text or 'No' in decoded_text:
+                logger.info(f"エンコーディング確定: {enc} (日本語検出)")
                 return enc
-            except:
-                continue
+            # 日本語がない場合でも正常にデコードできれば採用
+            logger.info(f"エンコーディング確定: {enc} (デコード成功)")
+            return enc
+        except (UnicodeDecodeError, LookupError):
+            logger.debug(f"エンコーディング {enc} でのデコードに失敗")
+            continue
     
-    return encoding or 'utf-8'
+    # すべて失敗した場合はUTF-8をデフォルトとする
+    logger.warning(f"エンコーディング検出に失敗、UTF-8を使用")
+    return 'utf-8'
+
+def clean_column_name(column_name: str) -> str:
+    """列名をクリーニングする（BOM除去、空白除去等）"""
+    if not isinstance(column_name, str):
+        column_name = str(column_name)
+    
+    # BOM（Byte Order Mark）を除去
+    if column_name.startswith('\ufeff'):
+        column_name = column_name[1:]
+    
+    # 前後の空白を除去
+    column_name = column_name.strip()
+    
+    # 全角スペースも除去
+    column_name = column_name.replace('\u3000', '')
+    
+    return column_name
+
+def find_matching_column(target_column: str, actual_columns: list) -> str:
+    """期待される列名に対応する実際の列名を見つける（柔軟照合）"""
+    target_cleaned = clean_column_name(target_column)
+    
+    for actual_col in actual_columns:
+        actual_cleaned = clean_column_name(actual_col)
+        
+        # 完全一致
+        if target_cleaned == actual_cleaned:
+            return actual_col
+        
+        # 大文字小文字を無視した一致
+        if target_cleaned.lower() == actual_cleaned.lower():
+            return actual_col
+        
+        # 部分一致チェック（主要キーワードが含まれている）
+        if target_column == '契約No':
+            if '契約' in actual_cleaned and ('No' in actual_cleaned or 'no' in actual_cleaned or 'NO' in actual_cleaned or '番号' in actual_cleaned):
+                return actual_col
+        elif target_column == '滞納額合計':
+            if '滞納' in actual_cleaned and ('合計' in actual_cleaned or '額' in actual_cleaned):
+                return actual_col
+        elif target_column == '管理番号':
+            if '管理' in actual_cleaned and '番号' in actual_cleaned:
+                return actual_col
+        elif target_column == '引継番号':
+            if '引継' in actual_cleaned and '番号' in actual_cleaned:
+                return actual_col
+        elif target_column == '滞納残債':
+            if '滞納' in actual_cleaned and '残債' in actual_cleaned:
+                return actual_col
+        elif target_column == 'クライアントCD':
+            if 'クライアント' in actual_cleaned and ('CD' in actual_cleaned or 'cd' in actual_cleaned):
+                return actual_col
+    
+    return None
 
 def read_csv_with_encoding(file_content: bytes, file_name: str, expected_columns: list) -> pd.DataFrame:
-    """エンコーディングを自動判定してCSVを読み込む（軽量版）"""
+    """エンコーディングを自動判定してCSVを読み込む（軽量版・改善版）"""
     try:
         encoding = detect_encoding(file_content)
         logger.info(f"ファイル {file_name} のエンコーディング: {encoding}")
@@ -67,19 +147,44 @@ def read_csv_with_encoding(file_content: bytes, file_name: str, expected_columns
         
         logger.info(f"軽量版読み込み完了: {len(df)} 行, {len(df.columns)} 列")
         
-        # 期待される列名の確認
+        # 実際の列名をログ出力（デバッグ用）
+        actual_columns = [clean_column_name(col) for col in df.columns]
+        logger.info(f"実際の列名（クリーニング後）: {actual_columns}")
+        logger.info(f"期待される列名: {expected_columns}")
+        
+        # 列名マッピングを作成
+        column_mapping = {}
         missing_columns = []
-        for col in expected_columns:
-            if col not in df.columns:
-                missing_columns.append(col)
+        
+        for expected_col in expected_columns:
+            matching_col = find_matching_column(expected_col, df.columns.tolist())
+            if matching_col is not None:
+                column_mapping[matching_col] = expected_col
+                logger.info(f"列名マッピング: '{matching_col}' → '{expected_col}'")
+            else:
+                missing_columns.append(expected_col)
         
         if missing_columns:
             logger.error(f"必要な列が見つかりません: {missing_columns}")
-            logger.info(f"実際の列名: {list(df.columns)}")
+            logger.error(f"実際の列名: {list(df.columns)}")
+            logger.error(f"クリーニング後の列名: {actual_columns}")
+            
+            # 類似した列名の提案
+            for missing_col in missing_columns:
+                suggestions = []
+                for actual_col in df.columns:
+                    actual_cleaned = clean_column_name(actual_col)
+                    if missing_col in actual_cleaned or actual_cleaned in missing_col:
+                        suggestions.append(actual_col)
+                if suggestions:
+                    logger.info(f"'{missing_col}' に類似した列名: {suggestions}")
+            
             raise ValueError(f"必要な列が見つかりません: {missing_columns}")
         
-        # 必要な列のみを抽出
-        df_filtered = df[expected_columns].copy()
+        # 列名を標準化してDataFrameを作成
+        df_renamed = df.rename(columns=column_mapping)
+        df_filtered = df_renamed[expected_columns].copy()
+        
         logger.info(f"必要列抽出完了: {expected_columns}")
         
         return df_filtered
