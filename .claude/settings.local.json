@@ -49,7 +49,8 @@
       "Bash(/Users/tchytky/Library/Python/3.9/bin/playwright install chromium)",
       "Bash(gh auth:*)",
       "Bash(gh pr merge:*)",
-      "Bash(gh pr view:*)"
+      "Bash(gh pr view:*)",
+      "Bash(docker kill:*)"
     ],
     "deny": []
   }
