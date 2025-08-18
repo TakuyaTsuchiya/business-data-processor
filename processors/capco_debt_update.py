@@ -232,11 +232,14 @@ def merge_data(contract_data: pd.DataFrame, arrear_data: pd.DataFrame) -> pd.Dat
             suffixes=('', '_arrear')
         )
         
-        # マッチしなかった場合（NaN）を0に変換
-        merged_df['滞納額合計'] = merged_df['滞納額合計'].fillna(0)
+        # マッチフラグを追加（未マッチレコードの識別用）
+        merged_df['is_matched'] = merged_df['契約No'].notna()
         
-        # 数値型に変換
-        merged_df['滞納額合計'] = pd.to_numeric(merged_df['滞納額合計'], errors='coerce').fillna(0)
+        # 数値型に変換（マッチしたレコードのみ滞納額合計を変換）
+        merged_df.loc[merged_df['is_matched'], '滞納額合計'] = pd.to_numeric(
+            merged_df.loc[merged_df['is_matched'], '滞納額合計'], 
+            errors='coerce'
+        ).fillna(0)
         merged_df['滞納残債'] = pd.to_numeric(merged_df['滞納残債'], errors='coerce').fillna(0)
         
         # マッチング統計
@@ -255,15 +258,20 @@ def merge_data(contract_data: pd.DataFrame, arrear_data: pd.DataFrame) -> pd.Dat
         raise
 
 def extract_changed_data(merged_df: pd.DataFrame) -> pd.DataFrame:
-    """新旧の残債額が異なるデータのみを抽出"""
+    """新旧の残債額が異なるデータのみを抽出（マッチしたレコードのみを対象）"""
     try:
         logger.info("=== Step 4: 差分データ抽出 ===")
         
-        # 新旧の残債額が異なるデータのみを抽出
-        changed_df = merged_df[merged_df['滞納残債'] != merged_df['滞納額合計']].copy()
+        # マッチしたレコードのみを対象に差分を抽出
+        matched_df = merged_df[merged_df['is_matched']].copy()
+        logger.info(f"マッチ済みレコードで差分チェック: {len(matched_df)} 件")
         
-        logger.info(f"差分抽出結果: {len(merged_df)} -> {len(changed_df)} 件")
-        logger.info(f"変更なしで除外: {len(merged_df) - len(changed_df)} 件")
+        # 新旧の残債額が異なるデータのみを抽出
+        changed_df = matched_df[matched_df['滞納残債'] != matched_df['滞納額合計']].copy()
+        
+        logger.info(f"差分抽出結果: {len(merged_df)} -> {len(matched_df)} (マッチ済み) -> {len(changed_df)} 件")
+        logger.info(f"未マッチで除外: {len(merged_df) - len(matched_df)} 件")
+        logger.info(f"変更なしで除外: {len(matched_df) - len(changed_df)} 件")
         
         # 詳細統計
         increased = len(changed_df[changed_df['滞納額合計'] > changed_df['滞納残債']])
