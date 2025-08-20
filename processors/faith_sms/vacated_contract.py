@@ -46,7 +46,7 @@ def read_csv_auto_encoding(file_content: bytes) -> pd.DataFrame:
     
     raise ValueError("CSVファイルの読み込みに失敗しました。エンコーディングを確認してください。")
 
-def process_faith_sms_vacated_contract_data(file_content: bytes) -> Tuple[pd.DataFrame, str, int, int, List[str]]:
+def process_faith_sms_vacated_contract_data(file_content: bytes) -> Tuple[pd.DataFrame, List[str], str, dict]:
     """
     フェイスSMS退去済み契約者データ処理（Streamlit対応版）
     
@@ -54,7 +54,7 @@ def process_faith_sms_vacated_contract_data(file_content: bytes) -> Tuple[pd.Dat
         file_content: アップロードされたCSVファイルの内容（bytes）
         
     Returns:
-        tuple: (変換済みDF, 出力ファイル名, 元データ件数, 処理後件数, ログリスト)
+        tuple: (変換済みDF, ログリスト, 出力ファイル名, 統計情報)
     """
     try:
         # ログリスト初期化
@@ -165,7 +165,13 @@ def process_faith_sms_vacated_contract_data(file_content: bytes) -> Tuple[pd.Dat
         df_copy = output_df.copy()
         df_copy.columns = output_column_order
         
-        return df_copy, output_filename, initial_rows, len(output_df), logs
+        # 統計情報を辞書形式で作成
+        stats = {
+            'initial_rows': initial_rows,
+            'processed_rows': len(output_df)
+        }
+        
+        return df_copy, logs, output_filename, stats
         
     except Exception as e:
         raise Exception(f"FAITH SMS退去済み契約者処理エラー: {str(e)}")
