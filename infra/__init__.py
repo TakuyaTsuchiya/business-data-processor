@@ -1,0 +1,1 @@
+"""Infrastructure Layer - 技術的関心事とデータアクセス層"""

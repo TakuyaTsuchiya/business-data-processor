@@ -18,6 +18,9 @@ import pandas as pd
 import io
 from datetime import datetime, date
 
+# Infrastructure Layer のインポート
+from infra.csv.writer import safe_csv_download_button
+
 def safe_dataframe_display(df: pd.DataFrame):
     """安全なDataFrame表示関数（空列重複エラー対応）"""
     # DataFrameのコピーを作成して空列問題を回避
@@ -39,38 +42,8 @@ def safe_dataframe_display(df: pd.DataFrame):
     return st.dataframe(df_display)
 
 def safe_csv_download(df: pd.DataFrame, filename: str, label: str = "📥 CSVファイルをダウンロード"):
-    """安全なCSVダウンロード関数（cp932エンコーディングエラー対応）"""
-    # DataFrameのコピーを作成して空列問題を回避
-    df_copy = df.copy()
-    
-    # 空文字列のカラム名に一時的な名前を付ける
-    columns = list(df_copy.columns)
-    empty_col_counter = 1
-    for i, col in enumerate(columns):
-        if col == "":
-            columns[i] = f"_empty_col_{empty_col_counter}_"
-            empty_col_counter += 1
-    
-    # 一時的なカラム名を設定
-    df_copy.columns = columns
-    
-    try:
-        # CSVとして出力する際に元のカラム名に戻す
-        csv_data = df_copy.to_csv(index=False, encoding='cp932', errors='replace', header=list(df.columns))
-        csv_bytes = csv_data.encode('cp932', errors='replace')
-    except UnicodeEncodeError:
-        # cp932でエラーが出る場合はUTF-8で出力
-        csv_data = df_copy.to_csv(index=False, encoding='utf-8-sig', header=list(df.columns))
-        csv_bytes = csv_data.encode('utf-8-sig')
-        st.warning("⚠️ 一部の文字がcp932に対応していないため、UTF-8で出力します")
-    
-    return st.download_button(
-        label=label,
-        data=csv_bytes,
-        file_name=filename,
-        mime="text/csv",
-        type="primary"
-    )
+    """安全なCSVダウンロード関数（Infrastructure Layer使用）"""
+    return safe_csv_download_button(df, filename, label)
 
 # プロセッサーをインポート
 from processors.mirail_autocall.contract.without10k import process_mirail_contract_without10k_data

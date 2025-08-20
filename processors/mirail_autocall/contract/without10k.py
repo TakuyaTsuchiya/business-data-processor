@@ -4,11 +4,21 @@
 """
 
 import pandas as pd
-import io
 import sys
 import os
 from datetime import datetime
 from typing import Tuple, Optional
+
+# Infrastructure Layer のインポート
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
+from infra.csv.reader import read_csv_auto_encoding
+from infra.logging.logger import create_logger
+
+# Domain Layer のインポート
+from domain.filters.filter_factory import FilterFactory
 
 # 共通定義のインポート
 processors_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -46,86 +56,31 @@ class MirailConfig:
     OUTPUT_FILE_PREFIX = "ミライル_without10k_契約者"
 
 
-def read_csv_auto_encoding(file_content: bytes) -> pd.DataFrame:
-    """アップロードされたCSVファイルを自動エンコーディング判定で読み込み"""
-    encodings = ['utf-8', 'utf-8-sig', 'shift_jis', 'cp932']
-    
-    for enc in encodings:
-        try:
-            return pd.read_csv(io.BytesIO(file_content), encoding=enc, dtype=str)
-        except Exception:
-            continue
-    
-    raise ValueError("CSVファイルの読み込みに失敗しました。エンコーディングを確認してください。")
 
 
-def apply_filters(df_input: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
+def apply_filters(df_input: pd.DataFrame, logger) -> pd.DataFrame:
     """
     ミライル契約者（残債10,000円・11,000円除外）フィルタリング処理
     
-    📋 フィルタリング条件:
-    - 委託先法人ID: 空白と5
-    - 入金予定日: 前日以前またはNaN（当日は除外）
-    - 回収ランク: 弁護士介入を除外
-    - 残債除外: クライアントCD=1かつ滞納残債10,000円・11,000円のレコードのみ除外
-    - TEL携帯: 空でない値のみ（契約者電話番号）
+    Domain Layer のフィルターシステムを使用した新しい実装
+    
+    Args:
+        df_input (pd.DataFrame): 入力データ
+        logger: ログ出力用ロガー
     
     Returns:
-        tuple: (フィルタリング済みDataFrame, 処理ログ)
+        pd.DataFrame: フィルタリング済みDataFrame
     """
-    df = df_input.copy()
-    logs = []
-    filter_conditions = MirailConfig.FILTER_CONDITIONS
+    # Domain Layerのフィルターファクトリーを使用
+    filter_instance = FilterFactory.create_mirail_filter(
+        process_type="contract",
+        debt_filter_enabled=True  # without10k版なので残債除外有効
+    )
     
-    initial_count = len(df)
-    logs.append(f"初期データ件数: {initial_count}件")
+    # 統合フィルターを適用
+    df_filtered = filter_instance.apply_all_filters(df_input, logger)
     
-    # 委託先法人IDのフィルタリング（空白と5）
-    if "委託先法人ID" in filter_conditions:
-        df = df[df["委託先法人ID"].isna() | 
-               (df["委託先法人ID"].astype(str).str.strip() == "") | 
-               (df["委託先法人ID"].astype(str).str.strip() == "5")]
-        logs.append(f"委託先法人IDフィルタリング後: {len(df)}件")
-    
-    # 入金予定日のフィルタリング（前日以前またはNaN、当日は除外）
-    today = pd.Timestamp.now().normalize()
-    df["入金予定日"] = pd.to_datetime(df["入金予定日"], errors='coerce')
-    df = df[df["入金予定日"].isna() | (df["入金予定日"] < today)]
-    logs.append(f"入金予定日フィルタリング後: {len(df)}件")
-    
-    # 回収ランクのフィルタリング（弁護士介入のみ除外）
-    if "回収ランク_not_in" in filter_conditions:
-        df = df[~df["回収ランク"].isin(filter_conditions["回収ランク_not_in"])]
-        logs.append(f"回収ランクフィルタリング後: {len(df)}件")
-    
-    # 残債除外フィルタリング
-    # 「クライアントCD=1 かつ 滞納残債=10,000円・11,000円」のレコードのみ除外
-    # その他全てのレコードは対象（クライアントCD≠1や、CD=1でも残債が10k/11k以外）
-    if "滞納残債_not_in" in filter_conditions:
-        df["クライアントCD"] = pd.to_numeric(df["クライアントCD"], errors="coerce")
-        df["滞納残債"] = pd.to_numeric(df["滞納残債"].astype(str).str.replace(',', ''), errors='coerce')
-        
-        exclude_condition = ((df["クライアントCD"] == 1) | (df["クライアントCD"] == 4)) & \
-                           (df["滞納残債"].isin(filter_conditions["滞納残債_not_in"]))
-        df = df[~exclude_condition]
-        logs.append(f"クライアントCD=1,4かつ残債10,000円・11,000円除外後: {len(df)}件")
-    
-    # TEL携帯のフィルタリング（契約者電話番号が必須）
-    if "TEL携帯" in filter_conditions:
-        df = df[
-            df["TEL携帯"].notna() &
-            (~df["TEL携帯"].astype(str).str.strip().isin(["", "nan", "NaN"]))
-        ]
-        logs.append(f"TEL携帯フィルタリング後: {len(df)}件")
-    
-    # 入金予定金額のフィルタリング（2,3,5,12を除外）
-    if "入金予定金額_not_in" in filter_conditions:
-        df["入金予定金額"] = pd.to_numeric(df["入金予定金額"], errors='coerce')
-        df = df[df["入金予定金額"].isna() | ~df["入金予定金額"].isin(filter_conditions["入金予定金額_not_in"])]
-        logs.append(f"入金予定金額フィルタリング後: {len(df)}件")
-    
-    logs.append(f"最終フィルタリング結果: {len(df)}件")
-    return df, logs
+    return df_filtered
 
 
 def create_template_dataframe(row_count: int) -> pd.DataFrame:
@@ -161,23 +116,41 @@ def process_mirail_data(file_content: bytes) -> Tuple[pd.DataFrame, pd.DataFrame
     Returns:
         tuple: (最終出力DF, フィルタリング済みDF, 処理ログ, 出力ファイル名)
     """
+    # Infrastructure Layer のロガーを初期化
+    logger = create_logger("ミライル契約者without10k")
+    
     try:
+        logger.info("処理開始")
+        
         # 1. CSVファイル読み込み
+        logger.info("CSVファイル読み込み開始")
         df_input = read_csv_auto_encoding(file_content)
+        logger.log_data_processing("CSV読み込み", 0, len(df_input), f"列数: {len(df_input.columns)}")
         
         # 2. フィルタリング処理
-        df_filtered, logs = apply_filters(df_input)
+        logger.info("フィルタリング処理開始")
+        df_filtered = apply_filters(df_input, logger)
+        logger.log_data_processing("フィルタリング", len(df_input), len(df_filtered))
         
         # 3. テンプレートマッピング
+        logger.info("テンプレートマッピング開始")
         df_output = map_data_to_template(df_filtered)
+        logger.log_mapping_result("28列テンプレート", len(df_output))
         
         # 4. 出力ファイル名生成
         today_str = datetime.now().strftime("%m%d")
         output_filename = f"{today_str}{MirailConfig.OUTPUT_FILE_PREFIX}.csv"
+        logger.info(f"出力ファイル名: {output_filename}")
+        
+        logger.info("処理完了")
+        
+        # ログを取得
+        logs = logger.get_logs()
         
         return df_output, df_filtered, logs, output_filename
         
     except Exception as e:
+        logger.error(f"処理エラー: {str(e)}")
         raise Exception(f"ミライルデータ処理エラー: {str(e)}")
 
 
