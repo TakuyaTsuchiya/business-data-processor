@@ -872,21 +872,14 @@ def show_faith_sms_vacated():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, stats = process_faith_sms_vacated_contract_data(df)
+                    result_df, filename, initial_rows, processed_rows = process_faith_sms_vacated_contract_data(uploaded_file.read())
                     
                 if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
+                    st.success(f"処理完了: {processed_rows}件のデータを出力（元データ: {initial_rows}件）")
                     
                     st.subheader("処理結果プレビュー")
                     safe_dataframe_display(result_df.head(10))
                     
-                    timestamp = datetime.now().strftime("%m%d")
-                    filename = f"{timestamp}フェイス_SMS_退去済み.csv"
                     safe_csv_download(result_df, filename)
                 else:
                     st.warning("条件に合致するデータがありませんでした。")
