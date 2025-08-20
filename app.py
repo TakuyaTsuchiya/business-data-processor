@@ -872,12 +872,22 @@ def show_faith_sms_vacated():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, logs, filename, stats = process_faith_sms_vacated_contract_data(uploaded_file.read())
+                    # 戻り値を一時変数で受け取る
+                    result = process_faith_sms_vacated_contract_data(uploaded_file.read())
+                    st.write(f"DEBUG: 戻り値の数: {len(result)}")
+                    st.write(f"DEBUG: 各要素の型: {[type(x).__name__ for x in result]}")
+                    result_df, logs, filename, stats = result
                     
                 # 処理ログ表示（データの有無に関わらず表示）
                 with st.expander("📊 処理ログ", expanded=True):
-                    for log in logs:
-                        st.write(f"• {log}")
+                    # デバッグ情報
+                    st.write(f"logs type: {type(logs)}")
+                    st.write(f"logs content: {logs}")
+                    if isinstance(logs, list):
+                        for log in logs:
+                            st.write(f"• {log}")
+                    else:
+                        st.write(f"logs is not a list but: {logs}")
                 
                 if not result_df.empty:
                     st.success(f"処理完了: {stats['processed_rows']}件のデータを出力（元データ: {stats['initial_rows']}件）")
