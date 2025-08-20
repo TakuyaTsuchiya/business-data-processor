@@ -2,8 +2,24 @@ import pandas as pd
 import io
 import re
 import os
-from datetime import datetime
+from datetime import datetime, date
 from typing import Tuple, List
+
+def format_payment_deadline(date_input: date) -> str:
+    """
+    日付オブジェクトを日本語形式に変換
+    
+    Args:
+        date_input: datetimeのdateオブジェクト
+        
+    Returns:
+        str: 'YYYY年MM月DD日' 形式の文字列
+        
+    Examples:
+        format_payment_deadline(date(2025, 6, 30)) -> '2025年6月30日'
+        format_payment_deadline(date(2025, 12, 1)) -> '2025年12月1日'
+    """
+    return date_input.strftime("%Y年%m月%d日")
 
 def load_faith_sms_template_headers() -> List[str]:
     """外部ファイルからフェイスSMSテンプレートヘッダーを読み込み"""
@@ -46,12 +62,13 @@ def read_csv_auto_encoding(file_content: bytes) -> pd.DataFrame:
     
     raise ValueError("CSVファイルの読み込みに失敗しました。エンコーディングを確認してください。")
 
-def process_faith_sms_vacated_contract_data(file_content: bytes) -> Tuple[pd.DataFrame, List[str], str, dict]:
+def process_faith_sms_vacated_contract_data(file_content: bytes, payment_deadline_date: date) -> Tuple[pd.DataFrame, List[str], str, dict]:
     """
     フェイスSMS退去済み契約者データ処理（Streamlit対応版）
     
     Args:
         file_content: アップロードされたCSVファイルの内容（bytes）
+        payment_deadline_date: 支払期限日付（dateオブジェクト）
         
     Returns:
         tuple: (変換済みDF, ログリスト, 出力ファイル名, 統計情報)
@@ -182,11 +199,15 @@ def process_faith_sms_vacated_contract_data(file_content: bytes) -> Tuple[pd.Dat
         
         output_df['(info5)メモ'] = df['管理番号'].astype(str)
         
+        # Set payment deadline (BG column - column 59)
+        payment_deadline_formatted = format_payment_deadline(payment_deadline_date)
+        output_df['支払期限'] = payment_deadline_formatted
+        
         # Fill empty columns and other remaining columns
         for col in temp_column_order:
             if col.startswith('_empty_') and col not in output_df.columns:
                 output_df[col] = ''
-            elif col in ['保証人', '連絡人', '支払期限'] and col not in output_df.columns:
+            elif col in ['保証人', '連絡人'] and col not in output_df.columns:
                 output_df[col] = ''
         
         # Ensure correct column order

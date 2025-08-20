@@ -16,7 +16,7 @@ Business Data Processor v2.3.0
 import streamlit as st
 import pandas as pd
 import io
-from datetime import datetime
+from datetime import datetime, date
 
 def safe_dataframe_display(df: pd.DataFrame):
     """安全なDataFrame表示関数（空列重複エラー対応）"""
@@ -864,6 +864,16 @@ def show_faith_sms_vacated():
     st.markdown("**📋 フィルタ条件**: 入居ステータス(退去済み), 委託先法人ID(1-4), TEL携帯必須")
     st.markdown("**📊 出力**: SMS送信用フォーマット（退去済み契約者のSMS送信用）")
     
+    # 支払期限日付入力
+    st.subheader("📅 支払期限設定")
+    payment_deadline_date = st.date_input(
+        "支払期限を選択してください",
+        value=date(2025, 6, 30),  # デフォルト値: 2025年6月30日
+        help="この日付がBG列「支払期限」に設定されます（例：2025年6月30日）",
+        key="faith_sms_payment_deadline"
+    )
+    st.write(f"設定される支払期限: **{payment_deadline_date.strftime('%Y年%m月%d日')}**")
+    
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="faith_sms_vacated_file")
     
     if uploaded_file is not None:
@@ -873,21 +883,13 @@ def show_faith_sms_vacated():
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
                     # 戻り値を一時変数で受け取る
-                    result = process_faith_sms_vacated_contract_data(uploaded_file.read())
-                    st.write(f"DEBUG: 戻り値の数: {len(result)}")
-                    st.write(f"DEBUG: 各要素の型: {[type(x).__name__ for x in result]}")
+                    result = process_faith_sms_vacated_contract_data(uploaded_file.read(), payment_deadline_date)
                     result_df, logs, filename, stats = result
                     
                 # 処理ログ表示（データの有無に関わらず表示）
                 with st.expander("📊 処理ログ", expanded=True):
-                    # デバッグ情報
-                    st.write(f"logs type: {type(logs)}")
-                    st.write(f"logs content: {logs}")
-                    if isinstance(logs, list):
-                        for log in logs:
-                            st.write(f"• {log}")
-                    else:
-                        st.write(f"logs is not a list but: {logs}")
+                    for log in logs:
+                        st.write(f"• {log}")
                 
                 if not result_df.empty:
                     st.success(f"処理完了: {stats['processed_rows']}件のデータを出力（元データ: {stats['initial_rows']}件）")
