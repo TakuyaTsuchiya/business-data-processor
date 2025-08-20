@@ -367,855 +367,610 @@ def show_mirail_contract_without10k():
                 ResultDisplayService.show_complete_result(result)
 
 def show_mirail_contract_with10k():
+    """ミライル契約者with10k版 - Services Layer使用版"""
     st.header("ミライル契約者（10,000円を除外しないパターン）")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• 委託先法人ID → 空白&5")
-    st.markdown("• 入金予定日 → 前日以前とNaN")
-    st.markdown("• 回収ランク → 「弁護士介入」除外")
-    st.markdown("• 滞納残債フィルタ → なし（全件処理）")
-    st.markdown("• 入金予定金額 → 2,3,5,12除外")
-    st.markdown("• 「TEL携帯」 → 空でない値のみ")
-    st.markdown('</div>', unsafe_allow_html=True)
     
-    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_contract_with10k_file")
+    # フィルタ条件表示 (Services Layer使用)
+    filter_conditions = [
+        "委託先法人ID → 空白&5",
+        "入金予定日 → 前日以前とNaN",
+        "回収ランク → 「弁護士介入」除外",
+        "滞納残債フィルタ → なし（全件処理）",
+        "入金予定金額 → 2,3,5,12除外",
+        "「TEL携帯」 → 空でない値のみ"
+    ]
+    FilterConditionDisplay.show_filter_conditions(filter_conditions)
     
-    if uploaded_file is not None:
-        try:
-            st.success(f"✅ {uploaded_file.name}: 読み込み完了")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    result_df, filtered_df, logs, filename = process_mirail_contract_with10k_data(uploaded_file.read())
-                    
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
-                    
-                    # データプレビュー
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    # ダウンロード
-                    # filenameは関数から取得済み
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
-        except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+    # ファイルアップロード (Services Layer使用)
+    upload_result = FileUploadService.handle_single_file_upload(
+        label="CSVファイルをアップロードしてください",
+        key="mirail_contract_with10k_file"
+    )
+    
+    if upload_result.success:
+        if st.button("処理を実行", type="primary"):
+            with st.spinner("処理中..."):
+                # プロセッサー実行 (Services Layer使用)
+                result = ProcessorExecutionService.execute_single_file_processor(
+                    process_mirail_contract_with10k_data,
+                    upload_result.single_file_content,
+                    "ミライル契約者with10k"
+                )
+                
+                # 結果表示 (Services Layer使用)
+                ResultDisplayService.show_complete_result(result)
 
 def show_mirail_guarantor_without10k():
+    """ミライル保証人without10k版 - Services Layer使用版"""
     st.header("ミライル保証人（10,000円を除外するパターン）")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• 委託先法人ID → 空白&5")
-    st.markdown("• 入金予定日 → 前日以前とNaN")
-    st.markdown("• 回収ランク → 「弁護士介入」除外")
-    st.markdown("• 残債除外 → CD=1,4かつ滞納残債10,000円・11,000円除外")
-    st.markdown("• 入金予定金額 → 2,3,5,12除外")
-    st.markdown("• 「TEL携帯.1」 → 空でない値のみ")
-    st.markdown('</div>', unsafe_allow_html=True)
     
-    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_guarantor_without10k_file")
+    # フィルタ条件表示 (Services Layer使用)
+    filter_conditions = [
+        "委託先法人ID → 空白&5",
+        "入金予定日 → 前日以前とNaN",
+        "回収ランク → 「弁護士介入」除外",
+        "残債除外 → CD=1,4かつ滞納残債10,000円・11,000円除外",
+        "入金予定金額 → 2,3,5,12除外",
+        "「TEL携帯.1」 → 空でない値のみ"
+    ]
+    FilterConditionDisplay.show_filter_conditions(filter_conditions)
     
-    if uploaded_file is not None:
-        try:
-            st.success(f"✅ {uploaded_file.name}: 読み込み完了")
-            
-            if st.button("処理を実行", type="primary"):
+    # ファイルアップロード (Services Layer使用)
+    upload_result = FileUploadService.handle_single_file_upload(
+        label="CSVファイルをアップロードしてください",
+        key="mirail_guarantor_without10k_file"
+    )
+    
+    if upload_result.success:
+        if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, filtered_df, logs, filename = process_mirail_guarantor_without10k_data(uploaded_file.read())
-                    
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
-                    
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    # filenameは関数から取得済み
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
-        except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+                # プロセッサー実行 (Services Layer使用)
+                result = ProcessorExecutionService.execute_single_file_processor(
+                    process_mirail_guarantor_without10k_data,
+                    upload_result.single_file_content,
+                    "ミライル保証人without10k"
+                )
+                
+                # 結果表示 (Services Layer使用)
+                ResultDisplayService.show_complete_result(result)
 
 def show_mirail_guarantor_with10k():
+    """ミライル保証人with10k版 - Services Layer使用版"""
     st.header("ミライル保証人（10,000円を除外しないパターン）")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• 委託先法人ID → 空白&5")
-    st.markdown("• 入金予定日 → 前日以前とNaN")
-    st.markdown("• 回収ランク → 「弁護士介入」除外")
-    st.markdown("• 滞納残債フィルタ → なし（全件処理）")
-    st.markdown("• 入金予定金額 → 2,3,5,12除外")
-    st.markdown("• 「TEL携帯.1」 → 空でない値のみ")
-    st.markdown('</div>', unsafe_allow_html=True)
     
-    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_guarantor_with10k_file")
+    # フィルタ条件表示 (Services Layer使用)
+    filter_conditions = [
+        "委託先法人ID → 空白&5",
+        "入金予定日 → 前日以前とNaN",
+        "回収ランク → 「弁護士介入」除外",
+        "滞納残債フィルタ → なし（全件処理）",
+        "入金予定金額 → 2,3,5,12除外",
+        "「TEL携帯.1」 → 空でない値のみ"
+    ]
+    FilterConditionDisplay.show_filter_conditions(filter_conditions)
     
-    if uploaded_file is not None:
-        try:
-            st.success(f"✅ {uploaded_file.name}: 読み込み完了")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    result_df, filtered_df, logs, filename = process_mirail_guarantor_with10k_data(uploaded_file.read())
-                    
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
-                    
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    # filenameは関数から取得済み
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
-        except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+    # ファイルアップロード (Services Layer使用)
+    upload_result = FileUploadService.handle_single_file_upload(
+        label="CSVファイルをアップロードしてください",
+        key="mirail_guarantor_with10k_file"
+    )
+    
+    if upload_result.success:
+        if st.button("処理を実行", type="primary"):
+            with st.spinner("処理中..."):
+                # プロセッサー実行 (Services Layer使用)
+                result = ProcessorExecutionService.execute_single_file_processor(
+                    process_mirail_guarantor_with10k_data,
+                    upload_result.single_file_content,
+                    "ミライル保証人with10k"
+                )
+                
+                # 結果表示 (Services Layer使用)
+                ResultDisplayService.show_complete_result(result)
 
 def show_mirail_emergency_without10k():
+    """ミライル緊急連絡人without10k版 - Services Layer使用版"""
     st.header("ミライル緊急連絡人（10,000円を除外するパターン）")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• 委託先法人ID → 空白&5")
-    st.markdown("• 入金予定日 → 前日以前とNaN")
-    st.markdown("• 回収ランク → 「弁護士介入」除外")
-    st.markdown("• 残債除外 → CD=1,4かつ滞納残債10,000円・11,000円除外")
-    st.markdown("• 入金予定金額 → 2,3,5,12除外")
-    st.markdown("• 「TEL携帯.2」 → 空でない値のみ")
-    st.markdown('</div>', unsafe_allow_html=True)
     
-    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_emergency_without10k_file")
+    # フィルタ条件表示 (Services Layer使用)
+    filter_conditions = [
+        "委託先法人ID → 空白&5",
+        "入金予定日 → 前日以前とNaN",
+        "回収ランク → 「弁護士介入」除外",
+        "残債除外 → CD=1,4かつ滞納残債10,000円・11,000円除外",
+        "入金予定金額 → 2,3,5,12除外",
+        "「TEL携帯.2」 → 空でない値のみ"
+    ]
+    FilterConditionDisplay.show_filter_conditions(filter_conditions)
     
-    if uploaded_file is not None:
-        try:
-            st.success(f"✅ {uploaded_file.name}: 読み込み完了")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    result_df, filtered_df, logs, filename = process_mirail_emergencycontact_without10k_data(uploaded_file.read())
-                    
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
-                    
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    # filenameは関数から取得済み
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
-        except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+    # ファイルアップロード (Services Layer使用)
+    upload_result = FileUploadService.handle_single_file_upload(
+        label="CSVファイルをアップロードしてください",
+        key="mirail_emergency_without10k_file"
+    )
+    
+    if upload_result.success:
+        if st.button("処理を実行", type="primary"):
+            with st.spinner("処理中..."):
+                # プロセッサー実行 (Services Layer使用)
+                result = ProcessorExecutionService.execute_single_file_processor(
+                    process_mirail_emergencycontact_without10k_data,
+                    upload_result.single_file_content,
+                    "ミライル緊急連絡人without10k"
+                )
+                
+                # 結果表示 (Services Layer使用)
+                ResultDisplayService.show_complete_result(result)
 
 def show_mirail_emergency_with10k():
+    """ミライル緊急連絡人with10k版 - Services Layer使用版"""
     st.header("ミライル緊急連絡人（10,000円を除外しないパターン）")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• 委託先法人ID → 空白&5")
-    st.markdown("• 入金予定日 → 前日以前とNaN")
-    st.markdown("• 回収ランク → 「弁護士介入」除外")
-    st.markdown("• 滞納残債フィルタ → なし（全件処理）")
-    st.markdown("• 入金予定金額 → 2,3,5,12除外")
-    st.markdown("• 「TEL携帯.2」 → 空でない値のみ")
-    st.markdown('</div>', unsafe_allow_html=True)
     
-    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_emergency_with10k_file")
+    # フィルタ条件表示 (Services Layer使用)
+    filter_conditions = [
+        "委託先法人ID → 空白&5",
+        "入金予定日 → 前日以前とNaN",
+        "回収ランク → 「弁護士介入」除外",
+        "滞納残債フィルタ → なし（全件処理）",
+        "入金予定金額 → 2,3,5,12除外",
+        "「TEL携帯.2」 → 空でない値のみ"
+    ]
+    FilterConditionDisplay.show_filter_conditions(filter_conditions)
     
-    if uploaded_file is not None:
-        try:
-            st.success(f"✅ {uploaded_file.name}: 読み込み完了")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    result_df, filtered_df, logs, filename = process_mirail_emergencycontact_with10k_data(uploaded_file.read())
-                    
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
-                    
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    # filenameは関数から取得済み
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
-        except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+    # ファイルアップロード (Services Layer使用)
+    upload_result = FileUploadService.handle_single_file_upload(
+        label="CSVファイルをアップロードしてください",
+        key="mirail_emergency_with10k_file"
+    )
+    
+    if upload_result.success:
+        if st.button("処理を実行", type="primary"):
+            with st.spinner("処理中..."):
+                # プロセッサー実行 (Services Layer使用)
+                result = ProcessorExecutionService.execute_single_file_processor(
+                    process_mirail_emergencycontact_with10k_data,
+                    upload_result.single_file_content,
+                    "ミライル緊急連絡人with10k"
+                )
+                
+                # 結果表示 (Services Layer使用)
+                ResultDisplayService.show_complete_result(result)
 
 def show_faith_contract():
+    """フェイス契約者版 - Services Layer使用版"""
     st.header("フェイス契約者用オートコール")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• 委託先法人ID → 1-4")
-    st.markdown("• 入金予定日 → 前日以前とNaN")
-    st.markdown("• 回収ランク → 「弁護士介入」除外")
-    st.markdown("• 入金予定金額 → 2,3,5,12除外")
-    st.markdown("• 滞納残債フィルタ → なし（全件処理）")
-    st.markdown("• 「TEL携帯」 → 空でない値のみ")
-    st.markdown('</div>', unsafe_allow_html=True)
     
-    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="faith_contract_file")
+    # フィルタ条件表示 (Services Layer使用)
+    filter_conditions = [
+        "委託先法人ID → 1-4",
+        "入金予定日 → 前日以前とNaN",
+        "回収ランク → 「弁護士介入」除外",
+        "入金予定金額 → 2,3,5,12除外",
+        "滞納残債フィルタ → なし（全件処理）",
+        "「TEL携帯」 → 空でない値のみ"
+    ]
+    FilterConditionDisplay.show_filter_conditions(filter_conditions)
     
-    if uploaded_file is not None:
-        try:
-            st.success(f"✅ {uploaded_file.name}: 読み込み完了")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    filtered_df, result_df, logs, filename = process_faith_contract_data(uploaded_file.read())
-                    
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
-                    
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    # filenameは関数から取得済み
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
-        except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+    # ファイルアップロード (Services Layer使用)
+    upload_result = FileUploadService.handle_single_file_upload(
+        label="CSVファイルをアップロードしてください",
+        key="faith_contract_file"
+    )
+    
+    if upload_result.success:
+        if st.button("処理を実行", type="primary"):
+            with st.spinner("処理中..."):
+                # プロセッサー実行 (Services Layer使用)
+                result = ProcessorExecutionService.execute_single_file_processor(
+                    process_faith_contract_data,
+                    upload_result.single_file_content,
+                    "フェイス契約者"
+                )
+                
+                # 結果表示 (Services Layer使用)
+                ResultDisplayService.show_complete_result(result)
 
 def show_faith_guarantor():
+    """フェイス保証人版 - Services Layer使用版"""
     st.header("フェイス保証人用オートコール")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• 委託先法人ID → 1-4")
-    st.markdown("• 入金予定日 → 前日以前とNaN")
-    st.markdown("• 回収ランク → 「弁護士介入」除外")
-    st.markdown("• 入金予定金額 → 2,3,5,12除外")
-    st.markdown("• 滞納残債フィルタ → なし（全件処理）")
-    st.markdown("• 「TEL携帯.1」 → 空でない値のみ")
-    st.markdown('</div>', unsafe_allow_html=True)
     
-    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="faith_guarantor_file")
+    # フィルタ条件表示 (Services Layer使用)
+    filter_conditions = [
+        "委託先法人ID → 1-4",
+        "入金予定日 → 前日以前とNaN",
+        "回収ランク → 「弁護士介入」除外",
+        "入金予定金額 → 2,3,5,12除外",
+        "滞納残債フィルタ → なし（全件処理）",
+        "「TEL携帯.1」 → 空でない値のみ"
+    ]
+    FilterConditionDisplay.show_filter_conditions(filter_conditions)
     
-    if uploaded_file is not None:
-        try:
-            st.success(f"✅ {uploaded_file.name}: 読み込み完了")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    filtered_df, result_df, logs, filename = process_faith_guarantor_data(uploaded_file.read())
-                    
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
-                    
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    # filenameは関数から取得済み
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
-        except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+    # ファイルアップロード (Services Layer使用)
+    upload_result = FileUploadService.handle_single_file_upload(
+        label="CSVファイルをアップロードしてください",
+        key="faith_guarantor_file"
+    )
+    
+    if upload_result.success:
+        if st.button("処理を実行", type="primary"):
+            with st.spinner("処理中..."):
+                # プロセッサー実行 (Services Layer使用)
+                result = ProcessorExecutionService.execute_single_file_processor(
+                    process_faith_guarantor_data,
+                    upload_result.single_file_content,
+                    "フェイス保証人"
+                )
+                
+                # 結果表示 (Services Layer使用)
+                ResultDisplayService.show_complete_result(result)
 
 def show_faith_emergency():
+    """フェイス緊急連絡人版 - Services Layer使用版"""
     st.header("フェイス緊急連絡人用オートコール")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• 委託先法人ID → 1-4")
-    st.markdown("• 入金予定日 → 前日以前とNaN")
-    st.markdown("• 回収ランク → 「弁護士介入」除外")
-    st.markdown("• 入金予定金額 → 2,3,5,12除外")
-    st.markdown("• 滞納残債フィルタ → なし（全件処理）")
-    st.markdown("• 「TEL携帯.2」 → 空でない値のみ")
-    st.markdown('</div>', unsafe_allow_html=True)
     
-    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="faith_emergency_file")
+    # フィルタ条件表示 (Services Layer使用)
+    filter_conditions = [
+        "委託先法人ID → 1-4",
+        "入金予定日 → 前日以前とNaN",
+        "回収ランク → 「弁護士介入」除外",
+        "入金予定金額 → 2,3,5,12除外",
+        "滞納残債フィルタ → なし（全件処理）",
+        "「TEL携帯.2」 → 空でない値のみ"
+    ]
+    FilterConditionDisplay.show_filter_conditions(filter_conditions)
     
-    if uploaded_file is not None:
-        try:
-            st.success(f"✅ {uploaded_file.name}: 読み込み完了")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    filtered_df, result_df, logs, filename = process_faith_emergencycontact_data(uploaded_file.read())
-                    
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
-                    
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    # filenameは関数から取得済み
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
-        except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+    # ファイルアップロード (Services Layer使用)
+    upload_result = FileUploadService.handle_single_file_upload(
+        label="CSVファイルをアップロードしてください",
+        key="faith_emergency_file"
+    )
+    
+    if upload_result.success:
+        if st.button("処理を実行", type="primary"):
+            with st.spinner("処理中..."):
+                # プロセッサー実行 (Services Layer使用)
+                result = ProcessorExecutionService.execute_single_file_processor(
+                    process_faith_emergencycontact_data,
+                    upload_result.single_file_content,
+                    "フェイス緊急連絡人"
+                )
+                
+                # 結果表示 (Services Layer使用)
+                ResultDisplayService.show_complete_result(result)
 
 def show_plaza_main():
+    """プラザメイン版 - Services Layer使用版"""
     st.header("プラザ契約者用オートコール")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• 委託先法人ID → 6")
-    st.markdown("• 入金予定日 → <span style='color: red; font-weight: bold;'>当日</span>以前とNaN", unsafe_allow_html=True)
-    st.markdown("• 入金予定金額 → 2,3,5,12円除外")
-    st.markdown("• 「TEL携帯」 → 空でない値のみ")
-    st.markdown("• 回収ランク → 「督促停止」「弁護士介入」除外")
-    st.markdown('</div>', unsafe_allow_html=True)
     
-    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="plaza_main_file")
+    # フィルタ条件表示 (Services Layer使用)
+    filter_conditions = [
+        "委託先法人ID → 6",
+        "入金予定日 → <span style='color: red; font-weight: bold;'>当日</span>以前とNaN",
+        "入金予定金額 → 2,3,5,12円除外",
+        "「TEL携帯」 → 空でない値のみ",
+        "回収ランク → 「督促停止」「弁護士介入」除外"
+    ]
+    FilterConditionDisplay.show_filter_conditions(filter_conditions)
     
-    if uploaded_file is not None:
-        try:
-            # ファイル内容をbytesで読み取り
-            file_content = uploaded_file.read()
-            st.success(f"ファイルを読み込みました: {uploaded_file.name}")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    filtered_df, result_df, logs, filename = process_plaza_main_data(file_content)
-                    
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
-                    
-                    # ログ表示
-                    if logs:
-                        st.info("処理ログ:")
-                        for log in logs:
-                            st.write(f"• {log}")
-                    
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    # filenameは関数から取得済み
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
-        except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+    # ファイルアップロード (Services Layer使用)
+    upload_result = FileUploadService.handle_single_file_upload(
+        label="CSVファイルをアップロードしてください",
+        key="plaza_main_file"
+    )
+    
+    if upload_result.success:
+        if st.button("処理を実行", type="primary"):
+            with st.spinner("処理中..."):
+                # プロセッサー実行 (Services Layer使用)
+                result = ProcessorExecutionService.execute_single_file_processor(
+                    process_plaza_main_data,
+                    upload_result.single_file_content,
+                    "プラザメイン"
+                )
+                
+                # 結果表示 (Services Layer使用)
+                ResultDisplayService.show_complete_result(result)
 
 def show_plaza_guarantor():
+    """プラザ保証人版 - Services Layer使用版"""
     st.header("プラザ保証人用オートコール")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• 委託先法人ID → 6")
-    st.markdown("• 入金予定日 → 前日以前とNaN")
-    st.markdown("• 入金予定金額 → 2,3,5,12円除外")
-    st.markdown("• 「TEL携帯.1」 → 空でない値のみ")
-    st.markdown("• 回収ランク → 「督促停止」「弁護士介入」除外")
-    st.markdown('</div>', unsafe_allow_html=True)
     
-    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="plaza_guarantor_file")
+    # フィルタ条件表示 (Services Layer使用)
+    filter_conditions = [
+        "委託先法人ID → 6",
+        "入金予定日 → 前日以前とNaN",
+        "入金予定金額 → 2,3,5,12円除外",
+        "「TEL携帯.1」 → 空でない値のみ",
+        "回収ランク → 「督促停止」「弁護士介入」除外"
+    ]
+    FilterConditionDisplay.show_filter_conditions(filter_conditions)
     
-    if uploaded_file is not None:
-        try:
-            # ファイル内容をbytesで読み取り
-            file_content = uploaded_file.read()
-            st.success(f"ファイルを読み込みました: {uploaded_file.name}")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    filtered_df, result_df, logs, filename = process_plaza_guarantor_data(file_content)
-                    
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
-                    
-                    # ログ表示
-                    if logs:
-                        st.info("処理ログ:")
-                        for log in logs:
-                            st.write(f"• {log}")
-                    
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    # filenameは関数から取得済み
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
-        except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+    # ファイルアップロード (Services Layer使用)
+    upload_result = FileUploadService.handle_single_file_upload(
+        label="CSVファイルをアップロードしてください",
+        key="plaza_guarantor_file"
+    )
+    
+    if upload_result.success:
+        if st.button("処理を実行", type="primary"):
+            with st.spinner("処理中..."):
+                # プロセッサー実行 (Services Layer使用)
+                result = ProcessorExecutionService.execute_single_file_processor(
+                    process_plaza_guarantor_data,
+                    upload_result.single_file_content,
+                    "プラザ保証人"
+                )
+                
+                # 結果表示 (Services Layer使用)
+                ResultDisplayService.show_complete_result(result)
 
 def show_plaza_contact():
+    """プラザ連絡先版 - Services Layer使用版"""
     st.header("プラザ緊急連絡人用オートコール")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• 委託先法人ID → 6")
-    st.markdown("• 入金予定日 → 前日以前とNaN")
-    st.markdown("• 入金予定金額 → 2,3,5,12円除外")
-    st.markdown("• 「緊急連絡人１のTEL（携帯）」 → 空でない値のみ")
-    st.markdown("• 回収ランク → 「督促停止」「弁護士介入」除外")
-    st.markdown('</div>', unsafe_allow_html=True)
     
-    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="plaza_contact_file")
+    # フィルタ条件表示 (Services Layer使用)
+    filter_conditions = [
+        "委託先法人ID → 6",
+        "入金予定日 → 前日以前とNaN",
+        "入金予定金額 → 2,3,5,12円除外",
+        "「緊急連絡人１のTEL（携帯）」 → 空でない値のみ",
+        "回収ランク → 「督促停止」「弁護士介入」除外"
+    ]
+    FilterConditionDisplay.show_filter_conditions(filter_conditions)
     
-    if uploaded_file is not None:
-        try:
-            # ファイル内容をbytesで読み取り
-            file_content = uploaded_file.read()
-            st.success(f"ファイルを読み込みました: {uploaded_file.name}")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    filtered_df, result_df, logs, filename = process_plaza_contact_data(file_content)
-                    
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
-                    
-                    # ログ表示
-                    if logs:
-                        st.info("処理ログ:")
-                        for log in logs:
-                            st.write(f"• {log}")
-                    
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    # filenameは関数から取得済み
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
-        except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+    # ファイルアップロード (Services Layer使用)
+    upload_result = FileUploadService.handle_single_file_upload(
+        label="CSVファイルをアップロードしてください",
+        key="plaza_contact_file"
+    )
+    
+    if upload_result.success:
+        if st.button("処理を実行", type="primary"):
+            with st.spinner("処理中..."):
+                # プロセッサー実行 (Services Layer使用)
+                result = ProcessorExecutionService.execute_single_file_processor(
+                    process_plaza_contact_data,
+                    upload_result.single_file_content,
+                    "プラザ連絡先"
+                )
+                
+                # 結果表示 (Services Layer使用)
+                ResultDisplayService.show_complete_result(result)
 
 def show_faith_sms_vacated():
+    """フェイスSMS版 - Services Layer使用版"""
     st.header("📱 フェイス　契約者")
     
     # 支払期限日付入力
     st.subheader("支払期限の設定")
     payment_deadline_date = st.date_input(
         "クリックして支払期限を選択してください",
-        value=date.today(),  # デフォルト値: 今日の日付
+        value=date.today(),
         help="この日付がBG列「支払期限」に設定されます（例：2025年6月30日）",
         key="faith_sms_payment_deadline",
-        disabled=False,  # カレンダー選択は有効
+        disabled=False,
         format="YYYY/MM/DD"
     )
     st.write(f"設定される支払期限: **{payment_deadline_date.strftime('%Y年%m月%d日')}**")
     
-    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="faith_sms_vacated_file")
+    # フィルタ条件表示 (Services Layer使用)
+    filter_conditions = [
+        "委託先法人ID → 1-4",
+        "入金予定日 → 前日以前とNaN",
+        "入金予定金額 → 2,3,5円除外",
+        "回収ランク → 「弁護士介入」「破産決定」「死亡決定」除外",
+        "TEL携帯 → 090/080/070形式のみ"
+    ]
+    FilterConditionDisplay.show_filter_conditions(filter_conditions)
     
-    if uploaded_file is not None:
-        try:
-            st.success(f"✅ {uploaded_file.name}: 読み込み完了")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    # 戻り値を一時変数で受け取る
-                    result = process_faith_sms_vacated_contract_data(uploaded_file.read(), payment_deadline_date)
-                    result_df, logs, filename, stats = result
-                    
-                if not result_df.empty:
-                    st.success(f"処理完了: {stats['processed_rows']}件のデータを出力（元データ: {stats['initial_rows']}件）")
-                    safe_csv_download(result_df, filename)
-                    
-                    # 処理ログ表示（データの有無に関わらず表示）
-                    with st.expander("📊 処理ログ", expanded=False):
-                        for log in logs:
-                            st.write(f"• {log}")
-                    
-                    # フィルタ条件表示
-                    st.markdown("**フィルタ条件:**")
-                    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-                    st.markdown("• 委託先法人ID → 1-4")
-                    st.markdown("• 入金予定日 → 前日以前とNaN")
-                    st.markdown("• 入金予定金額 → 2,3,5円除外")
-                    st.markdown("• 回収ランク → 「弁護士介入」「破産決定」「死亡決定」除外")
-                    st.markdown("• TEL携帯 → 090/080/070形式のみ")
-                    st.markdown('</div>', unsafe_allow_html=True)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
-                    
-                    # 処理ログ表示（エラー時も表示）
-                    with st.expander("📊 処理ログ", expanded=True):
-                        for log in logs:
-                            st.write(f"• {log}")
-                    
-                    # フィルタ条件表示
-                    st.markdown("**フィルタ条件:**")
-                    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-                    st.markdown("• 委託先法人ID → 1-4")
-                    st.markdown("• 入金予定日 → 前日以前とNaN")
-                    st.markdown("• 入金予定金額 → 2,3,5円除外")
-                    st.markdown("• 回収ランク → 「弁護士介入」「破産決定」「死亡決定」除外")
-                    st.markdown("• TEL携帯 → 090/080/070形式のみ")
-                    st.markdown('</div>', unsafe_allow_html=True)
+    # ファイルアップロード (Services Layer使用)
+    upload_result = FileUploadService.handle_single_file_upload(
+        label="CSVファイルをアップロードしてください",
+        key="faith_sms_vacated_file"
+    )
+    
+    if upload_result.success:
+        if st.button("処理を実行", type="primary"):
+            with st.spinner("処理中..."):
+                # プロセッサー実行 (カスタムパラメータ付き)
+                result = ProcessorExecutionService.execute_single_file_processor(
+                    process_faith_sms_vacated_contract_data,
+                    upload_result.single_file_content,
+                    "フェイスSMS退去済み",
+                    payment_deadline_date=payment_deadline_date
+                )
+                
+                # 結果表示 (Services Layer使用)
+                ResultDisplayService.show_complete_result(result)
         except Exception as e:
             st.error(f"エラーが発生しました: {str(e)}")
 
 def show_ark_registration_tokyo():
+    """アーク東京版 - Services Layer使用版"""
     st.header("📋 アーク新規登録（東京）")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• 重複チェック → 契約番号（案件取込用レポート）↔引継番号（ContractList）")
-    st.markdown("• 新規データ → 重複除外後の案件取込用レポートデータのみ統合")
-    st.markdown("• 地域コード → 1（東京）")
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.info("📂 必要ファイル: 案件取込用レポート + ContractList（2ファイル処理）")
     
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("**📄 ファイル1: 案件取込用レポート**")
-        file1 = st.file_uploader("案件取込用レポート.csvをアップロード", type="csv", key="ark_tokyo_file1")
-    with col2:
-        st.markdown("**📄 ファイル2: ContractList**")
-        file2 = st.file_uploader("ContractList_*.csvをアップロード", type="csv", key="ark_tokyo_file2")
+    # フィルタ条件表示 (Services Layer使用)
+    filter_conditions = [
+        "重複チェック → 契約番号（案件取込用レポート）↔引継番号（ContractList）",
+        "新規データ → 重複除外後の案件取込用レポートデータのみ統合",
+        "地域コード → 1（東京）"
+    ]
+    FilterConditionDisplay.show_filter_conditions(filter_conditions)
     
-    if file1 and file2:
-        try:
-            # ファイル内容を読み取り
-            file_contents = [file1.read(), file2.read()]
-            st.success(f"✅ {file1.name}: 読み込み完了")
-            st.success(f"✅ {file2.name}: 読み込み完了")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    result_df, logs, stats = process_ark_data(file_contents[0], file_contents[1], region_code=1)
+    # ファイルアップロード (Services Layer使用)
+    file_configs = [
+        {
+            "label": "案件取込用レポート.csvをアップロード",
+            "key": "ark_tokyo_file1",
+            "description": "📄 ファイル1: 案件取込用レポート"
+        },
+        {
+            "label": "ContractList_*.csvをアップロード",
+            "key": "ark_tokyo_file2", 
+            "description": "📄 ファイル2: ContractList"
+        }
+    ]
+    
+    upload_result = FileUploadService.handle_multiple_file_upload(
+        file_configs,
+        show_success=True
+    )
+    
+    if upload_result.success:
+        if st.button("処理を実行", type="primary"):
+            with st.spinner("処理中..."):
+                # プロセッサー実行 (Services Layer使用)
+                result = ProcessorExecutionService.execute_multiple_file_processor(
+                    process_ark_data,
+                    upload_result.file_contents,
+                    "アーク新規登録東京",
+                    region_code=1
+                )
+                
+                # 結果表示 (Services Layer使用)
+                ResultDisplayService.show_complete_result(result)
                     
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
-                    
-                    # ログ表示
-                    if logs:
-                        st.info("処理ログ:")
-                        for log in logs:
-                            st.write(f"• {log}")
-                    
-                    # データプレビュー
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    # ダウンロード
-                    timestamp = datetime.now().strftime("%m%d")
-                    filename = f"{timestamp}アーク_新規登録_東京.csv"
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
-        except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
-    elif file1 or file2:
-        st.warning("2つのCSVファイルをアップロードしてください。")
 
 def show_ark_registration_osaka():
+    """アーク大阪版 - Services Layer使用版"""
     st.header("📋 アーク新規登録（大阪）")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• 重複チェック → 契約番号（案件取込用レポート）↔引継番号（ContractList）")
-    st.markdown("• 新規データ → 重複除外後の案件取込用レポートデータのみ統合")
-    st.markdown("• 地域コード → 2（大阪）")
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.info("📂 必要ファイル: 案件取込用レポート + ContractList（2ファイル処理）")
     
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("**📄 ファイル1: 案件取込用レポート**")
-        file1 = st.file_uploader("案件取込用レポート.csvをアップロード", type="csv", key="ark_osaka_file1")
-    with col2:
-        st.markdown("**📄 ファイル2: ContractList**")
-        file2 = st.file_uploader("ContractList_*.csvをアップロード", type="csv", key="ark_osaka_file2")
+    # フィルタ条件表示 (Services Layer使用)
+    filter_conditions = [
+        "重複チェック → 契約番号（案件取込用レポート）↔引継番号（ContractList）",
+        "新規データ → 重複除外後の案件取込用レポートデータのみ統合",
+        "地域コード → 2（大阪）"
+    ]
+    FilterConditionDisplay.show_filter_conditions(filter_conditions)
     
-    if file1 and file2:
-        try:
-            file_contents = [file1.read(), file2.read()]
-            st.success(f"✅ {file1.name}: 読み込み完了")
-            st.success(f"✅ {file2.name}: 読み込み完了")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    result_df, logs, stats = process_ark_data(file_contents[0], file_contents[1], region_code=2)
+    # ファイルアップロード (Services Layer使用)
+    file_configs = [
+        {"label": "案件取込用レポート.csvをアップロード", "key": "ark_osaka_file1", "description": "📄 ファイル1: 案件取込用レポート"},
+        {"label": "ContractList_*.csvをアップロード", "key": "ark_osaka_file2", "description": "📄 ファイル2: ContractList"}
+    ]
+    
+    upload_result = FileUploadService.handle_multiple_file_upload(file_configs, show_success=True)
+    
+    if upload_result.success:
+        if st.button("処理を実行", type="primary"):
+            with st.spinner("処理中..."):
+                result = ProcessorExecutionService.execute_multiple_file_processor(
+                    process_ark_data, upload_result.file_contents, "アーク新規登録大阪", region_code=2
+                )
+                ResultDisplayService.show_complete_result(result)
                     
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
-                    
-                    if logs:
-                        st.info("処理ログ:")
-                        for log in logs:
-                            st.write(f"• {log}")
-                    
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    timestamp = datetime.now().strftime("%m%d")
-                    filename = f"{timestamp}アーク_新規登録_大阪.csv"
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
-        except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
-    elif file1 or file2:
-        st.warning("2つのCSVファイルをアップロードしてください。")
 
 def show_ark_registration_hokkaido():
+    """アーク北海道版 - Services Layer使用版"""
     st.header("📋 アーク新規登録（北海道）")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• 重複チェック → 契約番号（案件取込用レポート）↔引継番号（ContractList）")
-    st.markdown("• 新規データ → 重複除外後の案件取込用レポートデータのみ統合")
-    st.markdown("• 地域コード → 3（北海道）")
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.info("📂 必要ファイル: 案件取込用レポート + ContractList（2ファイル処理）")
     
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("**📄 ファイル1: 案件取込用レポート**")
-        file1 = st.file_uploader("案件取込用レポート.csvをアップロード", type="csv", key="ark_hokkaido_file1")
-    with col2:
-        st.markdown("**📄 ファイル2: ContractList**")
-        file2 = st.file_uploader("ContractList_*.csvをアップロード", type="csv", key="ark_hokkaido_file2")
+    # フィルタ条件表示 (Services Layer使用)
+    filter_conditions = [
+        "重複チェック → 契約番号（案件取込用レポート）↔引継番号（ContractList）",
+        "新規データ → 重複除外後の案件取込用レポートデータのみ統合",
+        "地域コード → 3（北海道）"
+    ]
+    FilterConditionDisplay.show_filter_conditions(filter_conditions)
     
-    if file1 and file2:
-        try:
-            file_contents = [file1.read(), file2.read()]
-            st.success(f"✅ {file1.name}: 読み込み完了")
-            st.success(f"✅ {file2.name}: 読み込み完了")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    result_df, logs, stats = process_ark_data(file_contents[0], file_contents[1], region_code=3)
-                    
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
-                    
-                    if logs:
-                        st.info("処理ログ:")
-                        for log in logs:
-                            st.write(f"• {log}")
-                    
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    timestamp = datetime.now().strftime("%m%d")
-                    filename = f"{timestamp}アーク_新規登録_北海道.csv"
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
-        except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
-    elif file1 or file2:
-        st.warning("2つのCSVファイルをアップロードしてください。")
+    # ファイルアップロード (Services Layer使用)
+    file_configs = [
+        {"label": "案件取込用レポート.csvをアップロード", "key": "ark_hokkaido_file1", "description": "📄 ファイル1: 案件取込用レポート"},
+        {"label": "ContractList_*.csvをアップロード", "key": "ark_hokkaido_file2", "description": "📄 ファイル2: ContractList"}
+    ]
+    
+    upload_result = FileUploadService.handle_multiple_file_upload(file_configs, show_success=True)
+    
+    if upload_result.success:
+        if st.button("処理を実行", type="primary"):
+            with st.spinner("処理中..."):
+                result = ProcessorExecutionService.execute_multiple_file_processor(
+                    process_ark_data, upload_result.file_contents, "アーク新規登録北海道", region_code=3
+                )
+                ResultDisplayService.show_complete_result(result)
 
 def show_ark_registration_kitakanto():
+    """アーク北関東版 - Services Layer使用版"""
     st.header("📋 アーク新規登録（北関東）")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• 重複チェック → 契約番号（案件取込用レポート）↔引継番号（ContractList）")
-    st.markdown("• 新規データ → 重複除外後の案件取込用レポートデータのみ統合")
-    st.markdown("• 地域コード → 4（北関東）")
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.info("📂 必要ファイル: 案件取込用レポート + ContractList（2ファイル処理）")
     
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("**📄 ファイル1: 案件取込用レポート**")
-        file1 = st.file_uploader("案件取込用レポート.csvをアップロード", type="csv", key="ark_kitakanto_file1")
-    with col2:
-        st.markdown("**📄 ファイル2: ContractList**")
-        file2 = st.file_uploader("ContractList_*.csvをアップロード", type="csv", key="ark_kitakanto_file2")
+    # フィルタ条件表示 (Services Layer使用)
+    filter_conditions = [
+        "重複チェック → 契約番号（案件取込用レポート）↔引継番号（ContractList）",
+        "新規データ → 重複除外後の案件取込用レポートデータのみ統合",
+        "地域コード → 4（北関東）"
+    ]
+    FilterConditionDisplay.show_filter_conditions(filter_conditions)
     
-    if file1 and file2:
-        try:
-            file_contents = [file1.read(), file2.read()]
-            st.success(f"✅ {file1.name}: 読み込み完了")
-            st.success(f"✅ {file2.name}: 読み込み完了")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    result_df, logs, stats = process_ark_data(file_contents[0], file_contents[1], region_code=4)
-                    
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
-                    
-                    if logs:
-                        st.info("処理ログ:")
-                        for log in logs:
-                            st.write(f"• {log}")
-                    
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    timestamp = datetime.now().strftime("%m%d")
-                    filename = f"{timestamp}アーク_新規登録_北関東.csv"
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
-        except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
-    elif file1 or file2:
-        st.warning("2つのCSVファイルをアップロードしてください。")
+    # ファイルアップロード (Services Layer使用)
+    file_configs = [
+        {"label": "案件取込用レポート.csvをアップロード", "key": "ark_kitakanto_file1", "description": "📄 ファイル1: 案件取込用レポート"},
+        {"label": "ContractList_*.csvをアップロード", "key": "ark_kitakanto_file2", "description": "📄 ファイル2: ContractList"}
+    ]
+    
+    upload_result = FileUploadService.handle_multiple_file_upload(file_configs, show_success=True)
+    
+    if upload_result.success:
+        if st.button("処理を実行", type="primary"):
+            with st.spinner("処理中..."):
+                result = ProcessorExecutionService.execute_multiple_file_processor(
+                    process_ark_data, upload_result.file_contents, "アーク新規登録北関東", region_code=4
+                )
+                ResultDisplayService.show_complete_result(result)
 
 def show_arktrust_registration_tokyo():
+    """アークトラスト東京版 - Services Layer使用版"""
     st.header("📋 アークトラスト新規登録（東京）")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• 重複チェック → 契約番号（案件取込用レポート）↔引継番号（ContractList）")
-    st.markdown("• 新規データ → 重複除外後の案件取込用レポートデータのみ統合")
-    st.markdown("• 地域コード → 1（東京）")
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.info("📂 必要ファイル: 案件取込用レポート + ContractList（2ファイル処理）")
     
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("**📄 ファイル1: 案件取込用レポート**")
-        file1 = st.file_uploader("案件取込用レポート.csvをアップロード", type="csv", key="arktrust_tokyo_file1")
-    with col2:
-        st.markdown("**📄 ファイル2: ContractList**")
-        file2 = st.file_uploader("ContractList_*.csvをアップロード", type="csv", key="arktrust_tokyo_file2")
+    # フィルタ条件表示 (Services Layer使用)
+    filter_conditions = [
+        "重複チェック → 契約番号（案件取込用レポート）↔引継番号（ContractList）",
+        "新規データ → 重複除外後の案件取込用レポートデータのみ統合",
+        "地域コード → 1（東京）"
+    ]
+    FilterConditionDisplay.show_filter_conditions(filter_conditions)
     
-    if file1 and file2:
-        try:
-            file_contents = [file1.read(), file2.read()]
-            st.success(f"✅ {file1.name}: 読み込み完了")
-            st.success(f"✅ {file2.name}: 読み込み完了")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    result_df, logs, filename = process_arktrust_data(file_contents[0], file_contents[1])
+    # ファイルアップロード (Services Layer使用)
+    file_configs = [
+        {"label": "案件取込用レポート.csvをアップロード", "key": "arktrust_tokyo_file1", "description": "📄 ファイル1: 案件取込用レポート"},
+        {"label": "ContractList_*.csvをアップロード", "key": "arktrust_tokyo_file2", "description": "📄 ファイル2: ContractList"}
+    ]
+    
+    upload_result = FileUploadService.handle_multiple_file_upload(file_configs, show_success=True)
+    
+    if upload_result.success:
+        if st.button("処理を実行", type="primary"):
+            with st.spinner("処理中..."):
+                result = ProcessorExecutionService.execute_multiple_file_processor(
+                    process_arktrust_data, upload_result.file_contents, "アークトラスト新規登録東京"
+                )
+                ResultDisplayService.show_complete_result(result)
                     
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    safe_csv_download(result_df, filename)
-                    
-                    # 処理ログ表示
-                    if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
-                    
-                    if logs:
-                        st.info("処理ログ:")
-                        for log in logs:
-                            st.write(f"• {log}")
-                    
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
-        except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
-    elif file1 or file2:
-        st.warning("2つのCSVファイルをアップロードしてください。")
 
 def show_capco_registration():
+    """カプコ登録版 - Services Layer使用版"""
     st.header("📋 カプコ新規登録")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• データ統合 → カプコデータ + ContractList の結合処理")
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.info("📂 必要ファイル: カプコデータ + ContractList（2ファイル処理）")
     
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("**📄 ファイル1: カプコデータ**")
-        file1 = st.file_uploader("カプコデータ.csvをアップロード", type="csv", key="capco_file1")
-    with col2:
-        st.markdown("**📄 ファイル2: ContractList**")
-        file2 = st.file_uploader("ContractList_*.csvをアップロード", type="csv", key="capco_file2")
+    # フィルタ条件表示 (Services Layer使用)
+    filter_conditions = [
+        "データ統合 → カプコデータ + ContractList の結合処理"
+    ]
+    FilterConditionDisplay.show_filter_conditions(filter_conditions)
     
-    if file1 and file2:
-        try:
-            # ファイル内容を読み取り
-            file_contents = [file1.read(), file2.read()]
-            st.success(f"✅ {file1.name}: 読み込み完了")
-            st.success(f"✅ {file2.name}: 読み込み完了")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    result_df, logs, filename = process_capco_data(file_contents[0], file_contents[1])
+    # ファイルアップロード (Services Layer使用)
+    file_configs = [
+        {"label": "カプコデータ.csvをアップロード", "key": "capco_file1", "description": "📄 ファイル1: カプコデータ"},
+        {"label": "ContractList_*.csvをアップロード", "key": "capco_file2", "description": "📄 ファイル2: ContractList"}
+    ]
+    
+    upload_result = FileUploadService.handle_multiple_file_upload(file_configs, show_success=True)
+    
+    if upload_result.success:
+        if st.button("処理を実行", type="primary"):
+            with st.spinner("処理中..."):
+                result = ProcessorExecutionService.execute_multiple_file_processor(
+                    process_capco_data, upload_result.file_contents, "カプコ新規登録"
+                )
+                ResultDisplayService.show_complete_result(result)
                     
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    
-                    # 処理ログ表示
-                    if logs:
-                        with st.expander("📊 処理ログ", expanded=True):
-                            for log in logs:
-                                st.write(f"• {log}")
-                    
-                    # データプレビュー
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    # ダウンロード
-                    timestamp = datetime.now().strftime("%m%d")
-                    filename = f"{timestamp}カプコ_新規登録.csv"
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
-        except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
-    elif file1 or file2:
-        st.warning("2つのCSVファイルをアップロードしてください。")
 
 def show_ark_late_payment():
     st.header("💰 アーク残債の更新")
