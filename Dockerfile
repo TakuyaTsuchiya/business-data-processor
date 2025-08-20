@@ -63,6 +63,7 @@ ENV PATH=/home/streamlit/.local/bin:$PATH
 # アプリケーションファイルをコピー
 COPY app.py .
 COPY processors/ ./processors/
+COPY templates/ ./templates/
 
 # 必要なディレクトリを作成
 RUN mkdir -p /app/data /app/downloads /app/logs
