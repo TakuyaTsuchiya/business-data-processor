@@ -258,7 +258,7 @@ def main():
         
         # 📱 SMS送信用CSV加工
         st.markdown('<div class="sidebar-category">📱 SMS送信用CSV加工</div>', unsafe_allow_html=True)
-        if st.button("フェイス　契約者　退去済み", key="faith_sms_vacated", use_container_width=True):
+        if st.button("フェイス　契約者", key="faith_sms_vacated", use_container_width=True):
             st.session_state.selected_processor = "faith_sms_vacated"
         
         # 📋 新規登録用CSV加工
@@ -295,7 +295,7 @@ def main():
         - **プラザ用** (3種類): 契約者・保証人・緊急連絡人
         
         #### 📱 SMS送信用CSV加工
-        - フェイス　契約者　退去済み
+        - フェイス　契約者
         
         #### 📋 新規登録用CSV加工
         - アーク新規登録（東京・大阪・北海道・北関東）
@@ -860,7 +860,7 @@ def show_plaza_contact():
             st.error(f"エラーが発生しました: {str(e)}")
 
 def show_faith_sms_vacated():
-    st.header("📱 フェイス　契約者　退去済み")
+    st.header("📱 フェイス　契約者")
     st.markdown("**📋 フィルタ条件**: 入居ステータス(退去済み), 委託先法人ID(1-4), TEL携帯必須")
     st.markdown("**📊 出力**: SMS送信用フォーマット（退去済み契約者のSMS送信用）")
     

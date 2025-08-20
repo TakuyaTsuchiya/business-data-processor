@@ -1,8 +1,38 @@
 import pandas as pd
 import io
 import re
+import os
 from datetime import datetime
 from typing import Tuple, List
+
+def load_faith_sms_template_headers() -> List[str]:
+    """外部ファイルからフェイスSMSテンプレートヘッダーを読み込み"""
+    # 現在のスクリプトのディレクトリから相対パスでテンプレートファイルを探す
+    current_dir = os.path.dirname(__file__)
+    project_root = os.path.join(current_dir, '..', '..')
+    template_path = os.path.join(project_root, 'templates', 'faith_sms_template_headers.txt')
+    
+    try:
+        # 複数のエンコーディングで試行
+        encodings = ['utf-8', 'utf-8-sig', 'cp932', 'shift_jis']
+        header_line = None
+        
+        for encoding in encodings:
+            try:
+                with open(template_path, 'r', encoding=encoding) as f:
+                    header_line = f.read().strip()
+                break
+            except UnicodeDecodeError:
+                continue
+                
+        if header_line is None:
+            raise Exception("ヘッダーファイルの読み込みに失敗しました（エンコーディングエラー）")
+            
+        return header_line.split(',')
+    except FileNotFoundError:
+        raise FileNotFoundError(f"SMSテンプレートヘッダーファイルが見つかりません: {template_path}")
+    except Exception as e:
+        raise Exception(f"SMSテンプレートヘッダー読み込みエラー: {str(e)}")
 
 def read_csv_auto_encoding(file_content: bytes) -> pd.DataFrame:
     """アップロードされたCSVファイルを自動エンコーディング判定で読み込み"""
@@ -66,29 +96,21 @@ def process_faith_sms_vacated_contract_data(file_content: bytes) -> Tuple[pd.Dat
         
         df = df[df['TEL携帯'].apply(is_mobile_phone)]
         
-        # Data mapping to output format (59 columns)
-        # Create column names for 59-column structure
-        main_columns = [
-            '電話番号',
-            '(info1)契約者名', 
-            '(info2)物件名',
-            '(info3)金額',
-            '(info4)銀行口座',
-            '(info5)メモ'
-        ]
+        # Data mapping to output format - load from external template
+        output_column_order = load_faith_sms_template_headers()
         
-        empty_columns = [f'_empty_{i}' for i in range(50)]
+        # Create temporary column names for DataFrame construction (to handle empty column names)
+        temp_column_order = []
+        empty_col_counter = 1
+        for col in output_column_order:
+            if col == "":
+                temp_column_order.append(f"_empty_{empty_col_counter}")
+                empty_col_counter += 1
+            else:
+                temp_column_order.append(col)
         
-        final_columns = [
-            '保証人',
-            '連絡人', 
-            '支払期限'
-        ]
-        
-        output_column_order = main_columns + empty_columns + final_columns
-        
-        # Create output DataFrame
-        output_df = pd.DataFrame(columns=output_column_order)
+        # Create output DataFrame with temporary column names
+        output_df = pd.DataFrame(columns=temp_column_order)
         
         # Map data
         output_df['電話番号'] = df['TEL携帯'].astype(str)
@@ -116,32 +138,23 @@ def process_faith_sms_vacated_contract_data(file_content: bytes) -> Tuple[pd.Dat
         
         output_df['(info5)メモ'] = df['管理番号'].astype(str)
         
-        # Fill empty columns
-        for i in range(50):
-            empty_col_name = f'_empty_{i}'
-            output_df[empty_col_name] = ''
-        
-        # Fill final columns
-        output_df['保証人'] = ''
-        output_df['連絡人'] = ''
-        output_df['支払期限'] = ''
+        # Fill empty columns and other remaining columns
+        for col in temp_column_order:
+            if col.startswith('_empty_') and col not in output_df.columns:
+                output_df[col] = ''
+            elif col in ['保証人', '連絡人', '支払期限'] and col not in output_df.columns:
+                output_df[col] = ''
         
         # Ensure correct column order
-        output_df = output_df[output_column_order]
+        output_df = output_df[temp_column_order]
         
         # Create output filename
         date_str = datetime.now().strftime("%m%d")
         output_filename = f"{date_str}FAITH_SMS_Vacated_Contract.csv"
         
-        # Clean column names for output (convert _empty_X to blank)
+        # Restore original column names from template (convert _empty_X back to blank)
         df_copy = output_df.copy()
-        new_columns = []
-        for col in df_copy.columns:
-            if col.startswith('_empty_'):
-                new_columns.append('')
-            else:
-                new_columns.append(col)
-        df_copy.columns = new_columns
+        df_copy.columns = output_column_order
         
         return df_copy, output_filename, initial_rows, len(output_df)
         
