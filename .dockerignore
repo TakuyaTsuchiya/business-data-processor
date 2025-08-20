@@ -30,7 +30,6 @@ screenshots/
 
 # 開発用フォルダ
 shared/
-templates/
 
 # OS生成ファイル
 .DS_Store
