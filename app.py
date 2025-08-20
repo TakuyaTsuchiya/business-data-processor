@@ -423,7 +423,7 @@ def show_mirail_guarantor_without10k():
     
     if upload_result.success:
         if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
+            with st.spinner("処理中..."):
                 # プロセッサー実行 (Services Layer使用)
                 result = ProcessorExecutionService.execute_single_file_processor(
                     process_mirail_guarantor_without10k_data,
@@ -782,8 +782,6 @@ def show_faith_sms_vacated():
                 
                 # 結果表示 (Services Layer使用)
                 ResultDisplayService.show_complete_result(result)
-        except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
 
 def show_ark_registration_tokyo():
     """アーク東京版 - Services Layer使用版"""
