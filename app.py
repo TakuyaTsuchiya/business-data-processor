@@ -89,7 +89,7 @@ from processors.plaza_autocall.guarantor.standard import process_plaza_guarantor
 from processors.plaza_autocall.contact.standard import process_plaza_contact_data
 
 from processors.faith_sms.vacated_contract import process_faith_sms_vacated_contract_data
-from processors.ark_registration import process_ark_data
+from processors.ark_registration import process_ark_data, process_arktrust_data
 from processors.ark_late_payment_update import process_ark_late_payment_data
 from processors.capco_registration import process_capco_data
 
@@ -1139,7 +1139,7 @@ def show_arktrust_registration_tokyo():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, logs, stats = process_ark_data(file_contents[0], file_contents[1], region_code=1)
+                    result_df, logs, filename = process_arktrust_data(file_contents[0], file_contents[1])
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
@@ -1157,8 +1157,6 @@ def show_arktrust_registration_tokyo():
                     st.subheader("処理結果プレビュー")
                     safe_dataframe_display(result_df.head(10))
                     
-                    timestamp = datetime.now().strftime("%m%d")
-                    filename = f"{timestamp}アークトラスト_新規登録_東京.csv"
                     safe_csv_download(result_df, filename)
                 else:
                     st.warning("条件に合致するデータがありませんでした。")
