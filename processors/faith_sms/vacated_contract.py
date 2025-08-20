@@ -69,12 +69,26 @@ def process_faith_sms_vacated_contract_data(file_content: bytes) -> Tuple[pd.Dat
         # Filter 1: 委託先法人ID (Keep only 1, 2, 3, 4)
         trustee_ids_to_keep = [1, 2, 3, 4]
         df['委託先法人ID'] = pd.to_numeric(df['委託先法人ID'], errors='coerce').fillna(-1).astype(int)
+        
+        # 除外データの詳細を記録
+        excluded_trustee = df[~df['委託先法人ID'].isin(trustee_ids_to_keep)]
+        if len(excluded_trustee) > 0:
+            excluded_ids = excluded_trustee['委託先法人ID'].value_counts().head(5).to_dict()
+            logs.append(f"フィルター1除外 - 委託先法人ID詳細: {excluded_ids}")
+        
         df = df[df['委託先法人ID'].isin(trustee_ids_to_keep)]
         logs.append(f"フィルター1 - 委託先法人ID(1-4): {len(df)}件")
         
         # Filter 2: 入金予定日 (Keep empty or dates before today)
         df['入金予定日'] = pd.to_datetime(df['入金予定日'], format='%Y/%m/%d', errors='coerce')
         today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        # 除外データの詳細を記録
+        excluded_dates = df[~(df['入金予定日'].isna() | (df['入金予定日'] < today))]
+        if len(excluded_dates) > 0:
+            future_dates = excluded_dates['入金予定日'].dropna().dt.strftime('%Y/%m/%d').value_counts().head(3).to_dict()
+            logs.append(f"フィルター2除外 - 未来日付例: {future_dates}")
+        
         df = df[df['入金予定日'].isna() | (df['入金予定日'] < today)]
         logs.append(f"フィルター2 - 入金予定日(前日以前+空白): {len(df)}件")
         
@@ -83,6 +97,14 @@ def process_faith_sms_vacated_contract_data(file_content: bytes) -> Tuple[pd.Dat
         payment_amount_exclude_string = ["2", "3", "5"]
         df['入金予定金額_numeric'] = pd.to_numeric(df['入金予定金額'], errors='coerce')
         df['入金予定金額_string'] = df['入金予定金額'].astype(str)
+        
+        # 除外データの詳細を記録
+        excluded_amounts = df[(df['入金予定金額_numeric'].isin(payment_amount_exclude_numeric) | 
+                              df['入金予定金額_string'].isin(payment_amount_exclude_string))]
+        if len(excluded_amounts) > 0:
+            excluded_values = excluded_amounts['入金予定金額'].value_counts().head(3).to_dict()
+            logs.append(f"フィルター3除外 - 金額詳細: {excluded_values}")
+        
         df = df[~(df['入金予定金額_numeric'].isin(payment_amount_exclude_numeric) | 
                   df['入金予定金額_string'].isin(payment_amount_exclude_string))]
         df = df.drop(['入金予定金額_numeric', '入金予定金額_string'], axis=1)
@@ -90,17 +112,30 @@ def process_faith_sms_vacated_contract_data(file_content: bytes) -> Tuple[pd.Dat
         
         # Filter 4: 回収ランク (Exclude specific ranks)
         collection_rank_exclude = ["弁護士介入", "破産決定", "死亡決定"]
+        
+        # 除外データの詳細を記録
+        excluded_ranks = df[df['回収ランク'].isin(collection_rank_exclude)]
+        if len(excluded_ranks) > 0:
+            excluded_rank_counts = excluded_ranks['回収ランク'].value_counts().to_dict()
+            logs.append(f"フィルター4除外 - 回収ランク詳細: {excluded_rank_counts}")
+        
         df = df[~df['回収ランク'].isin(collection_rank_exclude)]
         logs.append(f"フィルター4 - 回収ランク(弁護士介入等除外): {len(df)}件")
         
         # Filter 5: TEL携帯 (Keep only valid mobile phone numbers)
-        mobile_phone_regex = r'^(090|080|070)\d{8}$'
+        mobile_phone_regex = r'^(090|080|070)-\d{4}-\d{4}$'
         df['TEL携帯'] = df['TEL携帯'].astype(str).str.strip().replace('nan', '')
         
         def is_mobile_phone(phone_number):
             if phone_number == '':
                 return False
             return bool(re.match(mobile_phone_regex, phone_number))
+        
+        # 除外データの詳細を記録
+        excluded_phones = df[~df['TEL携帯'].apply(is_mobile_phone)]
+        if len(excluded_phones) > 0:
+            invalid_phone_samples = excluded_phones['TEL携帯'].value_counts().head(5).to_dict()
+            logs.append(f"フィルター5除外 - TEL携帯形式例: {invalid_phone_samples}")
         
         df = df[df['TEL携帯'].apply(is_mobile_phone)]
         logs.append(f"フィルター5 - TEL携帯(090/080/070のみ): {len(df)}件")
