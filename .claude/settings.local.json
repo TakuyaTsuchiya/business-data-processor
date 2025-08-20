@@ -50,7 +50,15 @@
       "Bash(gh auth:*)",
       "Bash(gh pr merge:*)",
       "Bash(gh pr view:*)",
-      "Bash(docker kill:*)"
+      "Bash(docker kill:*)",
+      "Bash(git branch:*)",
+      "mcp__serena__execute_shell_command",
+      "mcp__serena__activate_project",
+      "mcp__serena__read_file",
+      "mcp__serena__search_for_pattern",
+      "mcp__serena__think_about_collected_information",
+      "mcp__serena__replace_regex",
+      "mcp__serena__insert_after_symbol"
     ],
     "deny": []
   }

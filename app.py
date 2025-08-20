@@ -89,7 +89,7 @@ from processors.plaza_autocall.guarantor.standard import process_plaza_guarantor
 from processors.plaza_autocall.contact.standard import process_plaza_contact_data
 
 from processors.faith_sms.vacated_contract import process_faith_sms_vacated_contract_data
-from processors.ark_registration import process_ark_data
+from processors.ark_registration import process_ark_data, process_arktrust_data
 from processors.ark_late_payment_update import process_ark_late_payment_data
 from processors.capco_registration import process_capco_data
 
@@ -271,6 +271,8 @@ def main():
             st.session_state.selected_processor = "ark_registration_hokkaido"
         if st.button("アーク新規登録（北関東）", key="ark_registration_kitakanto", use_container_width=True):
             st.session_state.selected_processor = "ark_registration_kitakanto"
+        if st.button("アークトラスト新規登録（東京）", key="arktrust_registration_tokyo", use_container_width=True):
+            st.session_state.selected_processor = "arktrust_registration_tokyo"
         if st.button("カプコ新規登録", key="capco_registration", use_container_width=True):
             st.session_state.selected_processor = "capco_registration"
         
@@ -341,6 +343,8 @@ def main():
         show_ark_registration_hokkaido()
     elif st.session_state.selected_processor == "ark_registration_kitakanto":
         show_ark_registration_kitakanto()
+    elif st.session_state.selected_processor == "arktrust_registration_tokyo":
+        show_arktrust_registration_tokyo()
     elif st.session_state.selected_processor == "capco_registration":
         show_capco_registration()
     elif st.session_state.selected_processor == "ark_late_payment":
@@ -1102,6 +1106,58 @@ def show_ark_registration_kitakanto():
                     timestamp = datetime.now().strftime("%m%d")
                     filename = f"{timestamp}アーク_新規登録_北関東.csv"
                     safe_csv_download(result_df, filename)
+                else:
+                    st.warning("条件に合致するデータがありませんでした。")
+        except Exception as e:
+            st.error(f"エラーが発生しました: {str(e)}")
+    elif file1 or file2:
+        st.warning("2つのCSVファイルをアップロードしてください。")
+
+def show_arktrust_registration_tokyo():
+    st.header("📋 アークトラスト新規登録（東京）")
+    st.markdown("**フィルタ条件:**")
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    st.markdown("• 重複チェック → 契約番号（案件取込用レポート）↔引継番号（ContractList）")
+    st.markdown("• 新規データ → 重複除外後の案件取込用レポートデータのみ統合")
+    st.markdown("• 地域コード → 1（東京）")
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.info("📂 必要ファイル: 案件取込用レポート + ContractList（2ファイル処理）")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("**📄 ファイル1: 案件取込用レポート**")
+        file1 = st.file_uploader("案件取込用レポート.csvをアップロード", type="csv", key="arktrust_tokyo_file1")
+    with col2:
+        st.markdown("**📄 ファイル2: ContractList**")
+        file2 = st.file_uploader("ContractList_*.csvをアップロード", type="csv", key="arktrust_tokyo_file2")
+    
+    if file1 and file2:
+        try:
+            file_contents = [file1.read(), file2.read()]
+            st.success(f"✅ {file1.name}: 読み込み完了")
+            st.success(f"✅ {file2.name}: 読み込み完了")
+            
+            if st.button("処理を実行", type="primary"):
+                with st.spinner("処理中..."):
+                    result_df, logs, filename = process_arktrust_data(file_contents[0], file_contents[1])
+                    
+                if not result_df.empty:
+                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
+                    safe_csv_download(result_df, filename)
+                    
+                    # 処理ログ表示
+                    if logs:
+                        with st.expander("📊 処理ログ", expanded=False):
+                            for log in logs:
+                                st.write(f"• {log}")
+                    
+                    if logs:
+                        st.info("処理ログ:")
+                        for log in logs:
+                            st.write(f"• {log}")
+                    
+                    st.subheader("処理結果プレビュー")
+                    safe_dataframe_display(result_df.head(10))
                 else:
                     st.warning("条件に合致するデータがありませんでした。")
         except Exception as e:

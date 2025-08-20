@@ -810,6 +810,46 @@ def process_ark_data(report_content: bytes, contract_content: bytes, region_code
         return pd.DataFrame(), [error_msg], "error.csv"
 
 
+def process_arktrust_data(report_content: bytes, contract_content: bytes) -> Tuple[pd.DataFrame, List[str], str]:
+    """
+    アークトラスト新規登録データ処理（東京専用）
+    通常のアーク処理に加えて、固定値を設定
+    
+    Args:
+        report_content: 案件取込用レポート.csvの内容
+        contract_content: ContractList_*.csvの内容
+        
+    Returns:
+        tuple: (変換済みDF, 処理ログ, 出力ファイル名)
+    """
+    # 通常のアーク処理を実行（region_code=1）
+    result_df, logs, _ = process_ark_data(report_content, contract_content, region_code=1)
+    
+    # アークトラスト固有の固定値を設定
+    if not result_df.empty:
+        result_df['回収口座金融機関CD'] = '9'
+        result_df['回収口座金融機関名'] = '三井住友銀行'
+        result_df['回収口座支店名'] = '日本橋東支店'
+        result_df['回収口座番号'] = '7834255'
+        result_df['回収口座名義'] = 'アークトラスト株式会社'
+        result_df['更新契約手数料'] = '1'
+        
+        # 契約者カナの半角→全角変換とスペース除去
+        if '契約者カナ' in result_df.columns:
+            result_df['契約者カナ'] = result_df['契約者カナ'].apply(
+                lambda x: unicodedata.normalize('NFKC', str(x)).replace(' ', '').replace('　', '') if pd.notna(x) else x
+            )
+            logs.append("契約者カナの半角→全角変換とスペース除去を実行")
+        
+        logs.append("アークトラスト固定値を設定: 回収口座情報・更新契約手数料")
+    
+    # 出力ファイル名
+    timestamp = datetime.now().strftime("%m%d")
+    filename = f"{timestamp}アークトラスト_新規登録_東京.csv"
+    
+    return result_df, logs, filename
+
+
 def get_sample_template() -> pd.DataFrame:
     """サンプルテンプレート（111列完全準拠）"""
     # 空列対応: 一意な仮名前を使用してから最後にリネーム
