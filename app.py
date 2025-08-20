@@ -876,6 +876,16 @@ def show_faith_sms_vacated():
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="faith_sms_vacated_file")
     
+    # フィルタ条件表示
+    st.markdown("**フィルタ条件:**")
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    st.markdown("• 委託先法人ID → 1-4")
+    st.markdown("• 入金予定日 → 前日以前とNaN")
+    st.markdown("• 入金予定金額 → 2,3,5円除外")
+    st.markdown("• 回収ランク → 「弁護士介入」「破産決定」「死亡決定」除外")
+    st.markdown("• TEL携帯 → 090/080/070形式のみ")
+    st.markdown('</div>', unsafe_allow_html=True)
+    
     if uploaded_file is not None:
         try:
             st.success(f"✅ {uploaded_file.name}: 読み込み完了")
@@ -886,20 +896,21 @@ def show_faith_sms_vacated():
                     result = process_faith_sms_vacated_contract_data(uploaded_file.read(), payment_deadline_date)
                     result_df, logs, filename, stats = result
                     
-                # 処理ログ表示（データの有無に関わらず表示）
-                with st.expander("📊 処理ログ", expanded=True):
-                    for log in logs:
-                        st.write(f"• {log}")
-                
                 if not result_df.empty:
                     st.success(f"処理完了: {stats['processed_rows']}件のデータを出力（元データ: {stats['initial_rows']}件）")
-                    
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
                     safe_csv_download(result_df, filename)
+                    
+                    # 処理ログ表示（データの有無に関わらず表示）
+                    with st.expander("📊 処理ログ", expanded=False):
+                        for log in logs:
+                            st.write(f"• {log}")
                 else:
                     st.warning("条件に合致するデータがありませんでした。")
+                    
+                    # 処理ログ表示（エラー時も表示）
+                    with st.expander("📊 処理ログ", expanded=True):
+                        for log in logs:
+                            st.write(f"• {log}")
         except Exception as e:
             st.error(f"エラーが発生しました: {str(e)}")
 
