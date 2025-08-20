@@ -833,6 +833,7 @@ def process_arktrust_data(report_content: bytes, contract_content: bytes) -> Tup
         result_df['回収口座番号'] = '7834255'
         result_df['回収口座名義'] = 'アークトラスト株式会社'
         result_df['更新契約手数料'] = '1'
+        result_df['クライアントCD'] = '40'
         
         # 契約者カナの半角→全角変換とスペース除去
         if '契約者カナ' in result_df.columns:
@@ -841,7 +842,7 @@ def process_arktrust_data(report_content: bytes, contract_content: bytes) -> Tup
             )
             logs.append("契約者カナの半角→全角変換とスペース除去を実行")
         
-        logs.append("アークトラスト固定値を設定: 回収口座情報・更新契約手数料")
+        logs.append("アークトラスト固定値を設定: 回収口座情報・更新契約手数料・クライアントCD")
     
     # 出力ファイル名
     timestamp = datetime.now().strftime("%m%d")
