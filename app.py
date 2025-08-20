@@ -866,7 +866,7 @@ def show_faith_sms_vacated():
     st.subheader("支払期限の設定")
     payment_deadline_date = st.date_input(
         "クリックして支払期限を選択してください",
-        value=date(2025, 6, 30),  # デフォルト値: 2025年6月30日
+        value=date.today(),  # デフォルト値: 今日の日付
         help="この日付がBG列「支払期限」に設定されます（例：2025年6月30日）",
         key="faith_sms_payment_deadline",
         disabled=False,  # カレンダー選択は有効
