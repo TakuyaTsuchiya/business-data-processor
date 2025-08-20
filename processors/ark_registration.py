@@ -835,6 +835,15 @@ def process_arktrust_data(report_content: bytes, contract_content: bytes) -> Tup
         result_df['更新契約手数料'] = '1'
         result_df['クライアントCD'] = '40'
         
+        # 引継情報をアークトラスト用に更新（入居日情報のみ）
+        if '引継情報' in result_df.columns:
+            result_df['引継情報'] = result_df['引継情報'].apply(
+                lambda x: x.split('●入居日：')[-1] if '●入居日：' in str(x) else ''
+            ).apply(
+                lambda x: f'●入居日：{x}' if x else '●入居日：'
+            )
+            logs.append("引継情報をアークトラスト用に更新（入居日のみ）")
+        
         # 契約者カナの半角→全角変換とスペース除去
         if '契約者カナ' in result_df.columns:
             result_df['契約者カナ'] = result_df['契約者カナ'].apply(
@@ -842,7 +851,7 @@ def process_arktrust_data(report_content: bytes, contract_content: bytes) -> Tup
             )
             logs.append("契約者カナの半角→全角変換とスペース除去を実行")
         
-        logs.append("アークトラスト固定値を設定: 回収口座情報・更新契約手数料・クライアントCD")
+        logs.append("アークトラスト固定値を設定: 回収口座情報・更新契約手数料・クライアントCD・引継情報")
     
     # 出力ファイル名
     timestamp = datetime.now().strftime("%m%d")
