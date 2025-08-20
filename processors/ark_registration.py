@@ -834,12 +834,12 @@ def process_arktrust_data(report_content: bytes, contract_content: bytes) -> Tup
         result_df['回収口座名義'] = 'アークトラスト株式会社'
         result_df['更新契約手数料'] = '1'
         
-        # 契約者カナの半角→全角変換
+        # 契約者カナの半角→全角変換とスペース除去
         if '契約者カナ' in result_df.columns:
             result_df['契約者カナ'] = result_df['契約者カナ'].apply(
-                lambda x: unicodedata.normalize('NFKC', str(x)) if pd.notna(x) else x
+                lambda x: unicodedata.normalize('NFKC', str(x)).replace(' ', '').replace('　', '') if pd.notna(x) else x
             )
-            logs.append("契約者カナの半角→全角変換を実行")
+            logs.append("契約者カナの半角→全角変換とスペース除去を実行")
         
         logs.append("アークトラスト固定値を設定: 回収口座情報・更新契約手数料")
     
