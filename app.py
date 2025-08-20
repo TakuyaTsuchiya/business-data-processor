@@ -21,6 +21,11 @@ from datetime import datetime, date
 # Infrastructure Layer のインポート
 from infra.csv.writer import safe_csv_download_button
 
+# Services Layer のインポート
+from services.processor_service import ProcessorExecutionService
+from services.file_service import FileUploadService
+from services.result_service import ResultDisplayService, FilterConditionDisplay
+
 def safe_dataframe_display(df: pd.DataFrame):
     """安全なDataFrame表示関数（空列重複エラー対応）"""
     # DataFrameのコピーを作成して空列問題を回避
@@ -328,46 +333,38 @@ def main():
 # 以下、各処理画面の関数を実装
 
 def show_mirail_contract_without10k():
+    """ミライル契約者without10k版 - Services Layer使用版"""
     st.header("ミライル契約者（10,000円を除外するパターン）")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• 委託先法人ID → 空白&5")
-    st.markdown("• 入金予定日 → 前日以前とNaN")
-    st.markdown("• 回収ランク → 「弁護士介入」除外")
-    st.markdown("• 残債除外 → CD=1,4かつ滞納残債10,000円・11,000円除外")
-    st.markdown("• 入金予定金額 → 2,3,5,12除外")
-    st.markdown("• 「TEL携帯」 → 空でない値のみ")
-    st.markdown('</div>', unsafe_allow_html=True)
     
-    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_contract_without10k_file")
+    # フィルタ条件表示 (Services Layer使用)
+    filter_conditions = [
+        "委託先法人ID → 空白&5",
+        "入金予定日 → 前日以前とNaN",
+        "回収ランク → 「弁護士介入」除外",
+        "残債除外 → CD=1,4かつ滞納残債10,000円・11,000円除外",
+        "入金予定金額 → 2,3,5,12除外",
+        "「TEL携帯」 → 空でない値のみ"
+    ]
+    FilterConditionDisplay.show_filter_conditions(filter_conditions)
     
-    if uploaded_file is not None:
-        try:
-            st.success(f"✅ {uploaded_file.name}: 読み込み完了")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    result_df, filtered_df, logs, filename = process_mirail_contract_without10k_data(uploaded_file.read())
-                    
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
-                    
-                    # データプレビュー
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    # ダウンロード
-                    # filenameは関数から取得済み
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
-        except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+    # ファイルアップロード (Services Layer使用)
+    upload_result = FileUploadService.handle_single_file_upload(
+        label="CSVファイルをアップロードしてください",
+        key="mirail_contract_without10k_file"
+    )
+    
+    if upload_result.success:
+        if st.button("処理を実行", type="primary"):
+            with st.spinner("処理中..."):
+                # プロセッサー実行 (Services Layer使用)
+                result = ProcessorExecutionService.execute_single_file_processor(
+                    process_mirail_contract_without10k_data,
+                    upload_result.single_file_content,
+                    "ミライル契約者without10k"
+                )
+                
+                # 結果表示 (Services Layer使用)
+                ResultDisplayService.show_complete_result(result)
 
 def show_mirail_contract_with10k():
     st.header("ミライル契約者（10,000円を除外しないパターン）")
