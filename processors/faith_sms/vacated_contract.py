@@ -46,7 +46,7 @@ def read_csv_auto_encoding(file_content: bytes) -> pd.DataFrame:
     
     raise ValueError("CSVファイルの読み込みに失敗しました。エンコーディングを確認してください。")
 
-def process_faith_sms_vacated_contract_data(file_content: bytes) -> Tuple[pd.DataFrame, str, int, int]:
+def process_faith_sms_vacated_contract_data(file_content: bytes) -> Tuple[pd.DataFrame, str, int, int, List[str]]:
     """
     フェイスSMS退去済み契約者データ処理（Streamlit対応版）
     
@@ -54,23 +54,29 @@ def process_faith_sms_vacated_contract_data(file_content: bytes) -> Tuple[pd.Dat
         file_content: アップロードされたCSVファイルの内容（bytes）
         
     Returns:
-        tuple: (変換済みDF, 出力ファイル名, 元データ件数, 処理後件数)
+        tuple: (変換済みDF, 出力ファイル名, 元データ件数, 処理後件数, ログリスト)
     """
     try:
+        # ログリスト初期化
+        logs = []
+        
         # CSVファイル読み込み（自動エンコーディング判定）
         df = read_csv_auto_encoding(file_content)
 
         initial_rows = len(df)
+        logs.append(f"元データ読み込み: {initial_rows}件")
         
         # Filter 1: 委託先法人ID (Keep only 1, 2, 3, 4)
         trustee_ids_to_keep = [1, 2, 3, 4]
         df['委託先法人ID'] = pd.to_numeric(df['委託先法人ID'], errors='coerce').fillna(-1).astype(int)
         df = df[df['委託先法人ID'].isin(trustee_ids_to_keep)]
+        logs.append(f"フィルター1 - 委託先法人ID(1-4): {len(df)}件")
         
         # Filter 2: 入金予定日 (Keep empty or dates before today)
         df['入金予定日'] = pd.to_datetime(df['入金予定日'], format='%Y/%m/%d', errors='coerce')
         today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         df = df[df['入金予定日'].isna() | (df['入金予定日'] < today)]
+        logs.append(f"フィルター2 - 入金予定日(前日以前+空白): {len(df)}件")
         
         # Filter 3: 入金予定金額 (Exclude specific amounts: 2, 3, 5 as numeric or string values)
         payment_amount_exclude_numeric = [2, 3, 5]
@@ -80,10 +86,12 @@ def process_faith_sms_vacated_contract_data(file_content: bytes) -> Tuple[pd.Dat
         df = df[~(df['入金予定金額_numeric'].isin(payment_amount_exclude_numeric) | 
                   df['入金予定金額_string'].isin(payment_amount_exclude_string))]
         df = df.drop(['入金予定金額_numeric', '入金予定金額_string'], axis=1)
+        logs.append(f"フィルター3 - 入金予定金額(2,3,5円除外): {len(df)}件")
         
         # Filter 4: 回収ランク (Exclude specific ranks)
         collection_rank_exclude = ["弁護士介入", "破産決定", "死亡決定"]
         df = df[~df['回収ランク'].isin(collection_rank_exclude)]
+        logs.append(f"フィルター4 - 回収ランク(弁護士介入等除外): {len(df)}件")
         
         # Filter 5: TEL携帯 (Keep only valid mobile phone numbers)
         mobile_phone_regex = r'^(090|080|070)\d{8}$'
@@ -95,6 +103,7 @@ def process_faith_sms_vacated_contract_data(file_content: bytes) -> Tuple[pd.Dat
             return bool(re.match(mobile_phone_regex, phone_number))
         
         df = df[df['TEL携帯'].apply(is_mobile_phone)]
+        logs.append(f"フィルター5 - TEL携帯(090/080/070のみ): {len(df)}件")
         
         # Data mapping to output format - load from external template
         output_column_order = load_faith_sms_template_headers()
@@ -156,7 +165,7 @@ def process_faith_sms_vacated_contract_data(file_content: bytes) -> Tuple[pd.Dat
         df_copy = output_df.copy()
         df_copy.columns = output_column_order
         
-        return df_copy, output_filename, initial_rows, len(output_df)
+        return df_copy, output_filename, initial_rows, len(output_df), logs
         
     except Exception as e:
         raise Exception(f"FAITH SMS退去済み契約者処理エラー: {str(e)}")

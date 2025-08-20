@@ -872,8 +872,13 @@ def show_faith_sms_vacated():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, filename, initial_rows, processed_rows = process_faith_sms_vacated_contract_data(uploaded_file.read())
+                    result_df, filename, initial_rows, processed_rows, logs = process_faith_sms_vacated_contract_data(uploaded_file.read())
                     
+                # 処理ログ表示（データの有無に関わらず表示）
+                with st.expander("📊 処理ログ", expanded=True):
+                    for log in logs:
+                        st.write(f"• {log}")
+                
                 if not result_df.empty:
                     st.success(f"処理完了: {processed_rows}件のデータを出力（元データ: {initial_rows}件）")
                     

@@ -1,5 +1,6 @@
 [server]
 maxUploadSize = 100
+port = 8502
 
 [client]
 toolbarMode = "minimal"
