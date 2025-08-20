@@ -215,7 +215,7 @@ def process_faith_sms_vacated_contract_data(file_content: bytes, payment_deadlin
         
         # Create output filename
         date_str = datetime.now().strftime("%m%d")
-        output_filename = f"{date_str}FAITH_SMS_Vacated_Contract.csv"
+        output_filename = f"{date_str}フェイスSMS契約者.csv"
         
         # Restore original column names from template (convert _empty_X back to blank)
         df_copy = output_df.copy()
