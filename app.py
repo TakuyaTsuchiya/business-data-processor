@@ -271,6 +271,8 @@ def main():
             st.session_state.selected_processor = "ark_registration_hokkaido"
         if st.button("アーク新規登録（北関東）", key="ark_registration_kitakanto", use_container_width=True):
             st.session_state.selected_processor = "ark_registration_kitakanto"
+        if st.button("アークトラスト新規登録（東京）", key="arktrust_registration_tokyo", use_container_width=True):
+            st.session_state.selected_processor = "arktrust_registration_tokyo"
         if st.button("カプコ新規登録", key="capco_registration", use_container_width=True):
             st.session_state.selected_processor = "capco_registration"
         
@@ -341,6 +343,8 @@ def main():
         show_ark_registration_hokkaido()
     elif st.session_state.selected_processor == "ark_registration_kitakanto":
         show_ark_registration_kitakanto()
+    elif st.session_state.selected_processor == "arktrust_registration_tokyo":
+        show_arktrust_registration_tokyo()
     elif st.session_state.selected_processor == "capco_registration":
         show_capco_registration()
     elif st.session_state.selected_processor == "ark_late_payment":
@@ -1057,21 +1061,24 @@ def show_ark_registration_hokkaido():
 
 def show_ark_registration_kitakanto():
     st.header("📋 アーク新規登録（北関東）")
+
+def show_arktrust_registration_tokyo():
+    st.header("📋 アークトラスト新規登録（東京）")
     st.markdown("**フィルタ条件:**")
     st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
     st.markdown("• 重複チェック → 契約番号（案件取込用レポート）↔引継番号（ContractList）")
     st.markdown("• 新規データ → 重複除外後の案件取込用レポートデータのみ統合")
-    st.markdown("• 地域コード → 4（北関東）")
+    st.markdown("• 地域コード → 1（東京）")
     st.markdown('</div>', unsafe_allow_html=True)
     st.info("📂 必要ファイル: 案件取込用レポート + ContractList（2ファイル処理）")
     
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("**📄 ファイル1: 案件取込用レポート**")
-        file1 = st.file_uploader("案件取込用レポート.csvをアップロード", type="csv", key="ark_kitakanto_file1")
+        file1 = st.file_uploader("案件取込用レポート.csvをアップロード", type="csv", key="arktrust_tokyo_file1")
     with col2:
         st.markdown("**📄 ファイル2: ContractList**")
-        file2 = st.file_uploader("ContractList_*.csvをアップロード", type="csv", key="ark_kitakanto_file2")
+        file2 = st.file_uploader("ContractList_*.csvをアップロード", type="csv", key="arktrust_tokyo_file2")
     
     if file1 and file2:
         try:
@@ -1081,7 +1088,7 @@ def show_ark_registration_kitakanto():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, logs, stats = process_ark_data(file_contents[0], file_contents[1], region_code=4)
+                    result_df, logs, stats = process_ark_data(file_contents[0], file_contents[1], region_code=1)
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
@@ -1100,7 +1107,7 @@ def show_ark_registration_kitakanto():
                     safe_dataframe_display(result_df.head(10))
                     
                     timestamp = datetime.now().strftime("%m%d")
-                    filename = f"{timestamp}アーク_新規登録_北関東.csv"
+                    filename = f"{timestamp}アークトラスト_新規登録_東京.csv"
                     safe_csv_download(result_df, filename)
                 else:
                     st.warning("条件に合致するデータがありませんでした。")
