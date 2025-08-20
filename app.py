@@ -1143,6 +1143,8 @@ def show_arktrust_registration_tokyo():
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
+                    safe_csv_download(result_df, filename)
+                    
                     # 処理ログ表示
                     if logs:
                         with st.expander("📊 処理ログ", expanded=False):
@@ -1156,8 +1158,6 @@ def show_arktrust_registration_tokyo():
                     
                     st.subheader("処理結果プレビュー")
                     safe_dataframe_display(result_df.head(10))
-                    
-                    safe_csv_download(result_df, filename)
                 else:
                     st.warning("条件に合致するデータがありませんでした。")
         except Exception as e:
