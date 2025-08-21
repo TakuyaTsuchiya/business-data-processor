@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-アーク新規登録プロセッサ（0から完全再構築版）
+アーク新規登録プロセッサ（型安全版）
 正確な111列テンプレートヘッダー完全準拠
 
 入力ファイル:
@@ -17,11 +17,15 @@
 import pandas as pd
 import io
 import re
+import time
 import chardet
 import unicodedata
 from datetime import datetime
 from typing import Tuple, List, Dict, Union
 import logging
+from domain.models.processing_models import ProcessingResult, ProcessingStatistics
+from domain.models.enums import ProcessingStatus
+from infra.logging.logger import create_logger
 
 
 class ArkConfig:
@@ -734,9 +738,9 @@ class DataConverter:
         return final_df
 
 
-def process_ark_data(report_content: bytes, contract_content: bytes, region_code: int = 1) -> Tuple[pd.DataFrame, List[str], str]:
+def process_ark_data(report_content: bytes, contract_content: bytes, region_code: int = 1) -> ProcessingResult:
     """
-    アーク新規登録データ処理メイン関数
+    アーク新規登録データ処理メイン関数（型安全版）
     
     Args:
         report_content: 案件取込用レポート.csvの内容
@@ -744,18 +748,13 @@ def process_ark_data(report_content: bytes, contract_content: bytes, region_code
         region_code: 地域コード（1:東京, 2:大阪, 3:北海道, 4:北関東）
         
     Returns:
-        tuple: (変換済みDF, 処理ログ, 出力ファイル名)
+        ProcessingResult: 処理結果（データ、統計情報、ログを含む）
     """
-    # ログ設定
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
-    logger = logging.getLogger(__name__)
+    logger = create_logger(__name__)
+    start_time = time.time()
     
     try:
         logs = []
-        start_time = datetime.now()
         
         logs.append("=== アーク新規登録処理開始 ===")
         logger.info("アーク新規登録処理開始")
@@ -775,7 +774,24 @@ def process_ark_data(report_content: bytes, contract_content: bytes, region_code
         
         if len(new_contracts) == 0:
             logs.append("⚠️ 新規案件が見つかりませんでした")
-            return pd.DataFrame(), logs, "no_new_contracts.csv"
+            processing_time = time.time() - start_time
+            
+            warning_stats = ProcessingStatistics(
+                total_records=match_stats['total_reports'],
+                processed_records=0,
+                filtered_records=0,
+                error_count=0,
+                processing_time=processing_time
+            )
+            
+            return ProcessingResult(
+                data=pd.DataFrame(),
+                statistics=warning_stats,
+                status=ProcessingStatus.WARNING,
+                warnings=["新規案件が見つかりませんでした"],
+                processor_name="アーク新規登録",
+                metadata={"output_filename": "no_new_contracts.csv"}
+            )
         
         # 3. データ変換（111列テンプレート準拠）
         data_converter = DataConverter()
@@ -787,32 +803,77 @@ def process_ark_data(report_content: bytes, contract_content: bytes, region_code
         today_str = datetime.now().strftime("%m%d")
         output_filename = f"{today_str}{ArkConfig.OUTPUT_FILE_PREFIX}.csv"
         
-        # 5. 処理完了
-        end_time = datetime.now()
-        processing_time = (end_time - start_time).total_seconds()
+        # 5. 処理時間計算
+        processing_time = time.time() - start_time
+        
+        # 6. 統計情報作成
+        statistics = ProcessingStatistics(
+            total_records=match_stats['total_reports'],
+            processed_records=len(output_df),
+            filtered_records=len(output_df),
+            error_count=0,
+            processing_time=processing_time,
+            filter_conditions={
+                "重複チェック": f"新規{match_stats['new_contracts']}件/既存{match_stats['existing_contracts']}件",
+                "地域コード": str(region_code),
+                "111列テンプレート": "完全準拠"
+            }
+        )
+        
+        # 7. ProcessingResult作成
+        result = ProcessingResult(
+            data=output_df,
+            statistics=statistics,
+            status=ProcessingStatus.SUCCESS,
+            messages=logs,
+            processor_name="アーク新規登録",
+            metadata={"output_filename": output_filename}
+        )
         
         logs.append(f"=== 処理完了: {output_filename} ({processing_time:.2f}秒) ===")
         logger.info(f"アーク処理完了: {len(output_df)}件出力")
         
-        return output_df, logs, output_filename
+        return result
         
     except FileNotFoundError as e:
         error_msg = f"ファイルが見つかりません: {str(e)}"
         logger.error(error_msg)
-        return pd.DataFrame(), [error_msg], "error.csv"
+        return _create_error_result(error_msg, start_time)
     except ValueError as e:
         error_msg = f"データ形式エラー: {str(e)}"
         logger.error(error_msg)
-        return pd.DataFrame(), [error_msg], "error.csv"
+        return _create_error_result(error_msg, start_time)
     except Exception as e:
         error_msg = f"アーク処理エラー: {str(e)}"
         logger.error(error_msg)
-        return pd.DataFrame(), [error_msg], "error.csv"
+        return _create_error_result(error_msg, start_time)
 
 
-def process_arktrust_data(report_content: bytes, contract_content: bytes) -> Tuple[pd.DataFrame, List[str], str]:
+def _create_error_result(error_message: str, start_time: float) -> ProcessingResult:
+    """エラー時のProcessingResult作成ヘルパー"""
+    processing_time = time.time() - start_time
+    
+    error_stats = ProcessingStatistics(
+        total_records=0,
+        processed_records=0,
+        filtered_records=0,
+        error_count=1,
+        processing_time=processing_time
+    )
+    
+    return ProcessingResult(
+        data=pd.DataFrame(),
+        statistics=error_stats,
+        status=ProcessingStatus.ERROR,
+        errors=[error_message],
+        processor_name="アーク新規登録",
+        metadata={"output_filename": "error.csv"}
+    )
+
+
+def process_arktrust_data(report_content: bytes, contract_content: bytes) -> ProcessingResult:
     """
-    アークトラスト新規登録データ処理（東京専用）
+    アークトラスト新規登録データ処理（東京専用・型安全版）
     通常のアーク処理に加えて、固定値を設定
     
     Args:
@@ -820,44 +881,69 @@ def process_arktrust_data(report_content: bytes, contract_content: bytes) -> Tup
         contract_content: ContractList_*.csvの内容
         
     Returns:
-        tuple: (変換済みDF, 処理ログ, 出力ファイル名)
+        ProcessingResult: 処理結果（データ、統計情報、ログを含む）
     """
     # 通常のアーク処理を実行（region_code=1）
-    result_df, logs, _ = process_ark_data(report_content, contract_content, region_code=1)
+    result = process_ark_data(report_content, contract_content, region_code=1)
+    
+    # エラーの場合はそのまま返す
+    if result.status == ProcessingStatus.ERROR:
+        return result
     
     # アークトラスト固有の固定値を設定
-    if not result_df.empty:
-        result_df['回収口座金融機関CD'] = '9'
-        result_df['回収口座金融機関名'] = '三井住友銀行'
-        result_df['回収口座支店名'] = '日本橋東支店'
-        result_df['回収口座番号'] = '7834255'
-        result_df['回収口座名義'] = 'アークトラスト株式会社'
-        result_df['更新契約手数料'] = '1'
-        result_df['クライアントCD'] = '40'
+    if not result.data.empty:
+        # データフレームのコピーを作成
+        modified_df = result.data.copy()
+        
+        modified_df['回収口座金融機関CD'] = '9'
+        modified_df['回収口座金融機関名'] = '三井住友銀行'
+        modified_df['回収口座支店名'] = '日本橋東支店'
+        modified_df['回収口座番号'] = '7834255'
+        modified_df['回収口座名義'] = 'アークトラスト株式会社'
+        modified_df['更新契約手数料'] = '1'
+        modified_df['クライアントCD'] = '40'
         
         # 引継情報をアークトラスト用に更新（入居日情報のみ）
-        if '引継情報' in result_df.columns:
-            result_df['引継情報'] = result_df['引継情報'].apply(
+        if '引継情報' in modified_df.columns:
+            modified_df['引継情報'] = modified_df['引継情報'].apply(
                 lambda x: x.split('●入居日：')[-1] if '●入居日：' in str(x) else ''
             ).apply(
                 lambda x: f'●入居日：{x}' if x else '●入居日：'
             )
-            logs.append("引継情報をアークトラスト用に更新（入居日のみ）")
         
         # 契約者カナの半角→全角変換とスペース除去
-        if '契約者カナ' in result_df.columns:
-            result_df['契約者カナ'] = result_df['契約者カナ'].apply(
+        if '契約者カナ' in modified_df.columns:
+            modified_df['契約者カナ'] = modified_df['契約者カナ'].apply(
                 lambda x: unicodedata.normalize('NFKC', str(x)).replace(' ', '').replace('　', '') if pd.notna(x) else x
             )
-            logs.append("契約者カナの半角→全角変換とスペース除去を実行")
         
-        logs.append("アークトラスト固定値を設定: 回収口座情報・更新契約手数料・クライアントCD・引継情報")
+        # 新しいメッセージを追加
+        additional_messages = [
+            "引継情報をアークトラスト用に更新（入居日のみ）",
+            "契約者カナの半角→全角変換とスペース除去を実行",
+            "アークトラスト固定値を設定: 回収口座情報・更新契約手数料・クライアントCD・引継情報"
+        ]
+        
+        # 出力ファイル名
+        timestamp = datetime.now().strftime("%m%d")
+        filename = f"{timestamp}アークトラスト_新規登録_東京.csv"
+        
+        # 新しいProcessingResultを作成
+        arktrust_result = ProcessingResult(
+            data=modified_df,
+            statistics=result.statistics,
+            status=result.status,
+            messages=result.messages + additional_messages,
+            warnings=result.warnings,
+            errors=result.errors,
+            processor_name="アークトラスト新規登録",
+            metadata={"output_filename": filename}
+        )
+        
+        return arktrust_result
     
-    # 出力ファイル名
-    timestamp = datetime.now().strftime("%m%d")
-    filename = f"{timestamp}アークトラスト_新規登録_東京.csv"
-    
-    return result_df, logs, filename
+    # データが空の場合は元の結果をそのまま返す
+    return result
 
 
 def get_sample_template() -> pd.DataFrame:

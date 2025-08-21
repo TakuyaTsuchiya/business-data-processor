@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: business-data-processor:v2.3.0-docker
+    image: business-data-processor:v2.4.0-docker
     container_name: business-data-processor
     hostname: bdp-app
     
@@ -38,7 +38,7 @@ services:
       - STREAMLIT_SERVER_ADDRESS=0.0.0.0
       - STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
       # アプリケーション設定
-      - APP_VERSION=2.3.0-docker
+      - APP_VERSION=2.4.0-docker
       - TZ=Asia/Tokyo
     
     # 再起動ポリシー

@@ -59,7 +59,9 @@
       "mcp__serena__think_about_collected_information",
       "mcp__serena__replace_regex",
       "mcp__serena__insert_after_symbol",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(docker system info:*)",
+      "Bash(docker system:*)"
     ],
     "deny": []
   }

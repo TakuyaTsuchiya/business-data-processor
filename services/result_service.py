@@ -1,59 +1,113 @@
 """
 結果表示サービス - Services Layer
 
-このモジュールは、処理結果の表示、ログ表示、統計情報表示、
-エラーハンドリング等のUI表示処理を統一します。
-
-統合対象：
-- 成功メッセージ表示（全関数で重複）
-- 警告メッセージ表示（全関数で重複）
-- 処理ログ表示（ほぼ全関数で重複）
-- データプレビュー表示（大部分の関数で重複）
-- エラーハンドリング（全関数で重複）
+型安全性確立版：ProcessingResult/ProcessingStatisticsを使用した
+統一的な結果表示サービスを提供します。
 """
 
 import streamlit as st
 import pandas as pd
-from typing import List, Dict, Any, Optional
-from .processor_service import ProcessorResult
+from typing import List, Dict, Any, Optional, Union
+from domain.models.processing_models import ProcessingResult, ProcessingStatistics
+from domain.models.enums import ProcessingStatus, MessageType
+from domain.validators.type_validator import TypeValidator, ValidationError
+from services.adapters.legacy_adapter import LegacyProcessorAdapter
+from infra.logging.logger import create_logger
+import time
+
+
+logger = create_logger(__name__)
 
 
 class ResultDisplayService:
     """
-    処理結果表示を統合管理するサービスクラス
+    処理結果表示を統合管理するサービスクラス（型安全版）
     
-    プロセッサーの実行結果を一貫した形式で表示します。
+    ProcessingResult形式の結果を一貫した形式で表示します。
     """
     
     @staticmethod
-    def show_processing_success(result: ProcessorResult):
+    def show_complete_result(
+        result: Union[ProcessingResult, Any],
+        processor_name: str = "プロセッサー",
+        start_time: Optional[float] = None
+    ):
         """
-        処理成功メッセージを表示
+        処理結果を完全表示（型安全対応）
         
         Args:
-            result (ProcessorResult): プロセッサー実行結果
-            
-        Examples:
-            >>> ResultDisplayService.show_processing_success(result)
-            # "処理完了: 150件のデータを出力"
+            result: 処理結果（ProcessingResultまたはレガシー形式）
+            processor_name: プロセッサー名
+            start_time: 処理開始時刻
         """
-        if result.has_data:
-            st.success(f"処理完了: {result.row_count:,}件のデータを出力")
+        try:
+            # 型検証・変換
+            if not isinstance(result, ProcessingResult):
+                logger.info(f"レガシー形式の結果を変換: {type(result)}")
+                result = LegacyProcessorAdapter.adapt_result(
+                    result, processor_name, start_time
+                )
+            
+            # ステータスに応じた表示
+            if result.is_success():
+                ResultDisplayService._show_success_result(result)
+            elif result.is_error():
+                ResultDisplayService._show_error_result(result)
+            else:
+                ResultDisplayService._show_warning_result(result)
+            
+            # 統計情報表示
+            ResultDisplayService.show_statistics(result.statistics)
+            
+            # データプレビュー表示
+            if not result.data.empty:
+                ResultDisplayService.show_data_preview(result.data)
+            
+            # メッセージ表示
+            ResultDisplayService._show_messages(result)
+            
+        except Exception as e:
+            logger.error(f"結果表示中にエラー: {str(e)}")
+            st.error(f"結果表示中にエラーが発生しました: {str(e)}")
+    
+    @staticmethod
+    def _show_success_result(result: ProcessingResult):
+        """成功結果の表示"""
+        st.success(result.statistics.to_summary())
+        
+        # 成功率が低い場合は警告
+        success_rate = result.statistics.success_rate()
+        if success_rate < 90:
+            st.warning(f"成功率: {success_rate:.1f}%")
+    
+    @staticmethod
+    def _show_error_result(result: ProcessingResult):
+        """エラー結果の表示"""
+        st.error("処理中にエラーが発生しました")
+        
+        for error in result.errors:
+            st.error(f"❌ {error}")
+    
+    @staticmethod
+    def _show_warning_result(result: ProcessingResult):
+        """警告結果の表示"""
+        st.warning("処理は完了しましたが、警告があります")
+        
+        for warning in result.warnings:
+            st.warning(f"⚠️ {warning}")
+    
+    @staticmethod
+    def show_processing_success(result: ProcessingResult):
+        """処理成功メッセージを表示（型安全版）"""
+        if result.statistics.processed_records > 0:
+            st.success(result.statistics.to_summary())
         else:
             st.warning("条件に合致するデータがありませんでした。")
     
     @staticmethod
-    def show_processing_error(result: ProcessorResult):
-        """
-        処理エラーメッセージを表示
-        
-        Args:
-            result (ProcessorResult): プロセッサー実行結果
-        """
-        if result.error_message:
-            st.error(f"エラーが発生しました: {result.error_message}")
-        else:
-            st.error("不明なエラーが発生しました。")
+    def show_processing_error(error_message: str):
+        """処理エラーメッセージを表示"""
+        st.error(f"エラーが発生しました: {error_message}")
     
     @staticmethod
     def show_processing_logs(
@@ -62,20 +116,7 @@ class ResultDisplayService:
         expanded: bool = False,
         max_logs: Optional[int] = None
     ):
-        """
-        処理ログを表示
-        
-        Args:
-            logs (List[str]): 処理ログのリスト
-            title (str): ログセクションのタイトル
-            expanded (bool): デフォルトで展開するか
-            max_logs (int, optional): 表示する最大ログ数
-            
-        Examples:
-            >>> ResultDisplayService.show_processing_logs(result.logs)
-            >>> # 最新5件のみ表示
-            >>> ResultDisplayService.show_processing_logs(result.logs, max_logs=5)
-        """
+        """処理ログを表示"""
         if not logs:
             return
         
@@ -87,74 +128,73 @@ class ResultDisplayService:
     
     @staticmethod
     def show_statistics(
-        stats: Dict[str, Any],
+        stats: Union[ProcessingStatistics, Dict[str, Any], str],
         title: str = "📊 処理統計情報"
     ):
         """
-        統計情報を表示
+        統計情報を表示（型安全対応）
         
         Args:
-            stats (Dict[str, Any]): 統計情報の辞書
-            title (str): 統計セクションのタイトル
-            
-        Examples:
-            >>> stats = {
-            ...     "arrear_unique_before": 15000,
-            ...     "arrear_unique_after": 14500,
-            ...     "match_success": 12000,
-            ...     "match_failed": 2500
-            ... }
-            >>> ResultDisplayService.show_statistics(stats)
+            stats: ProcessingStatistics、辞書、または文字列形式の統計情報
+            title: 統計セクションのタイトル
         """
-        if not stats:
-            return
+        try:
+            # 型検証・変換
+            if isinstance(stats, str):
+                # 文字列の場合はシンプル表示
+                st.info(f"📊 {stats}")
+                return
+            
+            if not isinstance(stats, ProcessingStatistics):
+                # ProcessingStatistics型への変換試行
+                stats = TypeValidator.validate_processing_statistics(stats)
+            
+            # 統計情報の表示
+            with st.expander(title, expanded=True):
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    st.metric("総レコード数", f"{stats.total_records:,}")
+                
+                with col2:
+                    st.metric("処理済み", f"{stats.processed_records:,}")
+                
+                with col3:
+                    st.metric("処理時間", f"{stats.processing_time:.2f}秒")
+                
+                # フィルタ条件の表示
+                if stats.filter_conditions:
+                    st.markdown("**適用フィルタ条件:**")
+                    ResultDisplayService._show_filter_conditions(stats.filter_conditions)
+                
+                # エラー情報
+                if stats.error_count > 0:
+                    st.error(f"エラー件数: {stats.error_count:,}件")
+                
+                # 成功率
+                success_rate = stats.success_rate()
+                if success_rate < 100:
+                    st.info(f"成功率: {success_rate:.1f}%")
         
-        with st.expander(title, expanded=True):
-            st.markdown("**処理統計情報:**")
-            st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-            
-            # 統計情報をカテゴリ別に整理して表示
-            ResultDisplayService._format_statistics(stats)
-            
-            st.markdown('</div>', unsafe_allow_html=True)
+        except ValidationError as e:
+            logger.warning(f"統計情報の型変換失敗: {str(e)}")
+            # フォールバック：生データをそのまま表示
+            st.info(f"統計情報: {stats}")
+        except Exception as e:
+            logger.error(f"統計情報表示エラー: {str(e)}")
+            st.error(f"統計情報の表示中にエラーが発生しました")
     
     @staticmethod
-    def _format_statistics(stats: Dict[str, Any]):
-        """統計情報をフォーマットして表示"""
-        
-        # データ抽出統計
-        extraction_keys = [k for k in stats.keys() if any(word in k for word in ['before', 'after', 'extracted', 'columns'])]
-        if extraction_keys:
-            st.markdown("**Step 2: データ抽出**")
-            for key in extraction_keys:
-                if 'columns' in key:
-                    st.markdown(f"• {key.replace('_', ' ').title()}: {stats[key]}列")
-                elif 'before' in key or 'after' in key:
-                    st.markdown(f"• {key.replace('_', ' ').title()}: {stats[key]:,} 件")
-        
-        # フィルタリング統計
-        filter_keys = [k for k in stats.keys() if any(word in k for word in ['excluded', 'removed', 'filtered'])]
-        if filter_keys:
-            st.markdown("**Step 2.5: フィルタリング**")
-            for key in filter_keys:
-                st.markdown(f"• {key.replace('_', ' ').title()}: {stats[key]:,} 件")
-        
-        # マッチング統計
-        match_keys = [k for k in stats.keys() if any(word in k for word in ['match', 'diff', 'increased', 'decreased'])]
-        if match_keys:
-            st.markdown("**Step 3-4: マッチング**")
-            for key in match_keys:
-                st.markdown(f"• {key.replace('_', ' ').title()}: {stats[key]:,} 件")
-        
-        # その他の統計
-        other_keys = [k for k in stats.keys() if k not in extraction_keys + filter_keys + match_keys]
-        if other_keys:
-            st.markdown("**その他の統計**")
-            for key in other_keys:
-                if isinstance(stats[key], (int, float)):
-                    st.markdown(f"• {key.replace('_', ' ').title()}: {stats[key]:,}")
-                else:
-                    st.markdown(f"• {key.replace('_', ' ').title()}: {stats[key]}")
+    def _show_filter_conditions(conditions: Dict[str, Any]):
+        """フィルタ条件を整形して表示"""
+        for key, value in conditions.items():
+            # HTMLエスケープとレンダリング
+            if isinstance(value, str) and '<' in value and '>' in value:
+                # HTMLタグを含む場合
+                st.markdown(f"• **{key}**: ", unsafe_allow_html=True)
+                st.markdown(value, unsafe_allow_html=True)
+            else:
+                st.markdown(f"• **{key}**: {value}")
     
     @staticmethod
     def show_data_preview(
@@ -162,136 +202,131 @@ class ResultDisplayService:
         title: str = "処理結果プレビュー",
         preview_rows: int = 10
     ):
-        """
-        データプレビューを表示
-        
-        Args:
-            df (pd.DataFrame): 表示するDataFrame
-            title (str): プレビューセクションのタイトル
-            preview_rows (int): 表示する行数
-            
-        Examples:
-            >>> ResultDisplayService.show_data_preview(result.result_df)
-        """
+        """データプレビューを表示"""
         if df.empty:
+            st.info("表示するデータがありません。")
             return
         
-        st.subheader(title)
-        
-        # app.pyの safe_dataframe_display を使用
-        from app import safe_dataframe_display
-        safe_dataframe_display(df.head(preview_rows))
-    
-    @staticmethod
-    def show_download_section(
-        result: ProcessorResult,
-        download_label: str = "📥 CSVファイルをダウンロード"
-    ):
-        """
-        ダウンロードセクションを表示
-        
-        Args:
-            result (ProcessorResult): プロセッサー実行結果
-            download_label (str): ダウンロードボタンのラベル
+        with st.expander(f"📋 {title} （{len(df):,}件）", expanded=False):
+            # データ形状情報
+            st.markdown(f"**データ形状**: {df.shape[0]:,}行 × {df.shape[1]}列")
             
-        Examples:
-            >>> ResultDisplayService.show_download_section(result)
-        """
-        if not result.has_data or not result.filename:
-            return
-        
-        # app.pyの safe_csv_download を使用
-        from app import safe_csv_download
-        safe_csv_download(result.result_df, result.filename, download_label)
+            # プレビュー表示
+            display_df = df.head(preview_rows)
+            st.dataframe(display_df)
+            
+            if len(df) > preview_rows:
+                st.info(f"※ 最初の{preview_rows}件を表示しています")
     
     @staticmethod
-    def show_complete_result(
-        result: ProcessorResult,
-        show_logs: bool = True,
+    def show_download_section(result: ProcessingResult, filename: str = "output.csv"):
+        """ダウンロードセクションを表示"""
+        if result.data.empty:
+            return
+        
+        # CSV生成（インフラ層の使用）
+        from infra.csv.writer import safe_csv_download_button
+        safe_csv_download_button(result.data, filename)
+    
+    @staticmethod
+    def _show_messages(result: ProcessingResult):
+        """各種メッセージを表示"""
+        # 情報メッセージ
+        for message in result.messages:
+            st.info(f"ℹ️ {message}")
+        
+        # 警告メッセージ
+        for warning in result.warnings:
+            st.warning(f"⚠️ {warning}")
+        
+        # エラーメッセージ
+        for error in result.errors:
+            st.error(f"❌ {error}")
+    
+    @staticmethod
+    def show_result_with_options(
+        result: ProcessingResult,
         show_stats: bool = True,
         show_preview: bool = True,
         show_download: bool = True,
-        logs_expanded: bool = False,
         preview_rows: int = 10
     ):
-        """
-        処理結果を包括的に表示
+        """オプション付きで結果を表示"""
+        # メイン結果表示
+        ResultDisplayService._show_success_result(result)
         
-        Args:
-            result (ProcessorResult): プロセッサー実行結果
-            show_logs (bool): ログを表示するか
-            show_stats (bool): 統計情報を表示するか  
-            show_preview (bool): データプレビューを表示するか
-            show_download (bool): ダウンロードボタンを表示するか
-            logs_expanded (bool): ログをデフォルトで展開するか
-            preview_rows (int): プレビュー表示行数
-            
-        Examples:
-            >>> # 基本的な結果表示
-            >>> ResultDisplayService.show_complete_result(result)
-            >>> 
-            >>> # ログを展開して表示
-            >>> ResultDisplayService.show_complete_result(result, logs_expanded=True)
-            >>> 
-            >>> # プレビューなしで表示
-            >>> ResultDisplayService.show_complete_result(result, show_preview=False)
-        """
-        if not result.success:
-            ResultDisplayService.show_processing_error(result)
-            return
-        
-        # 成功メッセージ
-        ResultDisplayService.show_processing_success(result)
-        
-        # データがない場合はここで終了
-        if not result.has_data:
-            if show_logs and result.logs:
-                ResultDisplayService.show_processing_logs(result.logs, expanded=True)
-            return
-        
-        # ダウンロードボタン（優先表示）
-        if show_download:
+        # オプション表示
+        if show_download and not result.data.empty:
             ResultDisplayService.show_download_section(result)
         
-        # 処理ログ表示
-        if show_logs and result.logs:
-            ResultDisplayService.show_processing_logs(result.logs, expanded=logs_expanded)
+        if show_stats:
+            ResultDisplayService.show_statistics(result.statistics)
         
-        # 統計情報表示
-        if show_stats and result.stats:
-            ResultDisplayService.show_statistics(result.stats)
+        if show_preview and not result.data.empty:
+            ResultDisplayService.show_data_preview(result.data, preview_rows=preview_rows)
         
-        # データプレビュー表示
-        if show_preview:
-            ResultDisplayService.show_data_preview(result.result_df, preview_rows=preview_rows)
+        # メッセージ表示
+        ResultDisplayService._show_messages(result)
 
 
 class FilterConditionDisplay:
     """
-    フィルタ条件表示の統一クラス
+    フィルタ条件表示の統一クラス（型安全版）
     """
     
     @staticmethod
-    def show_filter_conditions(conditions: List[str], title: str = "**フィルタ条件:**"):
+    def show_filter_conditions(
+        conditions: Union[List[str], Dict[str, Any]], 
+        title: str = "**フィルタ条件:**"
+    ):
         """
         フィルタ条件を統一フォーマットで表示
         
         Args:
-            conditions (List[str]): フィルタ条件のリスト
-            title (str): フィルタ条件セクションのタイトル
-            
-        Examples:
-            >>> conditions = [
-            ...     "委託先法人ID → 空白&5",
-            ...     "入金予定日 → 前日以前とNaN", 
-            ...     "回収ランク → 「弁護士介入」除外"
-            ... ]
-            >>> FilterConditionDisplay.show_filter_conditions(conditions)
+            conditions: フィルタ条件（リストまたは辞書）
+            title: フィルタ条件セクションのタイトル
         """
         st.markdown(title)
         st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
         
-        for condition in conditions:
-            st.markdown(f"• {condition}")
+        if isinstance(conditions, list):
+            # リスト形式の場合
+            for condition in conditions:
+                FilterConditionDisplay._render_condition_item(condition)
+        
+        elif isinstance(conditions, dict):
+            # 辞書形式の場合
+            for key, value in conditions.items():
+                FilterConditionDisplay._render_condition_item(f"{key} → {value}")
         
         st.markdown('</div>', unsafe_allow_html=True)
+    
+    @staticmethod
+    def _render_condition_item(condition: str):
+        """個別のフィルタ条件を表示"""
+        # HTMLタグのチェックと安全なレンダリング
+        if '<span' in condition and '</span>' in condition:
+            # HTMLを含む場合は unsafe_allow_html を使用
+            st.markdown(f"• {condition}", unsafe_allow_html=True)
+        else:
+            # 通常のテキスト
+            st.markdown(f"• {condition}")
+
+
+# 後方互換性のためのエイリアス
+class ProcessorResult:
+    """レガシー互換性のためのラッパークラス"""
+    def __init__(self, result_df=None, logs=None, stats=None, error_message=None):
+        self.result_df = result_df if result_df is not None else pd.DataFrame()
+        self.logs = logs if logs is not None else []
+        self.stats = stats if stats is not None else {}
+        self.error_message = error_message
+        self.has_data = not self.result_df.empty
+        self.row_count = len(self.result_df)
+        
+    def to_processing_result(self) -> ProcessingResult:
+        """ProcessingResult形式に変換"""
+        return LegacyProcessorAdapter.adapt_result(
+            (self.result_df, self.stats) if self.stats else self.result_df,
+            "LegacyProcessor"
+        )

@@ -1,5 +1,5 @@
-# Business Data Processor v2.3.0 - Docker Image  
-# 三層アーキテクチャ + Domain層Mapper対応版
+# Business Data Processor v2.4.0 - Docker Image  
+# 三層アーキテクチャ + 型安全性確立版
 
 # ステージ1: ビルド環境
 FROM python:3.11-slim as builder
@@ -25,8 +25,8 @@ FROM python:3.11-slim
 
 # 作者情報
 LABEL maintainer="Takuya Tsuchiya"
-LABEL version="2.3.0-docker"
-LABEL description="統合データ処理システム - 18種類プロセッサー + 三層アーキテクチャ対応（Domain層Mapper統合版）"
+LABEL version="2.4.0-docker"
+LABEL description="統合データ処理システム - 18種類プロセッサー + 型安全性確立版（エラーフリー実装）"
 
 # 作業ディレクトリ設定
 WORKDIR /app
