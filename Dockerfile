@@ -1,5 +1,5 @@
-# Business Data Processor v2.1.0 - Docker Image
-# マルチステージビルドで最適化されたイメージを作成
+# Business Data Processor v2.3.0 - Docker Image  
+# 三層アーキテクチャ + Domain層Mapper対応版
 
 # ステージ1: ビルド環境
 FROM python:3.11-slim as builder
@@ -25,8 +25,8 @@ FROM python:3.11-slim
 
 # 作者情報
 LABEL maintainer="Takuya Tsuchiya"
-LABEL version="2.1.0-docker"
-LABEL description="統合データ処理システム - 15種類プロセッサー対応（Docker最適化版）"
+LABEL version="2.3.0-docker"
+LABEL description="統合データ処理システム - 18種類プロセッサー + 三層アーキテクチャ対応（Domain層Mapper統合版）"
 
 # 作業ディレクトリ設定
 WORKDIR /app
@@ -64,6 +64,9 @@ ENV PATH=/home/streamlit/.local/bin:$PATH
 COPY app.py .
 COPY processors/ ./processors/
 COPY templates/ ./templates/
+COPY domain/ ./domain/
+COPY services/ ./services/
+COPY infra/ ./infra/
 
 # 必要なディレクトリを作成
 RUN mkdir -p /app/data /app/downloads /app/logs
