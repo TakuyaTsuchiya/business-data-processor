@@ -12,6 +12,26 @@ from .mirail_mapper import (
     MirailGuarantorMapper,
     MirailEmergencyContactMapper
 )
+from .faith_mapper import (
+    FaithContractMapper,
+    FaithGuarantorMapper,
+    FaithEmergencyContactMapper,
+    FaithSMSMapper
+)
+from .plaza_mapper import (
+    PlazaMainMapper,
+    PlazaGuarantorMapper,
+    PlazaContactMapper
+)
+from .ark_mapper import (
+    ArkRegistrationMapper,
+    ArkLatePaymentMapper
+)
+from .capco_mapper import (
+    CapcoRegistrationMapper,
+    CapcoDebtUpdateMapper,
+    CapcoPhoneCleaningMapper
+)
 from .exceptions import MappingRuleError
 
 
@@ -30,24 +50,26 @@ class MapperFactory:
         "mirail_emergency": MirailEmergencyContactMapper,
         "mirail_emergency_contact": MirailEmergencyContactMapper,  # エイリアス
         
-        # フェイスシステム（今後実装）
-        # "faith_contract": FaithContractMapper,
-        # "faith_guarantor": FaithGuarantorMapper,
-        # "faith_emergency": FaithEmergencyContactMapper,
-        # "faith_sms": FaithSMSMapper,
+        # フェイスシステム
+        "faith_contract": FaithContractMapper,
+        "faith_guarantor": FaithGuarantorMapper,
+        "faith_emergency": FaithEmergencyContactMapper,
+        "faith_emergency_contact": FaithEmergencyContactMapper,  # エイリアス
+        "faith_sms": FaithSMSMapper,
         
-        # プラザシステム（今後実装）
-        # "plaza_main": PlazaMainMapper,
-        # "plaza_guarantor": PlazaGuarantorMapper,
-        # "plaza_contact": PlazaContactMapper,
+        # プラザシステム
+        "plaza_main": PlazaMainMapper,
+        "plaza_guarantor": PlazaGuarantorMapper,
+        "plaza_contact": PlazaContactMapper,
         
-        # アークシステム（今後実装）
-        # "ark_registration": ArkRegistrationMapper,
-        # "ark_late_payment": ArkLatePaymentMapper,
+        # アークシステム
+        "ark_registration": ArkRegistrationMapper,
+        "ark_late_payment": ArkLatePaymentMapper,
         
-        # カプコシステム（今後実装）
-        # "capco_registration": CapcoRegistrationMapper,
-        # "capco_debt_update": CapcoDebtUpdateMapper,
+        # カプコシステム
+        "capco_registration": CapcoRegistrationMapper,
+        "capco_debt_update": CapcoDebtUpdateMapper,
+        "capco_phone_cleaning": CapcoPhoneCleaningMapper,
     }
     
     @classmethod

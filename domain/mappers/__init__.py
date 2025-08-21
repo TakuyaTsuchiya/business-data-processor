@@ -14,6 +14,34 @@ from .mirail_mapper import (
     MirailEmergencyContactMapper
 )
 
+# フェイス用Mapper
+from .faith_mapper import (
+    FaithContractMapper,
+    FaithGuarantorMapper,
+    FaithEmergencyContactMapper,
+    FaithSMSMapper
+)
+
+# プラザ用Mapper
+from .plaza_mapper import (
+    PlazaMainMapper,
+    PlazaGuarantorMapper,
+    PlazaContactMapper
+)
+
+# アーク用Mapper
+from .ark_mapper import (
+    ArkRegistrationMapper,
+    ArkLatePaymentMapper
+)
+
+# カプコ用Mapper
+from .capco_mapper import (
+    CapcoRegistrationMapper,
+    CapcoDebtUpdateMapper,
+    CapcoPhoneCleaningMapper
+)
+
 # ファクトリー
 from .mapper_factory import MapperFactory
 
@@ -35,6 +63,26 @@ __all__ = [
     'MirailContractMapper',
     'MirailGuarantorMapper',
     'MirailEmergencyContactMapper',
+    
+    # フェイス用
+    'FaithContractMapper',
+    'FaithGuarantorMapper',
+    'FaithEmergencyContactMapper',
+    'FaithSMSMapper',
+    
+    # プラザ用
+    'PlazaMainMapper',
+    'PlazaGuarantorMapper',
+    'PlazaContactMapper',
+    
+    # アーク用
+    'ArkRegistrationMapper',
+    'ArkLatePaymentMapper',
+    
+    # カプコ用
+    'CapcoRegistrationMapper',
+    'CapcoDebtUpdateMapper',
+    'CapcoPhoneCleaningMapper',
     
     # ファクトリー
     'MapperFactory',
