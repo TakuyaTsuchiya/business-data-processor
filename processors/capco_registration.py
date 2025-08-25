@@ -370,12 +370,15 @@ class DataConverter:
         # 2. 市区町村抽出（政令指定都市対応）
         city = ""
         
-        # 市川市・市原市の特別処理
+        # 市川市・市原市・町田市の特別処理
         if addr.startswith("市川市"):
             city = "市川市"
             addr = addr[3:]
         elif addr.startswith("市原市"):
             city = "市原市"
+            addr = addr[3:]
+        elif addr.startswith("町田市"):
+            city = "町田市"
             addr = addr[3:]
         
         # 既存の処理
