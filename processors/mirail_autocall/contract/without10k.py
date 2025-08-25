@@ -123,26 +123,91 @@ def process_mirail_data(file_content: bytes) -> Tuple[pd.DataFrame, pd.DataFrame
         logger.info("処理開始")
         
         # 1. CSVファイル読み込み
-        logger.info("CSVファイル読み込み開始")
+        logger.info(
+            "CSVファイル読み込み開始",
+            operation="csv_file_loading",
+            context={
+                "file_size_bytes": len(file_content),
+                "expected_encoding": "cp932"
+            },
+            human_note="AI-TODO: エンコーディングエラーが発生した場合は文字化け対応を確認してください"
+        )
         df_input = read_csv_auto_encoding(file_content)
-        logger.log_data_processing("CSV読み込み", 0, len(df_input), f"列数: {len(df_input.columns)}")
+        logger.log_data_processing(
+            "CSV読み込み", 
+            0, 
+            len(df_input), 
+            f"列数: {len(df_input.columns)}",
+            conditions={
+                "encoding_detection": "auto",
+                "columns_detected": len(df_input.columns)
+            },
+            human_note="AI-INFO: CSV読み込み成功。列数が期待値と大きく異なる場合はデータ形式を確認"
+        )
         
         # 2. フィルタリング処理
-        logger.info("フィルタリング処理開始")
+        logger.info(
+            "フィルタリング処理開始",
+            operation="filtering_process",
+            context={
+                "processor_type": "mirail_contract_without10k",
+                "debt_filter_enabled": True,
+                "expected_filter_conditions": MirailConfig.FILTER_CONDITIONS
+            },
+            human_note="AI-TODO: フィルタリング後の件数が大幅に減少した場合は、フィルタ条件の妥当性を確認"
+        )
         df_filtered = apply_filters(df_input, logger)
-        logger.log_data_processing("フィルタリング", len(df_input), len(df_filtered))
+        logger.log_data_processing(
+            "フィルタリング", 
+            len(df_input), 
+            len(df_filtered),
+            conditions={
+                "filter_type": "mirail_without10k",
+                "debt_exclusion": [10000, 11000],
+                "trustee_company_filter": ["空白", "5"]
+            },
+            human_note="AI-ANALYZE: 除外率をチェック。通常20-40%程度が適切"
+        )
         
         # 3. テンプレートマッピング
-        logger.info("テンプレートマッピング開始")
+        logger.info(
+            "テンプレートマッピング開始",
+            operation="template_mapping",
+            context={
+                "template_columns": len(AUTOCALL_OUTPUT_COLUMNS),
+                "mapping_rules": MirailConfig.MAPPING_RULES,
+                "input_rows": len(df_filtered)
+            },
+            human_note="AI-INFO: 28列統一テンプレートへのマッピング実行"
+        )
         df_output = map_data_to_template(df_filtered)
         logger.log_mapping_result("28列テンプレート", len(df_output))
         
         # 4. 出力ファイル名生成
         today_str = datetime.now().strftime("%m%d")
         output_filename = f"{today_str}{MirailConfig.OUTPUT_FILE_PREFIX}.csv"
-        logger.info(f"出力ファイル名: {output_filename}")
+        logger.info(
+            f"出力ファイル名: {output_filename}",
+            operation="output_file_generation",
+            context={
+                "filename": output_filename,
+                "date_prefix": today_str,
+                "file_prefix": MirailConfig.OUTPUT_FILE_PREFIX,
+                "output_rows": len(df_output)
+            },
+            human_note="AI-INFO: 出力ファイル名生成完了。ファイル名形式: MMDDミライル_without10k_契約者.csv"
+        )
         
-        logger.info("処理完了")
+        logger.info(
+            "処理完了",
+            operation="process_complete",
+            context={
+                "total_processing_time": (datetime.now() - logger.start_time).total_seconds(),
+                "final_output_count": len(df_output),
+                "success": True
+            },
+            human_note="AI-SUCCESS: ミライル契約者without10k処理が正常完了"
+        )
         
         # ログを取得
         logs = logger.get_logs()

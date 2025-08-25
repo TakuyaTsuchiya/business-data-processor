@@ -9,6 +9,10 @@ debug*.csv
 *.backup
 *.bak
 
+# ViveLogger log files
+logs/vibe/
+*.vibelogger.json
+
 # Local settings backups
 .claude/settings.local.json.backup
 .claude/settings.local.json.bak

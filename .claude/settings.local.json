@@ -61,7 +61,10 @@
       "mcp__serena__insert_after_symbol",
       "Bash(mv:*)",
       "Bash(docker system info:*)",
-      "Bash(docker system:*)"
+      "Bash(docker system:*)",
+      "mcp__serena__check_onboarding_performed",
+      "mcp__serena__list_dir",
+      "mcp__serena__get_symbols_overview"
     ],
     "deny": []
   }
