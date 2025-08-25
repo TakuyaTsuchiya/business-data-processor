@@ -159,7 +159,7 @@ def process_mirail_data(file_content: bytes) -> Tuple[pd.DataFrame, pd.DataFrame
         file_content: アップロードされたCSVファイルの内容
         
     Returns:
-        tuple: (最終出力DF, フィルタリング済みDF, 処理ログ, 出力ファイル名)
+        tuple: (最終出力DF, 処理済みDF, 処理ログ, 出力ファイル名)
     """
     try:
         # 1. CSVファイル読み込み
