@@ -149,11 +149,11 @@ def process_faith_sms_emergency_contact_data(file_content: bytes, payment_deadli
         df = df[~df['回収ランク'].isin(collection_rank_exclude)]
         logs.append(f"フィルター4 - 回収ランク(弁護士介入等除外): {len(df)}件")
         
-        # Filter 5: BE列「緊急連絡人１のTEL携帯」 (Keep only valid mobile phone numbers) - 列番号57を使用
+        # Filter 5: BE列「緊急連絡人１のTEL携帯」 (Keep only valid mobile phone numbers) - 列番号56を使用
         mobile_phone_regex = r'^(090|080|070)-\d{4}-\d{4}$'
         
-        # BE列（列番号57）の電話番号を取得
-        emergency_phone_series = df.iloc[:, 57].astype(str).str.strip().replace('nan', '')
+        # BE列（列番号56）の電話番号を取得
+        emergency_phone_series = df.iloc[:, 56].astype(str).str.strip().replace('nan', '')
         
         def is_mobile_phone(phone_number):
             if phone_number == '':
@@ -185,8 +185,8 @@ def process_faith_sms_emergency_contact_data(file_content: bytes, payment_deadli
         # Create output DataFrame with temporary column names
         output_df = pd.DataFrame(columns=temp_column_order)
         
-        # Map data - BE列（列番号57）の電話番号を使用
-        output_df['電話番号'] = df.iloc[:, 57].astype(str)
+        # Map data - BE列（列番号56）の電話番号を使用
+        output_df['電話番号'] = df.iloc[:, 56].astype(str)
         output_df['(info1)契約者名'] = df['契約者氏名']
         
         # Combine property name and number
