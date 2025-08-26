@@ -67,6 +67,8 @@ from processors.plaza_autocall.guarantor.standard import process_plaza_guarantor
 from processors.plaza_autocall.contact.standard import process_plaza_contact_data
 
 from processors.faith_sms.vacated_contract import process_faith_sms_vacated_contract_data
+from processors.faith_sms.guarantor import process_faith_sms_guarantor_data
+from processors.faith_sms.emergency_contact import process_faith_sms_emergency_contact_data
 from processors.ark_registration import process_ark_data, process_arktrust_data
 from processors.ark_late_payment_update import process_ark_late_payment_data
 from processors.capco_registration import process_capco_data
@@ -238,6 +240,10 @@ def main():
         st.markdown('<div class="sidebar-category">📱 SMS送信用CSV加工</div>', unsafe_allow_html=True)
         if st.button("フェイス　契約者", key="faith_sms_vacated", use_container_width=True):
             st.session_state.selected_processor = "faith_sms_vacated"
+        if st.button("フェイス　保証人", key="faith_sms_guarantor", use_container_width=True):
+            st.session_state.selected_processor = "faith_sms_guarantor"
+        if st.button("フェイス　連絡人", key="faith_sms_emergency_contact", use_container_width=True):
+            st.session_state.selected_processor = "faith_sms_emergency_contact"
         
         # 📋 新規登録用CSV加工
         st.markdown('<div class="sidebar-category">📋 新規登録用CSV加工</div>', unsafe_allow_html=True)
@@ -313,6 +319,10 @@ def main():
         show_plaza_contact()
     elif st.session_state.selected_processor == "faith_sms_vacated":
         show_faith_sms_vacated()
+    elif st.session_state.selected_processor == "faith_sms_guarantor":
+        show_faith_sms_guarantor()
+    elif st.session_state.selected_processor == "faith_sms_emergency_contact":
+        show_faith_sms_emergency_contact()
     elif st.session_state.selected_processor == "ark_registration_tokyo":
         show_ark_registration_tokyo()
     elif st.session_state.selected_processor == "ark_registration_osaka":
@@ -777,6 +787,98 @@ def show_faith_sms_vacated():
                     process_faith_sms_vacated_contract_data,
                     upload_result.single_file_content,
                     "フェイスSMS退去済み",
+                    payment_deadline_date=payment_deadline_date
+                )
+                
+                # 結果表示 (Services Layer使用)
+                ResultDisplayService.show_complete_result(result)
+
+def show_faith_sms_guarantor():
+    """フェイスSMS保証人版 - Services Layer使用版"""
+    st.header("📱 フェイス　保証人")
+    
+    # 支払期限日付入力
+    st.subheader("支払期限の設定")
+    payment_deadline_date = st.date_input(
+        "クリックして支払期限を選択してください",
+        value=date.today(),
+        help="この日付がBG列「支払期限」に設定されます（例：2025年6月30日）",
+        key="faith_sms_guarantor_payment_deadline",
+        disabled=False,
+        format="YYYY/MM/DD"
+    )
+    st.write(f"設定される支払期限: **{payment_deadline_date.strftime('%Y年%m月%d日')}**")
+    
+    # フィルタ条件表示 (Services Layer使用)
+    filter_conditions = [
+        "委託先法人ID → 1-4",
+        "入金予定日 → 前日以前とNaN",
+        "入金予定金額 → 2,3,5円除外",
+        "回収ランク → 「弁護士介入」「破産決定」「死亡決定」除外",
+        "AU列TEL携帯 → 090/080/070形式のみ"
+    ]
+    FilterConditionDisplay.show_filter_conditions(filter_conditions)
+    
+    # ファイルアップロード (Services Layer使用)
+    upload_result = FileUploadService.handle_single_file_upload(
+        label="CSVファイルをアップロードしてください",
+        key="faith_sms_guarantor_file"
+    )
+    
+    if upload_result.success:
+        if st.button("処理を実行", type="primary"):
+            with st.spinner("処理中..."):
+                # プロセッサー実行 (カスタムパラメータ付き)
+                result = ProcessorExecutionService.execute_single_file_processor(
+                    process_faith_sms_guarantor_data,
+                    upload_result.single_file_content,
+                    "フェイスSMS保証人",
+                    payment_deadline_date=payment_deadline_date
+                )
+                
+                # 結果表示 (Services Layer使用)
+                ResultDisplayService.show_complete_result(result)
+
+def show_faith_sms_emergency_contact():
+    """フェイスSMS緊急連絡人版 - Services Layer使用版"""
+    st.header("📱 フェイス　連絡人")
+    
+    # 支払期限日付入力
+    st.subheader("支払期限の設定")
+    payment_deadline_date = st.date_input(
+        "クリックして支払期限を選択してください",
+        value=date.today(),
+        help="この日付がBG列「支払期限」に設定されます（例：2025年6月30日）",
+        key="faith_sms_emergency_contact_payment_deadline",
+        disabled=False,
+        format="YYYY/MM/DD"
+    )
+    st.write(f"設定される支払期限: **{payment_deadline_date.strftime('%Y年%m月%d日')}**")
+    
+    # フィルタ条件表示 (Services Layer使用)
+    filter_conditions = [
+        "委託先法人ID → 1-4",
+        "入金予定日 → 前日以前とNaN",
+        "入金予定金額 → 2,3,5円除外",
+        "回収ランク → 「弁護士介入」「破産決定」「死亡決定」除外",
+        "緊急連絡人１のTEL（携帯） → 090/080/070形式のみ"
+    ]
+    FilterConditionDisplay.show_filter_conditions(filter_conditions)
+    
+    # ファイルアップロード (Services Layer使用)
+    upload_result = FileUploadService.handle_single_file_upload(
+        label="CSVファイルをアップロードしてください",
+        key="faith_sms_emergency_contact_file"
+    )
+    
+    if upload_result.success:
+        if st.button("処理を実行", type="primary"):
+            with st.spinner("処理中..."):
+                # プロセッサー実行 (カスタムパラメータ付き)
+                result = ProcessorExecutionService.execute_single_file_processor(
+                    process_faith_sms_emergency_contact_data,
+                    upload_result.single_file_content,
+                    "フェイスSMS緊急連絡人",
                     payment_deadline_date=payment_deadline_date
                 )
                 

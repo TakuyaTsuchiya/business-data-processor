@@ -61,7 +61,9 @@
       "mcp__serena__insert_after_symbol",
       "Bash(mv:*)",
       "Bash(docker system info:*)",
-      "Bash(docker system:*)"
+      "Bash(docker system:*)",
+      "Bash(ssh:*)",
+      "Bash(gh api:*)"
     ],
     "deny": []
   }
