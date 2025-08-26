@@ -5,9 +5,6 @@ import os
 import time
 from datetime import datetime, date
 from typing import Tuple, List
-from domain.models.processing_models import ProcessingResult, ProcessingStatistics
-from domain.models.enums import ProcessingStatus
-from infra.logging.logger import create_logger
 
 def format_payment_deadline(date_input: date) -> str:
     """
@@ -76,19 +73,17 @@ def read_csv_auto_encoding(file_content: bytes) -> pd.DataFrame:
     
     raise ValueError("CSVファイルの読み込みに失敗しました。エンコーディングを確認してください。")
 
-def process_faith_sms_guarantor_data(file_content: bytes, payment_deadline_date: date) -> ProcessingResult:
+def process_faith_sms_guarantor_data(file_content: bytes, payment_deadline_date: date) -> Tuple[pd.DataFrame, List[str], str, dict]:
     """
-    フェイスSMS保証人データ処理（型安全版）
+    フェイスSMS保証人データ処理（Streamlit対応版）
     
     Args:
         file_content: アップロードされたCSVファイルの内容（bytes）
         payment_deadline_date: 支払期限日付（dateオブジェクト）
         
     Returns:
-        ProcessingResult: 処理結果（データ、統計情報、ログを含む）
+        tuple: (変換済みDF, ログリスト, 出力ファイル名, 統計情報)
     """
-    logger = create_logger(__name__)
-    start_time = time.time()
     try:
         # ログリスト初期化
         logs = []
@@ -242,58 +237,13 @@ def process_faith_sms_guarantor_data(file_content: bytes, payment_deadline_date:
         date_str = datetime.now().strftime("%m%d")
         output_filename = f"{date_str}フェイスSMS保証人.csv"
         
-        # 処理時間計算
-        processing_time = time.time() - start_time
-        
-        # フィルタ条件の作成
-        filter_conditions = {
-            "委託先法人ID": "1-4",
-            "入金予定日": "前日以前+空白",
-            "入金予定金額": "2,3,5円除外",
-            "回収ランク": "弁護士介入等除外",
-            "AU列TEL携帯": "090/080/070のみ"
+        # 統計情報を辞書形式で作成
+        stats = {
+            'initial_rows': initial_rows,
+            'processed_rows': len(df_copy)
         }
         
-        # 統計情報を作成
-        statistics = ProcessingStatistics(
-            total_records=initial_rows,
-            processed_records=len(df_copy),
-            filtered_records=len(df_copy),
-            error_count=0,
-            processing_time=processing_time,
-            filter_conditions=filter_conditions
-        )
-        
-        # ProcessingResult作成
-        result = ProcessingResult(
-            data=df_copy,
-            statistics=statistics,
-            status=ProcessingStatus.SUCCESS,
-            messages=logs,
-            processor_name="フェイスSMS保証人",
-            metadata={"output_filename": output_filename}
-        )
-        
-        logger.info(f"フェイスSMS保証人処理完了: {len(df_copy)}件を処理")
-        return result
+        return df_copy, logs, output_filename, stats
         
     except Exception as e:
-        # エラー時のProcessingResult作成
-        processing_time = time.time() - start_time
-        logger.error(f"フェイスSMS保証人処理エラー: {str(e)}")
-        
-        error_stats = ProcessingStatistics(
-            total_records=0,
-            processed_records=0,
-            filtered_records=0,
-            error_count=1,
-            processing_time=processing_time
-        )
-        
-        return ProcessingResult(
-            data=pd.DataFrame(),
-            statistics=error_stats,
-            status=ProcessingStatus.ERROR,
-            errors=[f"FAITH SMS保証人処理エラー: {str(e)}"],
-            processor_name="フェイスSMS保証人"
-        )
+        raise Exception(f"FAITH SMS保証人処理エラー: {str(e)}")
