@@ -256,10 +256,6 @@ def main():
         if st.button("緊急連絡人", key="plaza_contact", use_container_width=True):
             st.session_state.selected_processor = "plaza_contact"
         
-        # 📱 SMS送信用CSV加工
-        st.markdown('<div class="sidebar-category">📱 SMS送信用CSV加工</div>', unsafe_allow_html=True)
-        if st.button("フェイス　契約者", key="faith_sms_vacated", use_container_width=True):
-            st.session_state.selected_processor = "faith_sms_vacated"
         
         # 📋 新規登録用CSV加工
         st.markdown('<div class="sidebar-category">📋 新規登録用CSV加工</div>', unsafe_allow_html=True)
