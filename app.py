@@ -261,14 +261,14 @@ def main():
         
         # 📱 SMS送信用CSV加工
         st.markdown('<div class="sidebar-category">📱 SMS送信用CSV加工</div>', unsafe_allow_html=True)
+        if st.button("ミライル　契約者", key="mirail_sms_contract", use_container_width=True):
+            st.session_state.selected_processor = "mirail_sms_contract"
         if st.button("フェイス　契約者", key="faith_sms_vacated", use_container_width=True):
             st.session_state.selected_processor = "faith_sms_vacated"
         if st.button("フェイス　保証人", key="faith_sms_guarantor", use_container_width=True):
             st.session_state.selected_processor = "faith_sms_guarantor"
         if st.button("フェイス　連絡人", key="faith_sms_emergency_contact", use_container_width=True):
             st.session_state.selected_processor = "faith_sms_emergency_contact"
-        if st.button("ミライル　契約者", key="mirail_sms_contract", use_container_width=True):
-            st.session_state.selected_processor = "mirail_sms_contract"
         
         # 📋 新規登録用CSV加工
         st.markdown('<div class="sidebar-category">📋 新規登録用CSV加工</div>', unsafe_allow_html=True)
@@ -624,7 +624,8 @@ def show_faith_sms_emergency_contact():
             st.error(f"エラーが発生しました: {str(e)}")
 
 def show_mirail_sms_contract():
-    st.header("📱 ミライル　契約者")
+    st.title("📱 SMS送信用CSV加工")
+    st.subheader("ミライル　契約者")
     
     # 支払期限日付入力
     st.subheader("支払期限の設定")
@@ -659,7 +660,7 @@ def show_mirail_sms_contract():
                         for log in logs:
                             st.write(f"• {log}")
                     
-                    # フィルタ条件表示
+                    # フィルタ条件を処理結果の最下部に表示
                     st.markdown("**フィルタ条件:**")
                     st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
                     st.markdown("• DO列　委託先法人ID → 5と空白セルのみ選択")
@@ -667,7 +668,6 @@ def show_mirail_sms_contract():
                     st.markdown("• BU列　入金予定日 → 前日以前が対象（当日は除外）")
                     st.markdown("• BV列　入金予定金額 → 2,3,5,12を除外")
                     st.markdown("• AB列　TEL携帯 → 090/080/070形式の携帯電話番号のみ")
-                    st.markdown("• 残債フィルタ → なし（全残債対象）")
                     st.markdown('</div>', unsafe_allow_html=True)
                 else:
                     st.warning("条件に合致するデータがありませんでした。")
@@ -677,7 +677,7 @@ def show_mirail_sms_contract():
                         for log in logs:
                             st.write(f"• {log}")
                     
-                    # フィルタ条件表示
+                    # フィルタ条件をエラー時も最下部に表示
                     st.markdown("**フィルタ条件:**")
                     st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
                     st.markdown("• DO列　委託先法人ID → 5と空白セルのみ選択")
@@ -685,7 +685,6 @@ def show_mirail_sms_contract():
                     st.markdown("• BU列　入金予定日 → 前日以前が対象（当日は除外）")
                     st.markdown("• BV列　入金予定金額 → 2,3,5,12を除外")
                     st.markdown("• AB列　TEL携帯 → 090/080/070形式の携帯電話番号のみ")
-                    st.markdown("• 残債フィルタ → なし（全残債対象）")
                     st.markdown('</div>', unsafe_allow_html=True)
         except Exception as e:
             st.error(f"エラーが発生しました: {str(e)}")
