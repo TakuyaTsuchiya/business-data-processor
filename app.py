@@ -91,6 +91,7 @@ from processors.plaza_autocall.contact.standard import process_plaza_contact_dat
 from processors.faith_sms.vacated_contract import process_faith_sms_vacated_contract_data
 from processors.faith_sms.guarantor import process_faith_sms_guarantor_data
 from processors.faith_sms.emergency_contact import process_faith_sms_emergency_contact_data
+from processors.mirail_sms.guarantor import process_mirail_sms_guarantor_data
 from processors.mirail_sms.contract import process_mirail_sms_contract_data
 from processors.ark_registration import process_ark_data, process_arktrust_data
 from processors.ark_late_payment_update import process_ark_late_payment_data
@@ -261,6 +262,8 @@ def main():
         
         # 📱 SMS送信用CSV加工
         st.markdown('<div class="sidebar-category">📱 SMS送信用CSV加工</div>', unsafe_allow_html=True)
+        if st.button("ミライル　保証人", key="mirail_sms_guarantor", use_container_width=True):
+            st.session_state.selected_processor = "mirail_sms_guarantor"
         if st.button("ミライル　契約者", key="mirail_sms_contract", use_container_width=True):
             st.session_state.selected_processor = "mirail_sms_contract"
         if st.button("フェイス　契約者", key="faith_sms_vacated", use_container_width=True):
@@ -348,6 +351,8 @@ def main():
         show_faith_sms_guarantor()
     elif st.session_state.selected_processor == "faith_sms_emergency_contact":
         show_faith_sms_emergency_contact()
+    elif st.session_state.selected_processor == "mirail_sms_guarantor":
+        show_mirail_sms_guarantor()
     elif st.session_state.selected_processor == "mirail_sms_contract":
         show_mirail_sms_contract()
     elif st.session_state.selected_processor == "ark_registration_tokyo":
@@ -623,6 +628,9 @@ def show_faith_sms_emergency_contact():
         except Exception as e:
             st.error(f"エラーが発生しました: {str(e)}")
 
+def show_mirail_sms_guarantor():
+    st.title("📱 SMS送信用CSV加工")
+    st.subheader("ミライル　保証人")
 def show_mirail_sms_contract():
     st.title("📱 SMS送信用CSV加工")
     st.subheader("ミライル　契約者")
@@ -633,18 +641,24 @@ def show_mirail_sms_contract():
         "クリックして支払期限を選択してください",
         value=date.today(),  # デフォルト値: 今日の日付
         help="この日付がBG列「支払期限」に設定されます（例：2025年6月30日）",
+        key="mirail_sms_guarantor_payment_deadline",
         key="mirail_sms_contract_payment_deadline",
         disabled=False,  # カレンダー選択は有効
         format="YYYY/MM/DD"
     )
     st.write(f"設定される支払期限: **{payment_deadline_date.strftime('%Y年%m月%d日')}**")
     
+    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_sms_guarantor_file")
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_sms_contract_file")
     
     if uploaded_file is not None:
         try:
             st.success(f"✅ {uploaded_file.name}: 読み込み完了")
             
+            if st.button("処理を実行", type="primary", key="mirail_sms_guarantor_process"):
+                with st.spinner("処理中..."):
+                    # 戻り値を一時変数で受け取る
+                    result = process_mirail_sms_guarantor_data(uploaded_file.read(), payment_deadline_date)
             if st.button("処理を実行", type="primary", key="mirail_sms_contract_process"):
                 with st.spinner("処理中..."):
                     # 戻り値を一時変数で受け取る
@@ -667,6 +681,7 @@ def show_mirail_sms_contract():
                     st.markdown("• CI列　回収ランク → 「弁護士介入」「訴訟中」のみ除外")
                     st.markdown("• BU列　入金予定日 → 前日以前が対象（当日は除外）")
                     st.markdown("• BV列　入金予定金額 → 2,3,5,12を除外")
+                    st.markdown("• AU列　TEL携帯 → 090/080/070形式の携帯電話番号のみ")
                     st.markdown("• AB列　TEL携帯 → 090/080/070形式の携帯電話番号のみ")
                     st.markdown('</div>', unsafe_allow_html=True)
                 else:
@@ -684,6 +699,7 @@ def show_mirail_sms_contract():
                     st.markdown("• CI列　回収ランク → 「弁護士介入」「訴訟中」のみ除外")
                     st.markdown("• BU列　入金予定日 → 前日以前が対象（当日は除外）")
                     st.markdown("• BV列　入金予定金額 → 2,3,5,12を除外")
+                    st.markdown("• AU列　TEL携帯 → 090/080/070形式の携帯電話番号のみ")
                     st.markdown("• AB列　TEL携帯 → 090/080/070形式の携帯電話番号のみ")
                     st.markdown('</div>', unsafe_allow_html=True)
         except Exception as e:
