@@ -665,15 +665,6 @@ def show_mirail_sms_guarantor():
                         for log in logs:
                             st.write(f"• {log}")
                     
-                    # フィルタ条件を処理結果の最下部に表示
-                    st.markdown("**フィルタ条件:**")
-                    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-                    st.markdown("• DO列　委託先法人ID → 5と空白セルのみ選択")
-                    st.markdown("• CI列　回収ランク → 「弁護士介入」「訴訟中」のみ除外")
-                    st.markdown("• BU列　入金予定日 → 前日以前が対象（当日は除外）")
-                    st.markdown("• BV列　入金予定金額 → 2,3,5,12を除外")
-                    st.markdown("• AU列　TEL携帯 → 090/080/070形式の携帯電話番号のみ")
-                    st.markdown('</div>', unsafe_allow_html=True)
                 else:
                     st.warning("条件に合致するデータがありませんでした。")
                     
@@ -682,17 +673,18 @@ def show_mirail_sms_guarantor():
                         for log in logs:
                             st.write(f"• {log}")
                     
-                    # フィルタ条件をエラー時も最下部に表示
-                    st.markdown("**フィルタ条件:**")
-                    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-                    st.markdown("• DO列　委託先法人ID → 5と空白セルのみ選択")
-                    st.markdown("• CI列　回収ランク → 「弁護士介入」「訴訟中」のみ除外")
-                    st.markdown("• BU列　入金予定日 → 前日以前が対象（当日は除外）")
-                    st.markdown("• BV列　入金予定金額 → 2,3,5,12を除外")
-                    st.markdown("• AU列　TEL携帯 → 090/080/070形式の携帯電話番号のみ")
-                    st.markdown('</div>', unsafe_allow_html=True)
         except Exception as e:
             st.error(f"エラーが発生しました: {str(e)}")
+    
+    # フィルタ条件を常時表示（画面下部）
+    st.markdown("**フィルタ条件:**")
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    st.markdown("• DO列　委託先法人ID → 5と空白セルのみ選択")
+    st.markdown("• CI列　回収ランク → 「弁護士介入」「訴訟中」のみ除外")
+    st.markdown("• BU列　入金予定日 → 前日以前が対象（当日は除外）")
+    st.markdown("• BV列　入金予定金額 → 2,3,5,12を除外")
+    st.markdown("• AU列　TEL携帯 → 090/080/070形式の携帯電話番号のみ")
+    st.markdown('</div>', unsafe_allow_html=True)
 
 def show_mirail_sms_emergencycontact():
     st.title("📱 SMS送信用CSV加工")
@@ -731,15 +723,6 @@ def show_mirail_sms_emergencycontact():
                         for log in logs:
                             st.write(f"• {log}")
                     
-                    # フィルタ条件を処理結果の最下部に表示
-                    st.markdown("**フィルタ条件:**")
-                    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-                    st.markdown("• DO列　委託先法人ID → 5と空白セルのみ選択")
-                    st.markdown("• CI列　回収ランク → 「弁護士介入」「訴訟中」のみ除外")
-                    st.markdown("• BU列　入金予定日 → 前日以前が対象（当日は除外）")
-                    st.markdown("• BV列　入金予定金額 → 2,3,5,12を除外")
-                    st.markdown("• BE列　TEL携帯 → 090/080/070形式の携帯電話番号のみ")
-                    st.markdown('</div>', unsafe_allow_html=True)
                 else:
                     st.warning("条件に合致するデータがありませんでした。")
                     
@@ -748,17 +731,18 @@ def show_mirail_sms_emergencycontact():
                         for log in logs:
                             st.write(f"• {log}")
                     
-                    # フィルタ条件をエラー時も最下部に表示
-                    st.markdown("**フィルタ条件:**")
-                    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-                    st.markdown("• DO列　委託先法人ID → 5と空白セルのみ選択")
-                    st.markdown("• CI列　回収ランク → 「弁護士介入」「訴訟中」のみ除外")
-                    st.markdown("• BU列　入金予定日 → 前日以前が対象（当日は除外）")
-                    st.markdown("• BV列　入金予定金額 → 2,3,5,12を除外")
-                    st.markdown("• BE列　TEL携帯 → 090/080/070形式の携帯電話番号のみ")
-                    st.markdown('</div>', unsafe_allow_html=True)
         except Exception as e:
             st.error(f"エラーが発生しました: {str(e)}")
+    
+    # フィルタ条件を常時表示（画面下部）
+    st.markdown("**フィルタ条件:**")
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    st.markdown("• DO列　委託先法人ID → 5と空白セルのみ選択")
+    st.markdown("• CI列　回収ランク → 「弁護士介入」「訴訟中」のみ除外")
+    st.markdown("• BU列　入金予定日 → 前日以前が対象（当日は除外）")
+    st.markdown("• BV列　入金予定金額 → 2,3,5,12を除外")
+    st.markdown("• BE列　TEL携帯 → 090/080/070形式の携帯電話番号のみ")
+    st.markdown('</div>', unsafe_allow_html=True)
 
 def show_mirail_guarantor_with10k():
     st.header("ミライル保証人（10,000円を除外しないパターン）")
