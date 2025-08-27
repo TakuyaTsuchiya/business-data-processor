@@ -263,18 +263,33 @@ def main():
         
         # 📱 SMS送信用CSV加工
         st.markdown('<div class="sidebar-category">📱 SMS送信用CSV加工</div>', unsafe_allow_html=True)
+        
+        # ミライル用SMS
+        st.markdown('<div class="sidebar-subcategory">ミライル用SMS</div>', unsafe_allow_html=True)
         if st.button("ミライル　契約者", key="mirail_sms_contract", use_container_width=True):
             st.session_state.selected_processor = "mirail_sms_contract"
         if st.button("ミライル　保証人", key="mirail_sms_guarantor", use_container_width=True):
             st.session_state.selected_processor = "mirail_sms_guarantor"
         if st.button("ミライル　連絡人", key="mirail_sms_emergencycontact", use_container_width=True):
             st.session_state.selected_processor = "mirail_sms_emergencycontact"
+        
+        # フェイス用SMS
+        st.markdown('<div class="sidebar-subcategory">フェイス用SMS</div>', unsafe_allow_html=True)
         if st.button("フェイス　契約者", key="faith_sms_vacated", use_container_width=True):
             st.session_state.selected_processor = "faith_sms_vacated"
         if st.button("フェイス　保証人", key="faith_sms_guarantor", use_container_width=True):
             st.session_state.selected_processor = "faith_sms_guarantor"
         if st.button("フェイス　連絡人", key="faith_sms_emergency_contact", use_container_width=True):
             st.session_state.selected_processor = "faith_sms_emergency_contact"
+        
+        # プラザ用SMS
+        st.markdown('<div class="sidebar-subcategory">プラザ用SMS</div>', unsafe_allow_html=True)
+        if st.button("プラザ　契約者", key="plaza_sms_contract", use_container_width=True):
+            st.session_state.selected_processor = "plaza_sms_contract"
+        if st.button("プラザ　保証人", key="plaza_sms_guarantor", use_container_width=True):
+            st.session_state.selected_processor = "plaza_sms_guarantor"
+        if st.button("プラザ　連絡人", key="plaza_sms_contact", use_container_width=True):
+            st.session_state.selected_processor = "plaza_sms_contact"
         
         # 📋 新規登録用CSV加工
         st.markdown('<div class="sidebar-category">📋 新規登録用CSV加工</div>', unsafe_allow_html=True)
@@ -310,10 +325,13 @@ def main():
         - **プラザ用** (3種類): 契約者・保証人・緊急連絡人
         
         #### 📱 SMS送信用CSV加工
-        - フェイス　契約者
+        - **ミライル用SMS** (3種類): 契約者・保証人・緊急連絡人
+        - **フェイス用SMS** (3種類): 契約者・保証人・緊急連絡人
+        - **プラザ用SMS** (3種類): 契約者・保証人・緊急連絡人（開発中）
         
         #### 📋 新規登録用CSV加工
         - アーク新規登録（東京・大阪・北海道・北関東）
+        - アークトラスト新規登録（東京）
         - カプコ新規登録
         
         #### 💰 残債の更新用CSV加工
@@ -360,6 +378,12 @@ def main():
         show_mirail_sms_emergencycontact()
     elif st.session_state.selected_processor == "mirail_sms_contract":
         show_mirail_sms_contract()
+    elif st.session_state.selected_processor == "plaza_sms_contract":
+        show_plaza_sms_contract()
+    elif st.session_state.selected_processor == "plaza_sms_guarantor":
+        show_plaza_sms_guarantor()
+    elif st.session_state.selected_processor == "plaza_sms_contact":
+        show_plaza_sms_contact()
     elif st.session_state.selected_processor == "ark_registration_tokyo":
         show_ark_registration_tokyo()
     elif st.session_state.selected_processor == "ark_registration_osaka":
@@ -504,7 +528,8 @@ def show_mirail_guarantor_without10k():
             st.error(f"エラーが発生しました: {str(e)}")
 
 def show_faith_sms_guarantor():
-    st.header("📱 フェイス　保証人")
+    st.title("📱 SMS送信用CSV加工")
+    st.subheader("フェイス　保証人")
     
     # 支払期限日付入力
     st.subheader("支払期限の設定")
@@ -556,20 +581,22 @@ def show_faith_sms_guarantor():
                         for log in logs:
                             st.write(f"• {log}")
                     
-                    # フィルタ条件表示
-                    st.markdown("**フィルタ条件:**")
-                    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-                    st.markdown("• 委託先法人ID → 1-4")
-                    st.markdown("• 入金予定日 → 前日以前とNaN")
-                    st.markdown("• 入金予定金額 → 2,3,5円除外")
-                    st.markdown("• 回収ランク → 「弁護士介入」「破産決定」「死亡決定」除外")
-                    st.markdown("• AU列TEL携帯 → 090/080/070形式のみ（保証人電話番号）")
-                    st.markdown('</div>', unsafe_allow_html=True)
         except Exception as e:
             st.error(f"エラーが発生しました: {str(e)}")
+    
+    # フィルタ条件を常時表示（画面下部）
+    st.markdown("**フィルタ条件:**")
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    st.markdown("• 委託先法人ID → 1-4")
+    st.markdown("• 入金予定日 → 前日以前とNaN")
+    st.markdown("• 入金予定金額 → 2,3,5円除外")
+    st.markdown("• 回収ランク → 「弁護士介入」「破産決定」「死亡決定」除外")
+    st.markdown("• AU列TEL携帯 → 090/080/070形式のみ（保証人電話番号）")
+    st.markdown('</div>', unsafe_allow_html=True)
 
 def show_faith_sms_emergency_contact():
-    st.header("📱 フェイス　連絡人")
+    st.title("📱 SMS送信用CSV加工")
+    st.subheader("フェイス　連絡人")
     
     # 支払期限日付入力
     st.subheader("支払期限の設定")
@@ -604,15 +631,6 @@ def show_faith_sms_emergency_contact():
                         for log in logs:
                             st.write(f"• {log}")
                     
-                    # フィルタ条件表示
-                    st.markdown("**フィルタ条件:**")
-                    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-                    st.markdown("• 委託先法人ID → 1-4")
-                    st.markdown("• 入金予定日 → 前日以前とNaN")
-                    st.markdown("• 入金予定金額 → 2,3,5円除外")
-                    st.markdown("• 回収ランク → 「弁護士介入」「破産決定」「死亡決定」除外")
-                    st.markdown("• BE列「緊急連絡人１のTEL携帯」 → 090/080/070形式のみ")
-                    st.markdown('</div>', unsafe_allow_html=True)
                 else:
                     st.warning("条件に合致するデータがありませんでした。")
                     
@@ -621,17 +639,18 @@ def show_faith_sms_emergency_contact():
                         for log in logs:
                             st.write(f"• {log}")
                     
-                    # フィルタ条件表示
-                    st.markdown("**フィルタ条件:**")
-                    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-                    st.markdown("• 委託先法人ID → 1-4")
-                    st.markdown("• 入金予定日 → 前日以前とNaN")
-                    st.markdown("• 入金予定金額 → 2,3,5円除外")
-                    st.markdown("• 回収ランク → 「弁護士介入」「破産決定」「死亡決定」除外")
-                    st.markdown("• BE列「緊急連絡人１のTEL携帯」 → 090/080/070形式のみ")
-                    st.markdown('</div>', unsafe_allow_html=True)
         except Exception as e:
             st.error(f"エラーが発生しました: {str(e)}")
+    
+    # フィルタ条件を常時表示（画面下部）
+    st.markdown("**フィルタ条件:**")
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    st.markdown("• 委託先法人ID → 1-4")
+    st.markdown("• 入金予定日 → 前日以前とNaN")
+    st.markdown("• 入金予定金額 → 2,3,5円除外")
+    st.markdown("• 回収ランク → 「弁護士介入」「破産決定」「死亡決定」除外")
+    st.markdown("• BE列「緊急連絡人１のTEL（携帯）」 → 090/080/070形式のみ")
+    st.markdown('</div>', unsafe_allow_html=True)
 
 def show_mirail_sms_guarantor():
     st.title("📱 SMS送信用CSV加工")
@@ -1189,7 +1208,8 @@ def show_plaza_contact():
             st.error(f"エラーが発生しました: {str(e)}")
 
 def show_faith_sms_vacated():
-    st.header("📱 フェイス　契約者")
+    st.title("📱 SMS送信用CSV加工")
+    st.subheader("フェイス　契約者")
     
     # 支払期限日付入力
     st.subheader("支払期限の設定")
@@ -1224,15 +1244,6 @@ def show_faith_sms_vacated():
                         for log in logs:
                             st.write(f"• {log}")
                     
-                    # フィルタ条件表示
-                    st.markdown("**フィルタ条件:**")
-                    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-                    st.markdown("• 委託先法人ID → 1-4")
-                    st.markdown("• 入金予定日 → 前日以前とNaN")
-                    st.markdown("• 入金予定金額 → 2,3,5円除外")
-                    st.markdown("• 回収ランク → 「弁護士介入」「破産決定」「死亡決定」除外")
-                    st.markdown("• TEL携帯 → 090/080/070形式のみ")
-                    st.markdown('</div>', unsafe_allow_html=True)
                 else:
                     st.warning("条件に合致するデータがありませんでした。")
                     
@@ -1241,17 +1252,33 @@ def show_faith_sms_vacated():
                         for log in logs:
                             st.write(f"• {log}")
                     
-                    # フィルタ条件表示
-                    st.markdown("**フィルタ条件:**")
-                    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-                    st.markdown("• 委託先法人ID → 1-4")
-                    st.markdown("• 入金予定日 → 前日以前とNaN")
-                    st.markdown("• 入金予定金額 → 2,3,5円除外")
-                    st.markdown("• 回収ランク → 「弁護士介入」「破産決定」「死亡決定」除外")
-                    st.markdown("• TEL携帯 → 090/080/070形式のみ")
-                    st.markdown('</div>', unsafe_allow_html=True)
         except Exception as e:
             st.error(f"エラーが発生しました: {str(e)}")
+    
+    # フィルタ条件を常時表示（画面下部）
+    st.markdown("**フィルタ条件:**")
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    st.markdown("• 委託先法人ID → 1-4")
+    st.markdown("• 入金予定日 → 前日以前とNaN")
+    st.markdown("• 入金予定金額 → 2,3,5円除外")
+    st.markdown("• 回収ランク → 「弁護士介入」「破産決定」「死亡決定」除外")
+    st.markdown("• TEL携帯 → 090/080/070形式のみ")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+def show_plaza_sms_contract():
+    st.title("📱 SMS送信用CSV加工")
+    st.subheader("プラザ　契約者")
+    st.info("🚧 この機能は開発中です。近日中に実装予定です。")
+
+def show_plaza_sms_guarantor():
+    st.title("📱 SMS送信用CSV加工")
+    st.subheader("プラザ　保証人")
+    st.info("🚧 この機能は開発中です。近日中に実装予定です。")
+
+def show_plaza_sms_contact():
+    st.title("📱 SMS送信用CSV加工")
+    st.subheader("プラザ　連絡人")
+    st.info("🚧 この機能は開発中です。近日中に実装予定です。")
 
 def show_ark_registration_tokyo():
     st.header("📋 アーク新規登録（東京）")
