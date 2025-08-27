@@ -246,6 +246,8 @@ def main():
             st.session_state.selected_processor = "faith_contract"
         if st.button("保証人", key="faith_guarantor", use_container_width=True):
             st.session_state.selected_processor = "faith_guarantor"
+        if st.button("緊急連絡人", key="faith_emergency_contact", use_container_width=True):
+            st.session_state.selected_processor = "faith_emergency"
         
         # プラザ用オートコール
         st.markdown('<div class="sidebar-subcategory">🏪 プラザ用オートコール</div>', unsafe_allow_html=True)
