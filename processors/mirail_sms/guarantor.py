@@ -111,8 +111,8 @@ def process_mirail_sms_guarantor_data(file_content: bytes, payment_deadline_date
         logs.append(f"元データ読み込み: {initial_rows}件")
         
         # Filter 1: DO列　委託先法人ID (Keep only 5 and blank)
-        # DO列は列番号119（0ベース）
-        trustee_id_column = df.iloc[:, 119].astype(str).str.strip()
+        # DO列は列番号118（0ベース）
+        trustee_id_column = df.iloc[:, 118].astype(str).str.strip()
         
         # 5または空白（NaN含む）のみ保持
         valid_trustee_mask = (trustee_id_column == '5') | (trustee_id_column == '') | (trustee_id_column == 'nan')
