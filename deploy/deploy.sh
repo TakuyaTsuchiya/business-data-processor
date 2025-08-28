@@ -91,7 +91,7 @@ echo ""
 # 5. 追加の検証（オプション）
 log "Running additional validation..."
 # Streamlitのメインページが正常に返ってくるか確認
-if ! docker exec bdp-$NEW_ENV curl -s http://localhost:8501 | grep -q "streamlit"; then
+if ! docker exec bdp-$NEW_ENV curl -f -s http://localhost:8501 > /dev/null; then
     error "$NEW_ENV is not serving Streamlit properly"
     log "Rolling back..."
     docker-compose -f docker-compose.prod.yml stop app-$NEW_ENV
