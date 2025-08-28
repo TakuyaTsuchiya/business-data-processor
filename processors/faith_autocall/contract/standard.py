@@ -142,7 +142,7 @@ def process_faith_contract_data(file_content: bytes) -> Tuple[pd.DataFrame, pd.D
         today_str = datetime.now().strftime("%m%d")
         output_filename = f"{today_str}フェイス_契約者.csv"
         
-        return df_filtered, df_output, logs, output_filename
+        return df_output, logs, output_filename
         
     except Exception as e:
         raise Exception(f"フェイス契約者データ処理エラー: {str(e)}")

@@ -206,7 +206,7 @@ def process_mirail_data(file_content: bytes) -> Tuple[pd.DataFrame, pd.DataFrame
         today_str = datetime.now().strftime("%m%d")
         output_filename = f"{today_str}{MirailMonthlyConfig.OUTPUT_FILE_PREFIX}.csv"
         
-        return df_filtered, df_output, logs, output_filename
+        return df_output, logs, output_filename
         
     except Exception as e:
         raise Exception(f"ミライル月初データ処理エラー: {str(e)}")
@@ -231,7 +231,7 @@ def process_mirail_contract_monthly_data(file_content: bytes) -> Tuple[pd.DataFr
         # メイン処理を実行
         df_filtered, df_output, logs, output_filename = process_mirail_data(file_content)
         
-        return df_filtered, df_output, logs, output_filename
+        return df_output, logs, output_filename
         
     except Exception as e:
         # エラー時は空のデータを返す

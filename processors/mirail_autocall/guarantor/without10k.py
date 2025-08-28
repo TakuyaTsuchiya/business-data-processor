@@ -194,7 +194,7 @@ def process_mirail_guarantor_without10k_data(file_content: bytes) -> Tuple[pd.Da
         today_str = datetime.now().strftime("%m%d")
         output_filename = f"{today_str}ミライル_without10k_保証人.csv"
         
-        return df_output, df_filtered, logs, output_filename
+        return df_output, logs, output_filename
         
     except Exception as e:
         raise Exception(f"ミライル保証人（残債除外）データ処理エラー: {str(e)}")
