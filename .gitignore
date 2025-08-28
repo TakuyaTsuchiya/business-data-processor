@@ -13,3 +13,12 @@ debug*.csv
 .claude/settings.local.json.backup
 .claude/settings.local.json.bak
 .mcp.json.bak
+
+# Deploy configuration (contains sensitive VPS information)
+.env.deploy
+*.key
+*.pem
+
+# Deployment logs
+deploy_*.log
+rollback_*.log
