@@ -229,7 +229,7 @@ def process_mirail_contract_monthly_data(file_content: bytes) -> Tuple[pd.DataFr
     """
     try:
         # メイン処理を実行
-        df_filtered, df_output, logs, output_filename = process_mirail_data(file_content)
+        df_output, logs, output_filename = process_mirail_data(file_content)
         
         return df_output, logs, output_filename
         

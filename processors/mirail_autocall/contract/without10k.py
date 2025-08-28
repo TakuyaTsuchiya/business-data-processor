@@ -198,7 +198,7 @@ def process_mirail_contract_without10k_data(file_content: bytes) -> Tuple[pd.Dat
     """
     try:
         # メイン処理を実行
-        df_output, df_filtered, logs, output_filename = process_mirail_data(file_content)
+        df_output, logs, output_filename = process_mirail_data(file_content)
         
         return df_output, logs, output_filename
         
