@@ -423,7 +423,7 @@ def show_mirail_contract_without10k():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, filtered_df, logs, filename = process_mirail_contract_without10k_data(uploaded_file.read())
+                    result_df, logs, filename = process_mirail_contract_without10k_data(uploaded_file.read())
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
@@ -465,7 +465,7 @@ def show_mirail_contract_with10k():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, filtered_df, logs, filename = process_mirail_contract_with10k_data(uploaded_file.read())
+                    result_df, logs, filename = process_mirail_contract_with10k_data(uploaded_file.read())
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
@@ -507,7 +507,7 @@ def show_mirail_guarantor_without10k():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, filtered_df, logs, filename = process_mirail_guarantor_without10k_data(uploaded_file.read())
+                    result_df, logs, filename = process_mirail_guarantor_without10k_data(uploaded_file.read())
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
@@ -846,7 +846,7 @@ def show_mirail_guarantor_with10k():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, filtered_df, logs, filename = process_mirail_guarantor_with10k_data(uploaded_file.read())
+                    result_df, logs, filename = process_mirail_guarantor_with10k_data(uploaded_file.read())
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
@@ -886,7 +886,7 @@ def show_mirail_emergency_without10k():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, filtered_df, logs, filename = process_mirail_emergencycontact_without10k_data(uploaded_file.read())
+                    result_df, logs, filename = process_mirail_emergencycontact_without10k_data(uploaded_file.read())
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
@@ -926,7 +926,7 @@ def show_mirail_emergency_with10k():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, filtered_df, logs, filename = process_mirail_emergencycontact_with10k_data(uploaded_file.read())
+                    result_df, logs, filename = process_mirail_emergencycontact_with10k_data(uploaded_file.read())
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
@@ -966,7 +966,7 @@ def show_faith_contract():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    filtered_df, result_df, logs, filename = process_faith_contract_data(uploaded_file.read())
+                    result_df, logs, filename = process_faith_contract_data(uploaded_file.read())
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
@@ -1006,7 +1006,7 @@ def show_faith_guarantor():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    filtered_df, result_df, logs, filename = process_faith_guarantor_data(uploaded_file.read())
+                    result_df, logs, filename = process_faith_guarantor_data(uploaded_file.read())
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
@@ -1046,7 +1046,7 @@ def show_faith_emergency():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    filtered_df, result_df, logs, filename = process_faith_emergencycontact_data(uploaded_file.read())
+                    result_df, logs, filename = process_faith_emergencycontact_data(uploaded_file.read())
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
@@ -1087,7 +1087,7 @@ def show_plaza_main():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    filtered_df, result_df, logs, filename = process_plaza_main_data(file_content)
+                    result_df, logs, filename = process_plaza_main_data(file_content)
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
@@ -1134,7 +1134,7 @@ def show_plaza_guarantor():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    filtered_df, result_df, logs, filename = process_plaza_guarantor_data(file_content)
+                    result_df, logs, filename = process_plaza_guarantor_data(file_content)
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
@@ -1181,7 +1181,7 @@ def show_plaza_contact():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    filtered_df, result_df, logs, filename = process_plaza_contact_data(file_content)
+                    result_df, logs, filename = process_plaza_contact_data(file_content)
                     
                 if not result_df.empty:
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
