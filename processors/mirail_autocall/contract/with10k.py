@@ -169,7 +169,7 @@ def process_mirail_with10k_data(file_content: bytes) -> Tuple[pd.DataFrame, pd.D
         today_str = datetime.now().strftime("%m%d")
         output_filename = f"{today_str}ミライル_with10k_契約者.csv"
         
-        return df_output, df_filtered, logs, output_filename
+        return df_output, logs, output_filename
         
     except Exception as e:
         raise Exception(f"ミライル（残債含む）データ処理エラー: {str(e)}")
@@ -208,9 +208,9 @@ def process_mirail_contract_with10k_data(file_content: bytes) -> Tuple[pd.DataFr
     """
     try:
         # メイン処理を実行
-        df_output, df_filtered, logs, output_filename = process_mirail_with10k_data(file_content)
+        df_output, logs, output_filename = process_mirail_with10k_data(file_content)
         
-        return df_output, df_filtered, logs, output_filename
+        return df_output, logs, output_filename
         
     except Exception as e:
         # エラー時は空のデータを返す

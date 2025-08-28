@@ -72,6 +72,20 @@ def safe_csv_download(df: pd.DataFrame, filename: str, label: str = "📥 CSVフ
         type="primary"
     )
 
+def display_processing_logs(logs: list, title: str = "📊 処理ログ", expanded: bool = False):
+    """処理ログの統一表示関数"""
+    with st.expander(title, expanded=expanded):
+        for log in logs:
+            st.write(f"• {log}")
+
+def display_filter_conditions(conditions: list, title: str = "**フィルタ条件:**"):
+    """フィルタ条件の統一表示関数"""
+    st.markdown(title)
+    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
+    for condition in conditions:
+        st.markdown(f"• {condition}")
+    st.markdown('</div>', unsafe_allow_html=True)
+
 # プロセッサーをインポート
 from processors.mirail_autocall.contract.without10k import process_mirail_contract_without10k_data
 from processors.mirail_autocall.contract.with10k import process_mirail_contract_with10k_data
@@ -405,15 +419,14 @@ def main():
 
 def show_mirail_contract_without10k():
     st.header("ミライル契約者（10,000円を除外するパターン）")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• 委託先法人ID → 空白&5")
-    st.markdown("• 入金予定日 → 前日以前とNaN")
-    st.markdown("• 回収ランク → 「弁護士介入」除外")
-    st.markdown("• 残債除外 → CD=1,4かつ滞納残債10,000円・11,000円除外")
-    st.markdown("• 入金予定金額 → 2,3,5,12除外")
-    st.markdown("• 「TEL携帯」 → 空でない値のみ")
-    st.markdown('</div>', unsafe_allow_html=True)
+    display_filter_conditions([
+        "委託先法人ID → 空白&5",
+        "入金予定日 → 前日以前とNaN",
+        "回収ランク → 「弁護士介入」除外",
+        "残債除外 → CD=1,4かつ滞納残債10,000円・11,000円除外",
+        "入金予定金額 → 2,3,5,12除外",
+        "「TEL携帯」 → 空でない値のみ"
+    ])
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_contract_without10k_file")
     
@@ -429,9 +442,7 @@ def show_mirail_contract_without10k():
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
                     # 処理ログ表示
                     if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
+                        display_processing_logs(logs)
                     
                     # データプレビュー
                     st.subheader("処理結果プレビュー")
@@ -447,15 +458,14 @@ def show_mirail_contract_without10k():
 
 def show_mirail_contract_with10k():
     st.header("ミライル契約者（10,000円を除外しないパターン）")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• 委託先法人ID → 空白&5")
-    st.markdown("• 入金予定日 → 前日以前とNaN")
-    st.markdown("• 回収ランク → 「弁護士介入」除外")
-    st.markdown("• 滞納残債フィルタ → なし（全件処理）")
-    st.markdown("• 入金予定金額 → 2,3,5,12除外")
-    st.markdown("• 「TEL携帯」 → 空でない値のみ")
-    st.markdown('</div>', unsafe_allow_html=True)
+    display_filter_conditions([
+        "委託先法人ID → 空白&5",
+        "入金予定日 → 前日以前とNaN", 
+        "回収ランク → 「弁護士介入」除外",
+        "滞納残債フィルタ → なし（全件処理）",
+        "入金予定金額 → 2,3,5,12除外",
+        "「TEL携帯」 → 空でない値のみ"
+    ])
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_contract_with10k_file")
     
@@ -471,9 +481,7 @@ def show_mirail_contract_with10k():
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
                     # 処理ログ表示
                     if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
+                        display_processing_logs(logs)
                     
                     # データプレビュー
                     st.subheader("処理結果プレビュー")
@@ -489,15 +497,14 @@ def show_mirail_contract_with10k():
 
 def show_mirail_guarantor_without10k():
     st.header("ミライル保証人（10,000円を除外するパターン）")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• 委託先法人ID → 空白&5")
-    st.markdown("• 入金予定日 → 前日以前とNaN")
-    st.markdown("• 回収ランク → 「弁護士介入」除外")
-    st.markdown("• 残債除外 → CD=1,4かつ滞納残債10,000円・11,000円除外")
-    st.markdown("• 入金予定金額 → 2,3,5,12除外")
-    st.markdown("• 「TEL携帯.1」 → 空でない値のみ")
-    st.markdown('</div>', unsafe_allow_html=True)
+    display_filter_conditions([
+        "委託先法人ID → 空白&5",
+        "入金予定日 → 前日以前とNaN",
+        "回収ランク → 「弁護士介入」除外",
+        "残債除外 → CD=1,4かつ滞納残債10,000円・11,000円除外",
+        "入金予定金額 → 2,3,5,12除外",
+        "「TEL携帯.1」 → 空でない値のみ"
+    ])
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_guarantor_without10k_file")
     
@@ -513,9 +520,7 @@ def show_mirail_guarantor_without10k():
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
                     # 処理ログ表示
                     if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
+                        display_processing_logs(logs)
                     
                     st.subheader("処理結果プレビュー")
                     safe_dataframe_display(result_df.head(10))
@@ -577,9 +582,7 @@ def show_faith_sms_guarantor():
                     st.warning("条件に合致するデータがありませんでした。")
                     
                     # 処理ログ表示（エラー時も表示）
-                    with st.expander("📊 処理ログ", expanded=True):
-                        for log in logs:
-                            st.write(f"• {log}")
+                    display_processing_logs(logs, expanded=True)
                     
         except Exception as e:
             st.error(f"エラーが発生しました: {str(e)}")
@@ -635,9 +638,7 @@ def show_faith_sms_emergency_contact():
                     st.warning("条件に合致するデータがありませんでした。")
                     
                     # 処理ログ表示（エラー時も表示）
-                    with st.expander("📊 処理ログ", expanded=True):
-                        for log in logs:
-                            st.write(f"• {log}")
+                    display_processing_logs(logs, expanded=True)
                     
         except Exception as e:
             st.error(f"エラーが発生しました: {str(e)}")
@@ -693,9 +694,7 @@ def show_mirail_sms_guarantor():
                     st.warning("条件に合致するデータがありませんでした。")
                     
                     # 処理ログ表示（エラー時も表示）
-                    with st.expander("📊 処理ログ", expanded=True):
-                        for log in logs:
-                            st.write(f"• {log}")
+                    display_processing_logs(logs, expanded=True)
                     
         except Exception as e:
             st.error(f"エラーが発生しました: {str(e)}")
@@ -751,9 +750,7 @@ def show_mirail_sms_contract():
                     st.warning("条件に合致するデータがありませんでした。")
                     
                     # 処理ログ表示（エラー時も表示）
-                    with st.expander("📊 処理ログ", expanded=True):
-                        for log in logs:
-                            st.write(f"• {log}")
+                    display_processing_logs(logs, expanded=True)
                     
         except Exception as e:
             st.error(f"エラーが発生しました: {str(e)}")
@@ -809,9 +806,7 @@ def show_mirail_sms_emergencycontact():
                     st.warning("条件に合致するデータがありませんでした。")
                     
                     # 処理ログ表示（エラー時も表示）
-                    with st.expander("📊 処理ログ", expanded=True):
-                        for log in logs:
-                            st.write(f"• {log}")
+                    display_processing_logs(logs, expanded=True)
                     
         except Exception as e:
             st.error(f"エラーが発生しました: {str(e)}")
@@ -828,15 +823,14 @@ def show_mirail_sms_emergencycontact():
 
 def show_mirail_guarantor_with10k():
     st.header("ミライル保証人（10,000円を除外しないパターン）")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• 委託先法人ID → 空白&5")
-    st.markdown("• 入金予定日 → 前日以前とNaN")
-    st.markdown("• 回収ランク → 「弁護士介入」除外")
-    st.markdown("• 滞納残債フィルタ → なし（全件処理）")
-    st.markdown("• 入金予定金額 → 2,3,5,12除外")
-    st.markdown("• 「TEL携帯.1」 → 空でない値のみ")
-    st.markdown('</div>', unsafe_allow_html=True)
+    display_filter_conditions([
+        "委託先法人ID → 空白&5",
+        "入金予定日 → 前日以前とNaN",
+        "回収ランク → 「弁護士介入」除外",
+        "滞納残債フィルタ → なし（全件処理）",
+        "入金予定金額 → 2,3,5,12除外",
+        "「TEL携帯.1」 → 空でない値のみ"
+    ])
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_guarantor_with10k_file")
     
@@ -852,9 +846,7 @@ def show_mirail_guarantor_with10k():
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
                     # 処理ログ表示
                     if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
+                        display_processing_logs(logs)
                     
                     st.subheader("処理結果プレビュー")
                     safe_dataframe_display(result_df.head(10))
@@ -868,15 +860,14 @@ def show_mirail_guarantor_with10k():
 
 def show_mirail_emergency_without10k():
     st.header("ミライル緊急連絡人（10,000円を除外するパターン）")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• 委託先法人ID → 空白&5")
-    st.markdown("• 入金予定日 → 前日以前とNaN")
-    st.markdown("• 回収ランク → 「弁護士介入」除外")
-    st.markdown("• 残債除外 → CD=1,4かつ滞納残債10,000円・11,000円除外")
-    st.markdown("• 入金予定金額 → 2,3,5,12除外")
-    st.markdown("• 「TEL携帯.2」 → 空でない値のみ")
-    st.markdown('</div>', unsafe_allow_html=True)
+    display_filter_conditions([
+        "委託先法人ID → 空白&5",
+        "入金予定日 → 前日以前とNaN",
+        "回収ランク → 「弁護士介入」除外",
+        "残債除外 → CD=1,4かつ滞納残債10,000円・11,000円除外",
+        "入金予定金額 → 2,3,5,12除外",
+        "「TEL携帯.2」 → 空でない値のみ"
+    ])
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_emergency_without10k_file")
     
@@ -892,9 +883,7 @@ def show_mirail_emergency_without10k():
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
                     # 処理ログ表示
                     if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
+                        display_processing_logs(logs)
                     
                     st.subheader("処理結果プレビュー")
                     safe_dataframe_display(result_df.head(10))
@@ -908,15 +897,14 @@ def show_mirail_emergency_without10k():
 
 def show_mirail_emergency_with10k():
     st.header("ミライル緊急連絡人（10,000円を除外しないパターン）")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• 委託先法人ID → 空白&5")
-    st.markdown("• 入金予定日 → 前日以前とNaN")
-    st.markdown("• 回収ランク → 「弁護士介入」除外")
-    st.markdown("• 滞納残債フィルタ → なし（全件処理）")
-    st.markdown("• 入金予定金額 → 2,3,5,12除外")
-    st.markdown("• 「TEL携帯.2」 → 空でない値のみ")
-    st.markdown('</div>', unsafe_allow_html=True)
+    display_filter_conditions([
+        "委託先法人ID → 空白&5",
+        "入金予定日 → 前日以前とNaN",
+        "回収ランク → 「弁護士介入」除外",
+        "滞納残債フィルタ → なし（全件処理）",
+        "入金予定金額 → 2,3,5,12除外",
+        "「TEL携帯.2」 → 空でない値のみ"
+    ])
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_emergency_with10k_file")
     
@@ -932,9 +920,7 @@ def show_mirail_emergency_with10k():
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
                     # 処理ログ表示
                     if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
+                        display_processing_logs(logs)
                     
                     st.subheader("処理結果プレビュー")
                     safe_dataframe_display(result_df.head(10))
@@ -948,15 +934,14 @@ def show_mirail_emergency_with10k():
 
 def show_faith_contract():
     st.header("フェイス契約者用オートコール")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• 委託先法人ID → 1-4")
-    st.markdown("• 入金予定日 → 前日以前とNaN")
-    st.markdown("• 回収ランク → 「弁護士介入」除外")
-    st.markdown("• 入金予定金額 → 2,3,5,12除外")
-    st.markdown("• 滞納残債フィルタ → なし（全件処理）")
-    st.markdown("• 「TEL携帯」 → 空でない値のみ")
-    st.markdown('</div>', unsafe_allow_html=True)
+    display_filter_conditions([
+        "委託先法人ID → 1-4",
+        "入金予定日 → 前日以前とNaN",
+        "回収ランク → 「弁護士介入」除外",
+        "入金予定金額 → 2,3,5,12除外",
+        "滞納残債フィルタ → なし（全件処理）",
+        "「TEL携帯」 → 空でない値のみ"
+    ])
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="faith_contract_file")
     
@@ -972,9 +957,7 @@ def show_faith_contract():
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
                     # 処理ログ表示
                     if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
+                        display_processing_logs(logs)
                     
                     st.subheader("処理結果プレビュー")
                     safe_dataframe_display(result_df.head(10))
@@ -988,15 +971,14 @@ def show_faith_contract():
 
 def show_faith_guarantor():
     st.header("フェイス保証人用オートコール")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• 委託先法人ID → 1-4")
-    st.markdown("• 入金予定日 → 前日以前とNaN")
-    st.markdown("• 回収ランク → 「弁護士介入」除外")
-    st.markdown("• 入金予定金額 → 2,3,5,12除外")
-    st.markdown("• 滞納残債フィルタ → なし（全件処理）")
-    st.markdown("• 「TEL携帯.1」 → 空でない値のみ")
-    st.markdown('</div>', unsafe_allow_html=True)
+    display_filter_conditions([
+        "委託先法人ID → 1-4",
+        "入金予定日 → 前日以前とNaN",
+        "回収ランク → 「弁護士介入」除外",
+        "入金予定金額 → 2,3,5,12除外",
+        "滞納残債フィルタ → なし（全件処理）",
+        "「TEL携帯.1」 → 空でない値のみ"
+    ])
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="faith_guarantor_file")
     
@@ -1012,9 +994,7 @@ def show_faith_guarantor():
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
                     # 処理ログ表示
                     if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
+                        display_processing_logs(logs)
                     
                     st.subheader("処理結果プレビュー")
                     safe_dataframe_display(result_df.head(10))
@@ -1028,15 +1008,14 @@ def show_faith_guarantor():
 
 def show_faith_emergency():
     st.header("フェイス緊急連絡人用オートコール")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• 委託先法人ID → 1-4")
-    st.markdown("• 入金予定日 → 前日以前とNaN")
-    st.markdown("• 回収ランク → 「弁護士介入」除外")
-    st.markdown("• 入金予定金額 → 2,3,5,12除外")
-    st.markdown("• 滞納残債フィルタ → なし（全件処理）")
-    st.markdown("• 「TEL携帯.2」 → 空でない値のみ")
-    st.markdown('</div>', unsafe_allow_html=True)
+    display_filter_conditions([
+        "委託先法人ID → 1-4",
+        "入金予定日 → 前日以前とNaN",
+        "回収ランク → 「弁護士介入」除外",
+        "入金予定金額 → 2,3,5,12除外",
+        "滞納残債フィルタ → なし（全件処理）",
+        "「TEL携帯.2」 → 空でない値のみ"
+    ])
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="faith_emergency_file")
     
@@ -1052,9 +1031,7 @@ def show_faith_emergency():
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
                     # 処理ログ表示
                     if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
+                        display_processing_logs(logs)
                     
                     st.subheader("処理結果プレビュー")
                     safe_dataframe_display(result_df.head(10))
@@ -1068,14 +1045,13 @@ def show_faith_emergency():
 
 def show_plaza_main():
     st.header("プラザ契約者用オートコール")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• 委託先法人ID → 6")
-    st.markdown("• 入金予定日 → <span style='color: red; font-weight: bold;'>当日</span>以前とNaN", unsafe_allow_html=True)
-    st.markdown("• 入金予定金額 → 2,3,5,12円除外")
-    st.markdown("• 「TEL携帯」 → 空でない値のみ")
-    st.markdown("• 回収ランク → 「督促停止」「弁護士介入」除外")
-    st.markdown('</div>', unsafe_allow_html=True)
+    display_filter_conditions([
+        "委託先法人ID → 6",
+        "入金予定日 → 当日以前とNaN",
+        "入金予定金額 → 2,3,5,12円除外",
+        "「TEL携帯」 → 空でない値のみ",
+        "回収ランク → 「督促停止」「弁護士介入」除外"
+    ])
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="plaza_main_file")
     
@@ -1093,9 +1069,7 @@ def show_plaza_main():
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
                     # 処理ログ表示
                     if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
+                        display_processing_logs(logs)
                     
                     # ログ表示
                     if logs:
@@ -1115,14 +1089,13 @@ def show_plaza_main():
 
 def show_plaza_guarantor():
     st.header("プラザ保証人用オートコール")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• 委託先法人ID → 6")
-    st.markdown("• 入金予定日 → 前日以前とNaN")
-    st.markdown("• 入金予定金額 → 2,3,5,12円除外")
-    st.markdown("• 「TEL携帯.1」 → 空でない値のみ")
-    st.markdown("• 回収ランク → 「督促停止」「弁護士介入」除外")
-    st.markdown('</div>', unsafe_allow_html=True)
+    display_filter_conditions([
+        "委託先法人ID → 6",
+        "入金予定日 → 前日以前とNaN",
+        "入金予定金額 → 2,3,5,12円除外",
+        "「TEL携帯.1」 → 空でない値のみ",
+        "回収ランク → 「督促停止」「弁護士介入」除外"
+    ])
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="plaza_guarantor_file")
     
@@ -1140,9 +1113,7 @@ def show_plaza_guarantor():
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
                     # 処理ログ表示
                     if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
+                        display_processing_logs(logs)
                     
                     # ログ表示
                     if logs:
@@ -1162,14 +1133,13 @@ def show_plaza_guarantor():
 
 def show_plaza_contact():
     st.header("プラザ緊急連絡人用オートコール")
-    st.markdown("**フィルタ条件:**")
-    st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
-    st.markdown("• 委託先法人ID → 6")
-    st.markdown("• 入金予定日 → 前日以前とNaN")
-    st.markdown("• 入金予定金額 → 2,3,5,12円除外")
-    st.markdown("• 「緊急連絡人１のTEL（携帯）」 → 空でない値のみ")
-    st.markdown("• 回収ランク → 「督促停止」「弁護士介入」除外")
-    st.markdown('</div>', unsafe_allow_html=True)
+    display_filter_conditions([
+        "委託先法人ID → 6",
+        "入金予定日 → 前日以前とNaN",
+        "入金予定金額 → 2,3,5,12円除外",
+        "「緊急連絡人１のTEL（携帯）」 → 空でない値のみ",
+        "回収ランク → 「督促停止」「弁護士介入」除外"
+    ])
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="plaza_contact_file")
     
@@ -1187,9 +1157,7 @@ def show_plaza_contact():
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
                     # 処理ログ表示
                     if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
+                        display_processing_logs(logs)
                     
                     # ログ表示
                     if logs:
@@ -1248,9 +1216,7 @@ def show_faith_sms_vacated():
                     st.warning("条件に合致するデータがありませんでした。")
                     
                     # 処理ログ表示（エラー時も表示）
-                    with st.expander("📊 処理ログ", expanded=True):
-                        for log in logs:
-                            st.write(f"• {log}")
+                    display_processing_logs(logs, expanded=True)
                     
         except Exception as e:
             st.error(f"エラーが発生しました: {str(e)}")
@@ -1313,9 +1279,7 @@ def show_ark_registration_tokyo():
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
                     # 処理ログ表示
                     if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
+                        display_processing_logs(logs)
                     
                     # ログ表示
                     if logs:
@@ -1370,9 +1334,7 @@ def show_ark_registration_osaka():
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
                     # 処理ログ表示
                     if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
+                        display_processing_logs(logs)
                     
                     if logs:
                         st.info("処理ログ:")
@@ -1424,9 +1386,7 @@ def show_ark_registration_hokkaido():
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
                     # 処理ログ表示
                     if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
+                        display_processing_logs(logs)
                     
                     if logs:
                         st.info("処理ログ:")
@@ -1478,9 +1438,7 @@ def show_ark_registration_kitakanto():
                     st.success(f"処理完了: {len(result_df)}件のデータを出力")
                     # 処理ログ表示
                     if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
+                        display_processing_logs(logs)
                     
                     if logs:
                         st.info("処理ログ:")
@@ -1534,9 +1492,7 @@ def show_arktrust_registration_tokyo():
                     
                     # 処理ログ表示
                     if logs:
-                        with st.expander("📊 処理ログ", expanded=False):
-                            for log in logs:
-                                st.write(f"• {log}")
+                        display_processing_logs(logs)
                     
                     if logs:
                         st.info("処理ログ:")

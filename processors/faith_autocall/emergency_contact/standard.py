@@ -141,7 +141,7 @@ def process_faith_emergencycontact_data(file_content: bytes) -> Tuple[pd.DataFra
         today_str = datetime.now().strftime("%m%d")
         output_filename = f"{today_str}フェイス_連絡人.csv"
         
-        return df_filtered, df_output, logs, output_filename
+        return df_output, logs, output_filename
         
     except Exception as e:
         raise Exception(f"フェイス緊急連絡人データ処理エラー: {str(e)}")
