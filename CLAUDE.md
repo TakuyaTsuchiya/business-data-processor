@@ -145,6 +145,16 @@ processors/faith_sms/
 ├── vacated_contract.py           # 退去済み契約者SMS（実装済み）
 │   📋 フィルタ条件: 入居ステータス(退去済み), 委託先法人ID(1-4), TEL携帯必須
 └── standard.py                   # 標準版（将来実装予定）
+
+processors/plaza_sms/
+├── contract.py                   # 契約者SMS（実装完了）
+│   📋 フィルタ条件: 委託先法人ID(6のみ), 入金予定日(前日以前+NaN), 
+│                  入金予定金額(2,3,5,12円除外), 回収ランク(弁護士介入等除外),
+│                  契約者携帯電話(090/080/070のみ), VLOOKUP国籍分離
+│   📂 必要ファイル: ContractList + コールセンター回収委託CSV
+│   📤 出力ファイル: 日本人向け + 外国人向け（2ファイル）
+├── guarantor.py                  # 保証人SMS（未実装）
+└── contact.py                    # 緊急連絡人SMS（未実装）
 ```
 
 ### 📋 データ変換処理
