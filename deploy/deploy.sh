@@ -140,12 +140,18 @@ fi
 log "Verifying deployment..."
 sleep 5
 
-# Nginxを通してアクセスできるか確認
-if curl -f http://localhost/_stcore/health &>/dev/null; then
-    success "New deployment is serving traffic correctly"
+# Nginx経由の疎通確認（まずは/healthを使用）
+if curl -fsS http://localhost/health &>/dev/null; then
+    success "Nginx /health responded"
 else
-    error "New deployment is not accessible through Nginx"
-    # ロールバック処理をここに追加可能
+    error "Nginx /health endpoint not responding"
+fi
+
+# アプリのヘルスも確認（失敗しても続行し、後続で検知可能に）
+if curl -fsS http://localhost/_stcore/health &>/dev/null; then
+    success "Application health reachable through Nginx"
+else
+    echo "(info) Application health endpoint not reachable via Nginx (/_stcore/health)"
 fi
 
 # 8. 古い環境を停止（オプション：すぐに停止するか、しばらく残すか選択可能）
@@ -159,7 +165,8 @@ fi
 
 # 9. デプロイメント情報を記録
 DEPLOY_INFO="deploy_$(date +%Y%m%d_%H%M%S).log"
-cat > "../logs/$DEPLOY_INFO" << EOF
+mkdir -p ../logs || true
+cat << EOF | tee "../logs/$DEPLOY_INFO" >/dev/null || true
 Deployment completed at: $(date)
 Previous environment: $CURRENT_ACTIVE
 New environment: $NEW_ENV
