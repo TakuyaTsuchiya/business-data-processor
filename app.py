@@ -70,6 +70,39 @@ def main():
         initial_sidebar_state="expanded"
     )
     
+    # プロセッサーのマッピング
+    PROCESSOR_MAPPING = {
+        "mirail_contract_without10k": show_mirail_contract_without10k,
+        "mirail_contract_with10k": show_mirail_contract_with10k,
+        "mirail_guarantor_without10k": show_mirail_guarantor_without10k,
+        "mirail_guarantor_with10k": show_mirail_guarantor_with10k,
+        "mirail_emergency_without10k": show_mirail_emergency_without10k,
+        "mirail_emergency_with10k": show_mirail_emergency_with10k,
+        "faith_contract": show_faith_contract,
+        "faith_guarantor": show_faith_guarantor,
+        "faith_emergency": show_faith_emergency,
+        "plaza_main": show_plaza_main,
+        "plaza_guarantor": show_plaza_guarantor,
+        "plaza_contact": show_plaza_contact,
+        "faith_sms_vacated": show_faith_sms_vacated,
+        "faith_sms_guarantor": show_faith_sms_guarantor,
+        "faith_sms_emergency_contact": show_faith_sms_emergency_contact,
+        "mirail_sms_guarantor": show_mirail_sms_guarantor,
+        "mirail_sms_emergencycontact": show_mirail_sms_emergencycontact,
+        "mirail_sms_contract": show_mirail_sms_contract,
+        "plaza_sms_contract": show_plaza_sms_contract,
+        "plaza_sms_guarantor": show_plaza_sms_guarantor,
+        "plaza_sms_contact": show_plaza_sms_contact,
+        "ark_registration_tokyo": show_ark_registration_tokyo,
+        "ark_registration_osaka": show_ark_registration_osaka,
+        "ark_registration_hokkaido": show_ark_registration_hokkaido,
+        "ark_registration_kitakanto": show_ark_registration_kitakanto,
+        "arktrust_registration_tokyo": show_arktrust_registration_tokyo,
+        "capco_registration": show_capco_registration,
+        "ark_late_payment": show_ark_late_payment,
+        "capco_debt_update": show_capco_debt_update
+    }
+    
     # カスタムCSSを適用
     st.markdown(get_custom_css(), unsafe_allow_html=True)
     
@@ -112,64 +145,9 @@ def main():
         return
     
     # 各プロセッサーの処理画面
-    if st.session_state.selected_processor == "mirail_contract_without10k":
-        show_mirail_contract_without10k()
-    elif st.session_state.selected_processor == "mirail_contract_with10k":
-        show_mirail_contract_with10k()
-    elif st.session_state.selected_processor == "mirail_guarantor_without10k":
-        show_mirail_guarantor_without10k()
-    elif st.session_state.selected_processor == "mirail_guarantor_with10k":
-        show_mirail_guarantor_with10k()
-    elif st.session_state.selected_processor == "mirail_emergency_without10k":
-        show_mirail_emergency_without10k()
-    elif st.session_state.selected_processor == "mirail_emergency_with10k":
-        show_mirail_emergency_with10k()
-    elif st.session_state.selected_processor == "faith_contract":
-        show_faith_contract()
-    elif st.session_state.selected_processor == "faith_guarantor":
-        show_faith_guarantor()
-    elif st.session_state.selected_processor == "faith_emergency":
-        show_faith_emergency()
-    elif st.session_state.selected_processor == "plaza_main":
-        show_plaza_main()
-    elif st.session_state.selected_processor == "plaza_guarantor":
-        show_plaza_guarantor()
-    elif st.session_state.selected_processor == "plaza_contact":
-        show_plaza_contact()
-    elif st.session_state.selected_processor == "faith_sms_vacated":
-        show_faith_sms_vacated()
-    elif st.session_state.selected_processor == "faith_sms_guarantor":
-        show_faith_sms_guarantor()
-    elif st.session_state.selected_processor == "faith_sms_emergency_contact":
-        show_faith_sms_emergency_contact()
-    elif st.session_state.selected_processor == "mirail_sms_guarantor":
-        show_mirail_sms_guarantor()
-    elif st.session_state.selected_processor == "mirail_sms_emergencycontact":
-        show_mirail_sms_emergencycontact()
-    elif st.session_state.selected_processor == "mirail_sms_contract":
-        show_mirail_sms_contract()
-    elif st.session_state.selected_processor == "plaza_sms_contract":
-        show_plaza_sms_contract()
-    elif st.session_state.selected_processor == "plaza_sms_guarantor":
-        show_plaza_sms_guarantor()
-    elif st.session_state.selected_processor == "plaza_sms_contact":
-        show_plaza_sms_contact()
-    elif st.session_state.selected_processor == "ark_registration_tokyo":
-        show_ark_registration_tokyo()
-    elif st.session_state.selected_processor == "ark_registration_osaka":
-        show_ark_registration_osaka()
-    elif st.session_state.selected_processor == "ark_registration_hokkaido":
-        show_ark_registration_hokkaido()
-    elif st.session_state.selected_processor == "ark_registration_kitakanto":
-        show_ark_registration_kitakanto()
-    elif st.session_state.selected_processor == "arktrust_registration_tokyo":
-        show_arktrust_registration_tokyo()
-    elif st.session_state.selected_processor == "capco_registration":
-        show_capco_registration()
-    elif st.session_state.selected_processor == "ark_late_payment":
-        show_ark_late_payment()
-    elif st.session_state.selected_processor == "capco_debt_update":
-        show_capco_debt_update()
+    processor = st.session_state.selected_processor
+    if processor in PROCESSOR_MAPPING:
+        PROCESSOR_MAPPING[processor]()
 
 # 以下、各処理画面の関数を実装
 
