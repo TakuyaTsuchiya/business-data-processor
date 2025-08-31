@@ -104,14 +104,17 @@ from processors.plaza_autocall.guarantor.standard import process_plaza_guarantor
 from processors.plaza_autocall.contact.standard import process_plaza_contact_data
 
 from processors.faith_sms.vacated_contract import process_faith_sms_vacated_contract_data
-from processors.faith_sms.guarantor import process_faith_sms_guarantor_data
-from processors.faith_sms.emergency_contact import process_faith_sms_emergency_contact_data
-from processors.mirail_sms.guarantor import process_mirail_sms_guarantor_data
-from processors.mirail_sms.emergency_contact import process_mirail_sms_emergencycontact_data
-from processors.mirail_sms.contract import process_mirail_sms_contract_data
 from processors.plaza_sms.contract import process_plaza_sms_contract_data
-from processors.plaza_sms.guarantor import process_plaza_sms_guarantor_data
-from processors.plaza_sms.contact import process_plaza_sms_contact_data
+# 共通化されたSMS処理
+from processors.sms_common.factory import (
+    process_faith_guarantor_sms,
+    process_faith_emergency_sms,
+    process_mirail_contract_sms,
+    process_mirail_guarantor_sms,
+    process_mirail_emergency_sms,
+    process_plaza_guarantor_sms,
+    process_plaza_emergency_sms
+)
 from processors.ark_registration import process_ark_data, process_arktrust_data
 from processors.ark_late_payment_update import process_ark_late_payment_data
 from processors.capco_registration import process_capco_data
@@ -561,7 +564,7 @@ def show_faith_sms_guarantor():
             if st.button("処理を実行", type="primary", key="faith_sms_guarantor_process"):
                 with st.spinner("処理中..."):
                     # 戻り値を一時変数で受け取る
-                    result = process_faith_sms_guarantor_data(uploaded_file.read(), payment_deadline_date)
+                    result = process_faith_guarantor_sms(uploaded_file.read(), payment_deadline_date)
                     result_df, logs, filename, stats = result
                     
                 if not result_df.empty:
@@ -626,7 +629,7 @@ def show_faith_sms_emergency_contact():
             if st.button("処理を実行", type="primary", key="faith_sms_emergency_contact_process"):
                 with st.spinner("処理中..."):
                     # 戻り値を一時変数で受け取る
-                    result = process_faith_sms_emergency_contact_data(uploaded_file.read(), payment_deadline_date)
+                    result = process_faith_emergency_sms(uploaded_file.read(), payment_deadline_date)
                     result_df, logs, filename, stats = result
                     
                 if not result_df.empty:
@@ -682,7 +685,7 @@ def show_mirail_sms_guarantor():
             if st.button("処理を実行", type="primary", key="mirail_sms_guarantor_process"):
                 with st.spinner("処理中..."):
                     # 戻り値を一時変数で受け取る
-                    result = process_mirail_sms_guarantor_data(uploaded_file.read(), payment_deadline_date)
+                    result = process_mirail_guarantor_sms(uploaded_file.read(), payment_deadline_date)
                     result_df, logs, filename, stats = result
                     
                 if not result_df.empty:
@@ -738,7 +741,7 @@ def show_mirail_sms_contract():
             if st.button("処理を実行", type="primary", key="mirail_sms_contract_process"):
                 with st.spinner("処理中..."):
                     # 戻り値を一時変数で受け取る
-                    result = process_mirail_sms_contract_data(uploaded_file.read(), payment_deadline_date)
+                    result = process_mirail_contract_sms(uploaded_file.read(), payment_deadline_date)
                     result_df, logs, filename, stats = result
                     
                 if not result_df.empty:
@@ -794,7 +797,7 @@ def show_mirail_sms_emergencycontact():
             if st.button("処理を実行", type="primary", key="mirail_sms_emergencycontact_process"):
                 with st.spinner("処理中..."):
                     # 戻り値を一時変数で受け取る
-                    result = process_mirail_sms_emergencycontact_data(uploaded_file.read(), payment_deadline_date)
+                    result = process_mirail_emergency_sms(uploaded_file.read(), payment_deadline_date)
                     result_df, logs, filename, stats = result
                     
                 if not result_df.empty:
@@ -1366,7 +1369,7 @@ def show_plaza_sms_guarantor():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, logs, output_filename, stats = process_plaza_sms_guarantor_data(
+                    result_df, logs, output_filename, stats = process_plaza_guarantor_sms(
                         file_content, payment_deadline
                     )
                     
@@ -1425,7 +1428,7 @@ def show_plaza_sms_contact():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, logs, output_filename, stats = process_plaza_sms_contact_data(
+                    result_df, logs, output_filename, stats = process_plaza_emergency_sms(
                         file_content, payment_deadline
                     )
                     

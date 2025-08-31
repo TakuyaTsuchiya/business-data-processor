@@ -22,26 +22,28 @@ def format_payment_deadline(date_input: date) -> str:
     return date_input.strftime("%Y年%m月%d日")
 
 def load_faith_sms_template_headers() -> List[str]:
-    """外部ファイルからフェイスSMSテンプレートヘッダーを読み込み"""
-    # 複数のパス候補を試行
+    """SMSテンプレートヘッダーを読み込み（新共通ファイル優先、旧ファイルへフォールバック）"""
     current_dir = os.path.dirname(__file__)
-    
-    # パス候補リスト
-    template_paths = [
-        os.path.join(current_dir, '..', '..', 'templates', 'faith_sms_template_headers.txt'),  # 相対パス
-        os.path.abspath(os.path.join(current_dir, '..', '..', 'templates', 'faith_sms_template_headers.txt')),  # 絶対パス
-        'templates/faith_sms_template_headers.txt',  # カレントディレクトリから
-        './templates/faith_sms_template_headers.txt',  # カレントディレクトリから
+
+    candidate_filenames = [
+        'sms_template_headers.txt',
+        'faith_sms_template_headers.txt',
     ]
-    
-    # 各パスを試行
+
+    template_paths: List[str] = []
+    for filename in candidate_filenames:
+        template_paths.extend([
+            os.path.join(current_dir, '..', '..', 'templates', filename),
+            os.path.abspath(os.path.join(current_dir, '..', '..', 'templates', filename)),
+            f'templates/{filename}',
+            f'./templates/{filename}',
+        ])
+
     for template_path in template_paths:
         if os.path.exists(template_path):
             try:
-                # 複数のエンコーディングで試行
                 encodings = ['utf-8', 'utf-8-sig', 'cp932', 'shift_jis']
                 header_line = None
-                
                 for encoding in encodings:
                     try:
                         with open(template_path, 'r', encoding=encoding) as f:
@@ -49,16 +51,15 @@ def load_faith_sms_template_headers() -> List[str]:
                         break
                     except UnicodeDecodeError:
                         continue
-                        
                 if header_line is None:
-                    raise Exception("ヘッダーファイルの読み込みに失敗しました（エンコーディングエラー）")
-                    
+                    raise Exception('ヘッダーファイルの読み込みに失敗しました（エンコーディングエラー）')
                 return header_line.split(',')
-            except Exception as e:
-                continue  # 次のパスを試行
-    
-    # すべてのパスで失敗した場合
-    raise FileNotFoundError(f"SMSテンプレートヘッダーファイルが見つかりません。試行パス: {template_paths}")
+            except Exception:
+                continue
+
+    raise FileNotFoundError(
+        f"SMSテンプレートヘッダーファイルが見つかりません。試行パス: {template_paths}"
+    )
 
 def read_csv_auto_encoding(file_content: bytes) -> pd.DataFrame:
     """アップロードされたCSVファイルを自動エンコーディング判定で読み込み"""
