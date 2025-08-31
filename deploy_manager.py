@@ -151,20 +151,68 @@ class DeployManager:
             print(result.stderr)
             
     def ssh_command(self, command, capture_output=False):
-        """SSH経由でコマンドを実行"""
+        """SSH経由でコマンドを実行（鍵を自動的に選択して試行）"""
+        host = f"{self.config['VPS_USER']}@{self.config['VPS_HOST']}"
+        port = self.config.get('VPS_PORT', '22')
+
+        # 候補鍵の順序: 現在選択 > 設定のSSH_KEY_PATH > 既定 > フォールバック
+        seen = set()
+        candidates = []
+        def add(p):
+            s = str(p)
+            if s not in seen:
+                candidates.append(p)
+                seen.add(s)
+
+        add(self.ssh_key)
+        if 'SSH_KEY_PATH' in self.config and self.config['SSH_KEY_PATH']:
+            add(Path(os.path.expanduser(self.config['SSH_KEY_PATH'])))
+        add(Path.home() / '.ssh' / 'vps-deploy-key')
+        add(Path.home() / '.ssh' / 'id_ed25519')
+        add(Path.home() / '.ssh' / 'id_rsa')
+
+        chosen_key = None
+        # まずは接続テストで使える鍵を特定
+        for key in candidates:
+            if not key.exists():
+                continue
+            test_cmd = [
+                'ssh', '-i', str(key), '-p', port,
+                '-o', 'BatchMode=yes',
+                '-o', 'PasswordAuthentication=no',
+                '-o', 'StrictHostKeyChecking=no',
+                host, 'true'
+            ]
+            res = subprocess.run(test_cmd)
+            if res.returncode == 0:
+                chosen_key = key
+                break
+
+        # 使える鍵が見つからない場合はそのまま現在の鍵で実行（エラーを返す）
+        key_to_use = chosen_key or self.ssh_key
+
+        # 実コマンドを実行
         ssh_cmd = [
             'ssh',
-            '-i', str(self.ssh_key),
-            '-p', self.config.get('VPS_PORT', '22'),
+            '-i', str(key_to_use),
+            '-p', port,
             '-o', 'StrictHostKeyChecking=no',
-            f"{self.config['VPS_USER']}@{self.config['VPS_HOST']}",
+            host,
             command
         ]
-        
-        if capture_output:
-            return subprocess.run(ssh_cmd, capture_output=True, text=True)
-        else:
-            return subprocess.run(ssh_cmd)
+
+        result = subprocess.run(ssh_cmd, capture_output=capture_output, text=True) if capture_output else subprocess.run(ssh_cmd)
+
+        # 成功した鍵を設定に保存（次回以降の接続を安定化）
+        if chosen_key and str(chosen_key) != self.config.get('SSH_KEY_PATH'):
+            self.config['SSH_KEY_PATH'] = str(chosen_key)
+            # ベストエフォートで保存（書けない場合は無視）
+            try:
+                self.save_config()
+            except Exception:
+                pass
+
+        return result
     
     def deploy(self, skip_git_pull=False):
         """VPSへデプロイ"""
