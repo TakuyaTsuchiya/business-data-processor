@@ -31,21 +31,27 @@ from components.sidebar import build_sidebar_menu
 from components.result_display import display_processing_result, display_error_result
 from components.welcome import show_welcome_screen
 
+# screens import
+from screens.mirail_autocall import (
+    show_mirail_contract_without10k,
+    show_mirail_contract_with10k,
+    show_mirail_guarantor_without10k,
+    show_mirail_guarantor_with10k,
+    show_mirail_emergency_without10k,
+    show_mirail_emergency_with10k
+)
+from screens.faith_autocall import (
+    show_faith_contract,
+    show_faith_guarantor,
+    show_faith_emergency
+)
+from screens.plaza_autocall import (
+    show_plaza_main,
+    show_plaza_guarantor,
+    show_plaza_contact
+)
+
 # プロセッサーをインポート
-from processors.mirail_autocall.contract.without10k import process_mirail_contract_without10k_data
-from processors.mirail_autocall.contract.with10k import process_mirail_contract_with10k_data
-from processors.mirail_autocall.guarantor.without10k import process_mirail_guarantor_without10k_data
-from processors.mirail_autocall.guarantor.with10k import process_mirail_guarantor_with10k_data
-from processors.mirail_autocall.emergency_contact.without10k import process_mirail_emergencycontact_without10k_data
-from processors.mirail_autocall.emergency_contact.with10k import process_mirail_emergencycontact_with10k_data
-
-from processors.faith_autocall.contract.standard import process_faith_contract_data
-from processors.faith_autocall.guarantor.standard import process_faith_guarantor_data
-from processors.faith_autocall.emergency_contact.standard import process_faith_emergencycontact_data
-
-from processors.plaza_autocall.main.standard import process_plaza_main_data
-from processors.plaza_autocall.guarantor.standard import process_plaza_guarantor_data
-from processors.plaza_autocall.contact.standard import process_plaza_contact_data
 
 from processors.faith_sms.contract import process_faith_sms_contract_data
 from processors.plaza_sms.contract import process_plaza_sms_contract_data
@@ -129,84 +135,6 @@ def main():
         PROCESSOR_MAPPING[processor]()
 
 # 以下、各処理画面の関数を実装
-
-def show_mirail_contract_without10k():
-    st.header("ミライル契約者（10,000円を除外するパターン）")
-    display_filter_conditions([
-        "委託先法人ID → 空白&5",
-        "入金予定日 → 前日以前とNaN",
-        "回収ランク → 「弁護士介入」除外",
-        "残債除外 → CD=1,4かつ滞納残債10,000円・11,000円除外",
-        "入金予定金額 → 2,3,5,12除外",
-        "「TEL携帯」 → 空でない値のみ"
-    ])
-    
-    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_contract_without10k_file")
-    
-    if uploaded_file is not None:
-        try:
-            st.success(f"✅ {uploaded_file.name}: 読み込み完了")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    result_df, logs, filename = process_mirail_contract_without10k_data(uploaded_file.read())
-                    
-                # 共通コンポーネントで結果表示
-                display_processing_result(result_df, logs, filename)
-        except Exception as e:
-            display_error_result(f"エラーが発生しました: {str(e)}")
-
-def show_mirail_contract_with10k():
-    st.header("ミライル契約者（10,000円を除外しないパターン）")
-    display_filter_conditions([
-        "委託先法人ID → 空白&5",
-        "入金予定日 → 前日以前とNaN", 
-        "回収ランク → 「弁護士介入」除外",
-        "滞納残債フィルタ → なし（全件処理）",
-        "入金予定金額 → 2,3,5,12除外",
-        "「TEL携帯」 → 空でない値のみ"
-    ])
-    
-    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_contract_with10k_file")
-    
-    if uploaded_file is not None:
-        try:
-            st.success(f"✅ {uploaded_file.name}: 読み込み完了")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    result_df, logs, filename = process_mirail_contract_with10k_data(uploaded_file.read())
-                    
-                # 共通コンポーネントで結果表示
-                display_processing_result(result_df, logs, filename)
-        except Exception as e:
-            display_error_result(f"エラーが発生しました: {str(e)}")
-
-def show_mirail_guarantor_without10k():
-    st.header("ミライル保証人（10,000円を除外するパターン）")
-    display_filter_conditions([
-        "委託先法人ID → 空白&5",
-        "入金予定日 → 前日以前とNaN",
-        "回収ランク → 「弁護士介入」除外",
-        "残債除外 → CD=1,4かつ滞納残債10,000円・11,000円除外",
-        "入金予定金額 → 2,3,5,12除外",
-        "「TEL携帯.1」 → 空でない値のみ"
-    ])
-    
-    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_guarantor_without10k_file")
-    
-    if uploaded_file is not None:
-        try:
-            st.success(f"✅ {uploaded_file.name}: 読み込み完了")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    result_df, logs, filename = process_mirail_guarantor_without10k_data(uploaded_file.read())
-                    
-                # 共通コンポーネントで結果表示
-                display_processing_result(result_df, logs, filename)
-        except Exception as e:
-            display_error_result(f"エラーが発生しました: {str(e)}")
 
 def show_faith_sms_guarantor():
     st.title("📱 SMS送信用CSV加工")
@@ -496,243 +424,6 @@ def show_mirail_sms_emergencycontact():
     st.markdown("• BV列　入金予定金額 → 2,3,5,12を除外")
     st.markdown("• BE列　TEL携帯 → 090/080/070形式の携帯電話番号のみ")
     st.markdown('</div>', unsafe_allow_html=True)
-
-def show_mirail_guarantor_with10k():
-    st.header("ミライル保証人（10,000円を除外しないパターン）")
-    display_filter_conditions([
-        "委託先法人ID → 空白&5",
-        "入金予定日 → 前日以前とNaN",
-        "回収ランク → 「弁護士介入」除外",
-        "滞納残債フィルタ → なし（全件処理）",
-        "入金予定金額 → 2,3,5,12除外",
-        "「TEL携帯.1」 → 空でない値のみ"
-    ])
-    
-    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_guarantor_with10k_file")
-    
-    if uploaded_file is not None:
-        try:
-            st.success(f"✅ {uploaded_file.name}: 読み込み完了")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    result_df, logs, filename = process_mirail_guarantor_with10k_data(uploaded_file.read())
-                    
-                # 共通コンポーネントで結果表示
-                display_processing_result(result_df, logs, filename)
-        except Exception as e:
-            display_error_result(f"エラーが発生しました: {str(e)}")
-
-def show_mirail_emergency_without10k():
-    st.header("ミライル緊急連絡人（10,000円を除外するパターン）")
-    display_filter_conditions([
-        "委託先法人ID → 空白&5",
-        "入金予定日 → 前日以前とNaN",
-        "回収ランク → 「弁護士介入」除外",
-        "残債除外 → CD=1,4かつ滞納残債10,000円・11,000円除外",
-        "入金予定金額 → 2,3,5,12除外",
-        "「TEL携帯.2」 → 空でない値のみ"
-    ])
-    
-    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_emergency_without10k_file")
-    
-    if uploaded_file is not None:
-        try:
-            st.success(f"✅ {uploaded_file.name}: 読み込み完了")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    result_df, logs, filename = process_mirail_emergencycontact_without10k_data(uploaded_file.read())
-                    
-                # 共通コンポーネントで結果表示
-                display_processing_result(result_df, logs, filename)
-        except Exception as e:
-            display_error_result(f"エラーが発生しました: {str(e)}")
-
-def show_mirail_emergency_with10k():
-    st.header("ミライル緊急連絡人（10,000円を除外しないパターン）")
-    display_filter_conditions([
-        "委託先法人ID → 空白&5",
-        "入金予定日 → 前日以前とNaN",
-        "回収ランク → 「弁護士介入」除外",
-        "滞納残債フィルタ → なし（全件処理）",
-        "入金予定金額 → 2,3,5,12除外",
-        "「TEL携帯.2」 → 空でない値のみ"
-    ])
-    
-    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="mirail_emergency_with10k_file")
-    
-    if uploaded_file is not None:
-        try:
-            st.success(f"✅ {uploaded_file.name}: 読み込み完了")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    result_df, logs, filename = process_mirail_emergencycontact_with10k_data(uploaded_file.read())
-                    
-                # 共通コンポーネントで結果表示
-                display_processing_result(result_df, logs, filename)
-        except Exception as e:
-            display_error_result(f"エラーが発生しました: {str(e)}")
-
-def show_faith_contract():
-    st.header("フェイス契約者用オートコール")
-    display_filter_conditions([
-        "委託先法人ID → 1-4",
-        "入金予定日 → 前日以前とNaN",
-        "回収ランク → 「弁護士介入」除外",
-        "入金予定金額 → 2,3,5,12除外",
-        "滞納残債フィルタ → なし（全件処理）",
-        "「TEL携帯」 → 空でない値のみ"
-    ])
-    
-    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="faith_contract_file")
-    
-    if uploaded_file is not None:
-        try:
-            st.success(f"✅ {uploaded_file.name}: 読み込み完了")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    result_df, logs, filename = process_faith_contract_data(uploaded_file.read())
-                    
-                # 共通コンポーネントで結果表示
-                display_processing_result(result_df, logs, filename)
-        except Exception as e:
-            display_error_result(f"エラーが発生しました: {str(e)}")
-
-def show_faith_guarantor():
-    st.header("フェイス保証人用オートコール")
-    display_filter_conditions([
-        "委託先法人ID → 1-4",
-        "入金予定日 → 前日以前とNaN",
-        "回収ランク → 「弁護士介入」除外",
-        "入金予定金額 → 2,3,5,12除外",
-        "滞納残債フィルタ → なし（全件処理）",
-        "「TEL携帯.1」 → 空でない値のみ"
-    ])
-    
-    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="faith_guarantor_file")
-    
-    if uploaded_file is not None:
-        try:
-            st.success(f"✅ {uploaded_file.name}: 読み込み完了")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    result_df, logs, filename = process_faith_guarantor_data(uploaded_file.read())
-                    
-                # 共通コンポーネントで結果表示
-                display_processing_result(result_df, logs, filename)
-        except Exception as e:
-            display_error_result(f"エラーが発生しました: {str(e)}")
-
-def show_faith_emergency():
-    st.header("フェイス緊急連絡人用オートコール")
-    display_filter_conditions([
-        "委託先法人ID → 1-4",
-        "入金予定日 → 前日以前とNaN",
-        "回収ランク → 「弁護士介入」除外",
-        "入金予定金額 → 2,3,5,12除外",
-        "滞納残債フィルタ → なし（全件処理）",
-        "「TEL携帯.2」 → 空でない値のみ"
-    ])
-    
-    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="faith_emergency_file")
-    
-    if uploaded_file is not None:
-        try:
-            st.success(f"✅ {uploaded_file.name}: 読み込み完了")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    result_df, logs, filename = process_faith_emergencycontact_data(uploaded_file.read())
-                    
-                # 共通コンポーネントで結果表示
-                display_processing_result(result_df, logs, filename)
-        except Exception as e:
-            display_error_result(f"エラーが発生しました: {str(e)}")
-
-def show_plaza_main():
-    st.header("プラザ契約者用オートコール")
-    display_filter_conditions([
-        "委託先法人ID → 6",
-        "入金予定日 → 当日以前とNaN",
-        "入金予定金額 → 2,3,5,12円除外",
-        "「TEL携帯」 → 空でない値のみ",
-        "回収ランク → 「督促停止」「弁護士介入」除外"
-    ])
-    
-    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="plaza_main_file")
-    
-    if uploaded_file is not None:
-        try:
-            # ファイル内容をbytesで読み取り
-            file_content = uploaded_file.read()
-            st.success(f"ファイルを読み込みました: {uploaded_file.name}")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    result_df, logs, filename = process_plaza_main_data(file_content)
-                    
-                # 共通コンポーネントで結果表示
-                display_processing_result(result_df, logs, filename)
-        except Exception as e:
-            display_error_result(f"エラーが発生しました: {str(e)}")
-
-def show_plaza_guarantor():
-    st.header("プラザ保証人用オートコール")
-    display_filter_conditions([
-        "委託先法人ID → 6",
-        "入金予定日 → 前日以前とNaN",
-        "入金予定金額 → 2,3,5,12円除外",
-        "「TEL携帯.1」 → 空でない値のみ",
-        "回収ランク → 「督促停止」「弁護士介入」除外"
-    ])
-    
-    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="plaza_guarantor_file")
-    
-    if uploaded_file is not None:
-        try:
-            # ファイル内容をbytesで読み取り
-            file_content = uploaded_file.read()
-            st.success(f"ファイルを読み込みました: {uploaded_file.name}")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    result_df, logs, filename = process_plaza_guarantor_data(file_content)
-                    
-                # 共通コンポーネントで結果表示
-                display_processing_result(result_df, logs, filename)
-        except Exception as e:
-            display_error_result(f"エラーが発生しました: {str(e)}")
-
-def show_plaza_contact():
-    st.header("プラザ緊急連絡人用オートコール")
-    display_filter_conditions([
-        "委託先法人ID → 6",
-        "入金予定日 → 前日以前とNaN",
-        "入金予定金額 → 2,3,5,12円除外",
-        "「緊急連絡人１のTEL（携帯）」 → 空でない値のみ",
-        "回収ランク → 「督促停止」「弁護士介入」除外"
-    ])
-    
-    uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="plaza_contact_file")
-    
-    if uploaded_file is not None:
-        try:
-            # ファイル内容をbytesで読み取り
-            file_content = uploaded_file.read()
-            st.success(f"ファイルを読み込みました: {uploaded_file.name}")
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    result_df, logs, filename = process_plaza_contact_data(file_content)
-                    
-                # 共通コンポーネントで結果表示
-                display_processing_result(result_df, logs, filename)
-        except Exception as e:
-            display_error_result(f"エラーが発生しました: {str(e)}")
 
 def show_faith_sms_vacated():
     st.title("📱 SMS送信用CSV加工")
