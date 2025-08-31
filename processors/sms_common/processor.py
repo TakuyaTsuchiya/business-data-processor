@@ -232,7 +232,12 @@ class CommonSMSProcessor:
             }
             
             # 処理完了ログ
+            self.logs.append("=" * 50)
+            self.logs.append(f"【処理サマリー】")
+            self.logs.append(f"読み込み: {original_count}件")
             self.logs.append(f"処理完了: {len(output_df)}件")
+            self.logs.append(f"除外合計: {original_count - len(output_df)}件")
+            self.logs.append("=" * 50)
             
             return output_df, self.logs, output_filename, stats
             
@@ -301,10 +306,28 @@ class CommonSMSProcessor:
     def _filter_client_ids(self, df: pd.DataFrame) -> pd.DataFrame:
         """委託先法人IDフィルタ - 最適化版"""
         client_ids = self.system_config['client_ids']
+        original_count = len(df)
         
         if self.system_type == 'mirail':
             # ミライルは空白と5（一度だけ変換）
             client_id_str = df['委託先法人ID'].astype(str).str.strip()
+            
+            # 除外される理由を詳細に記録
+            excluded_df = df[
+                ~((df['委託先法人ID'].isna()) | 
+                  (client_id_str == '') |
+                  (client_id_str == '5'))
+            ]
+            
+            if len(excluded_df) > 0:
+                # 除外される委託先法人IDの内訳
+                excluded_counts = excluded_df['委託先法人ID'].value_counts()
+                self.logs.append(f"委託先法人IDで除外: {len(excluded_df)}件")
+                for client_id, count in excluded_counts.head(10).items():
+                    self.logs.append(f"  - 委託先法人ID '{client_id}': {count}件")
+                if len(excluded_counts) > 10:
+                    self.logs.append(f"  - その他: {len(excluded_counts) - 10}種類")
+            
             df_filtered = df[
                 (df['委託先法人ID'].isna()) | 
                 (client_id_str == '') |
@@ -313,14 +336,28 @@ class CommonSMSProcessor:
         else:
             # フェイス、プラザは数値で比較（インプレース変換を避ける）
             client_id_numeric = pd.to_numeric(df['委託先法人ID'], errors='coerce')
+            
+            # 除外される理由を詳細に記録
+            excluded_df = df[~client_id_numeric.isin(client_ids)]
+            
+            if len(excluded_df) > 0:
+                # 除外される委託先法人IDの内訳
+                excluded_counts = excluded_df['委託先法人ID'].value_counts()
+                self.logs.append(f"委託先法人IDで除外: {len(excluded_df)}件")
+                for client_id, count in excluded_counts.head(10).items():
+                    self.logs.append(f"  - 委託先法人ID '{client_id}': {count}件")
+                if len(excluded_counts) > 10:
+                    self.logs.append(f"  - その他: {len(excluded_counts) - 10}種類")
+            
             df_filtered = df[client_id_numeric.isin(client_ids)]
         
-        self.logs.append(f"委託先法人IDフィルタ後: {len(df_filtered)}件")
+        self.logs.append(f"委託先法人IDフィルタ後: {len(df_filtered)}件 (除外: {original_count - len(df_filtered)}件)")
         return df_filtered
     
     def _filter_payment_date(self, df: pd.DataFrame) -> pd.DataFrame:
         """入金予定日フィルタ（前日以前）"""
         today = pd.Timestamp.now().normalize()
+        original_count = len(df)
         
         # DataFrameのコピーを作成して警告を回避
         df = df.copy()
@@ -328,38 +365,77 @@ class CommonSMSProcessor:
         # 入金予定日をdatetime型に変換
         df['入金予定日'] = pd.to_datetime(df['入金予定日'], errors='coerce')
         
+        # 除外される（当日以降の）データを記録
+        excluded_df = df[df['入金予定日'] >= today]
+        
+        if len(excluded_df) > 0:
+            self.logs.append(f"入金予定日で除外: {len(excluded_df)}件（当日以降）")
+            # 日付別の内訳（上位5日分）
+            date_counts = excluded_df['入金予定日'].dt.date.value_counts().sort_index()
+            for date, count in date_counts.head(5).items():
+                self.logs.append(f"  - {date}: {count}件")
+            if len(date_counts) > 5:
+                self.logs.append(f"  - その他: {date_counts.iloc[5:].sum()}件")
+        
         # 前日以前（当日除外）
         df_filtered = df[
             (df['入金予定日'] < today) | 
             (df['入金予定日'].isna())
         ]
         
-        self.logs.append(f"入金予定日フィルタ後: {len(df_filtered)}件")
+        self.logs.append(f"入金予定日フィルタ後: {len(df_filtered)}件 (除外: {original_count - len(df_filtered)}件)")
         return df_filtered
     
     def _filter_payment_amount(self, df: pd.DataFrame) -> pd.DataFrame:
         """入金予定金額フィルタ"""
         exclude_amounts = self.system_config['exclude_amounts']
+        original_count = len(df)
+        
+        # 除外される金額の内訳を記録
+        excluded_df = df[df['入金予定金額'].isin(exclude_amounts)]
+        
+        if len(excluded_df) > 0:
+            self.logs.append(f"入金予定金額で除外: {len(excluded_df)}件")
+            # 金額別の内訳
+            for amount in exclude_amounts:
+                count = (excluded_df['入金予定金額'] == amount).sum()
+                if count > 0:
+                    self.logs.append(f"  - {amount}円: {count}件")
         
         # 除外金額を取り除く
         df_filtered = df[~df['入金予定金額'].isin(exclude_amounts)]
         
-        self.logs.append(f"入金予定金額フィルタ後: {len(df_filtered)}件（除外: {exclude_amounts}円）")
+        self.logs.append(f"入金予定金額フィルタ後: {len(df_filtered)}件 (除外: {original_count - len(df_filtered)}件)")
         return df_filtered
     
     def _filter_collection_rank(self, df: pd.DataFrame) -> pd.DataFrame:
         """回収ランクフィルタ"""
         exclude_ranks = self.config.exclude_collection_ranks
+        original_count = len(df)
+        
+        # 除外ランクを含む行を記録
+        pattern = '|'.join([re.escape(rank) for rank in exclude_ranks])
+        excluded_df = df[df['回収ランク'].astype(str).str.contains(pattern, na=False, regex=True)]
+        
+        if len(excluded_df) > 0:
+            self.logs.append(f"回収ランクで除外: {len(excluded_df)}件")
+            # 回収ランク別の内訳
+            rank_counts = excluded_df['回収ランク'].value_counts()
+            for rank, count in rank_counts.head(10).items():
+                self.logs.append(f"  - '{rank}': {count}件")
+            if len(rank_counts) > 10:
+                self.logs.append(f"  - その他: {rank_counts.iloc[10:].sum()}件")
         
         # 除外ランクを含む行を削除
-        pattern = '|'.join([re.escape(rank) for rank in exclude_ranks])
         df_filtered = df[~df['回収ランク'].astype(str).str.contains(pattern, na=False, regex=True)]
         
-        self.logs.append(f"回収ランクフィルタ後: {len(df_filtered)}件")
+        self.logs.append(f"回収ランクフィルタ後: {len(df_filtered)}件 (除外: {original_count - len(df_filtered)}件)")
         return df_filtered
     
     def _validate_phone_numbers(self, df: pd.DataFrame) -> pd.DataFrame:
         """携帯電話番号の検証"""
+        original_count = len(df)
+        
         # 列番号マッピングを取得
         column_mapping = COLUMN_MAPPINGS.get(self.target_type, {})
         phone_idx = column_mapping.get('phone_column_idx', 27)
@@ -372,26 +448,57 @@ class CommonSMSProcessor:
                 self.logs.append(f"電話番号列が見つかりません: {phone_column}")
                 return pd.DataFrame()
             
+            # 携帯電話番号が存在しない行を記録
+            no_phone_df = df[df[phone_column].isna()]
+            if len(no_phone_df) > 0:
+                self.logs.append(f"携帯電話番号なしで除外: {len(no_phone_df)}件")
+            
             # 携帯電話番号が存在する行のみ
-            df = df[df[phone_column].notna()]
+            df_with_phone = df[df[phone_column].notna()]
+            
+            # 携帯番号形式でない番号を記録
+            invalid_phone_df = df_with_phone[~df_with_phone[phone_column].apply(lambda x: is_mobile_number(str(x)))]
+            if len(invalid_phone_df) > 0:
+                self.logs.append(f"携帯番号形式外で除外: {len(invalid_phone_df)}件")
+                # 無効な番号のサンプル（最大5件）
+                for idx, phone in invalid_phone_df[phone_column].head(5).items():
+                    self.logs.append(f"  - '{phone}'")
+                if len(invalid_phone_df) > 5:
+                    self.logs.append(f"  - その他: {len(invalid_phone_df) - 5}件")
             
             # 携帯番号形式の検証
-            valid_mask = df[phone_column].apply(lambda x: is_mobile_number(str(x)))
-            df_filtered = df[valid_mask]
+            valid_mask = df_with_phone[phone_column].apply(lambda x: is_mobile_number(str(x)))
+            df_filtered = df_with_phone[valid_mask]
         else:
             # 列番号でアクセス（本番用）
             phone_values = df.iloc[:, phone_idx].astype(str)
             
+            # 携帯電話番号が存在しない行を記録
+            no_phone_mask = phone_values == 'nan'
+            if no_phone_mask.sum() > 0:
+                self.logs.append(f"携帯電話番号なしで除外: {no_phone_mask.sum()}件")
+            
             # 携帯電話番号が存在する行のみ
-            not_na_mask = phone_values != 'nan'
-            df = df[not_na_mask]
-            phone_values = phone_values[not_na_mask]
+            not_na_mask = ~no_phone_mask
+            df_with_phone = df[not_na_mask]
+            phone_values_valid = phone_values[not_na_mask]
+            
+            # 携帯番号形式でない番号を記録
+            invalid_mask = ~phone_values_valid.apply(lambda x: is_mobile_number(str(x)))
+            if invalid_mask.sum() > 0:
+                self.logs.append(f"携帯番号形式外で除外: {invalid_mask.sum()}件")
+                # 無効な番号のサンプル（最大5件）
+                invalid_phones = phone_values_valid[invalid_mask]
+                for phone in invalid_phones.head(5):
+                    self.logs.append(f"  - '{phone}'")
+                if len(invalid_phones) > 5:
+                    self.logs.append(f"  - その他: {len(invalid_phones) - 5}件")
             
             # 携帯番号形式の検証
-            valid_mask = phone_values.apply(lambda x: is_mobile_number(str(x)))
-            df_filtered = df[valid_mask]
+            valid_mask = phone_values_valid.apply(lambda x: is_mobile_number(str(x)))
+            df_filtered = df_with_phone[valid_mask]
         
-        self.logs.append(f"携帯電話番号検証後: {len(df_filtered)}件")
+        self.logs.append(f"携帯電話番号検証後: {len(df_filtered)}件 (除外: {original_count - len(df_filtered)}件)")
         return df_filtered
     
     def _generate_output(self, df: pd.DataFrame, payment_deadline_date: date) -> pd.DataFrame:
@@ -428,9 +535,16 @@ class CommonSMSProcessor:
         result['(info2)物件名'] = property_name + room_number.apply(lambda x: f'　{x}' if x and x != 'nan' else '')
         
         # 4. (info3)金額（滞納残債をカンマ区切り）
-        amount_col = df.get('滞納残債', df.get('入金予定金額', pd.Series([0] * len(df))))
-        # 数値に変換してフォーマット
-        result['(info3)金額'] = pd.to_numeric(amount_col, errors='coerce').fillna(0).astype(int).apply(lambda x: f'{x:,}')
+        if '滞納残債' not in df.columns:
+            available_cols = list(df.columns[:20])  # 最初の20列を表示
+            if len(df.columns) > 20:
+                available_cols.append('...')
+            raise ValueError(f"必須列「滞納残債」が見つかりません。利用可能な列: {', '.join(available_cols)}")
+        
+        amount_col = df['滞納残債']
+        # カンマを除去してから数値に変換してフォーマット
+        amount_col_clean = amount_col.astype(str).str.replace(',', '')
+        result['(info3)金額'] = pd.to_numeric(amount_col_clean, errors='coerce').fillna(0).astype(int).apply(lambda x: f'{x:,}')
         
         # 5. (info4)銀行口座（5項目を全角スペースで結合）
         bank_cols = ['回収口座銀行名', '回収口座支店名', '回収口座種類', '回収口座番号', '回収口座名義人']
@@ -489,117 +603,124 @@ class CommonSMSProcessor:
         
         return output_df
     
-    def _create_output_row(self, row: pd.Series) -> List[str]:
-        """出力行の作成（システム別）"""
-        phone_column = self.target_config['phone_column']
-        name_column = self.target_config['name_column'] 
-        kana_column = self.target_config['kana_column']
-        
-        if self.system_type == 'faith':
-            return [
-                str(row.get('契約者ID', '')),
-                format_phone_number(str(row.get(phone_column, ''))),
-                clean_text(str(row.get(name_column, ''))),
-                clean_text(str(row.get('物件名', ''))),
-                clean_text(str(row.get('部屋番号', '')))
-            ]
-        elif self.system_type == 'mirail':
-            return [
-                str(row.get('契約者ID', '')),
-                format_phone_number(str(row.get(phone_column, ''))),
-                clean_text(str(row.get(name_column, ''))),
-                clean_text(str(row.get('物件名', ''))),
-                clean_text(str(row.get('部屋番号', '')))
-            ]
-        else:  # plaza
-            return [
-                str(row.get('顧客管理コード', '')),
-                format_phone_number(str(row.get(phone_column, ''))),
-                clean_text(str(row.get(kana_column, ''))),
-                clean_text(str(row.get('物件所在地１', ''))),
-                clean_text(str(row.get('部屋番号', '')))
-            ]
+    # TODO: 以下の2つの関数は現在使用されていないが、
+    # 将来的な機能拡張やデバッグ時の参考のため残しておく
+    # 実際の処理は _generate_output() で行われている
     
-    def _create_full_output_row(self, row: pd.Series, raw_row: pd.Series, phone_idx: int, payment_deadline_date: date) -> List[str]:
-        """59列の完全な出力行を作成 - 最適化版"""
-        # 事前に59要素のリストを作成（高速）
-        output_row = [''] * 59
-        
-        # 1. 電話番号（列番号から取得）
-        if phone_idx < len(raw_row):
-            output_row[0] = raw_row.iat[phone_idx] if pd.notna(raw_row.iat[phone_idx]) else ''
-        else:
-            # 列名でアクセス（テスト用）
-            phone_val = row.get(self.target_config['phone_column'], '')
-            output_row[0] = phone_val if pd.notna(phone_val) else ''
-        
-        # 2. (info1)契約者名（常に契約者氏名）
-        name_val = row.get('契約者氏名', '')
-        output_row[1] = name_val if pd.notna(name_val) else ''
-        
-        # 3. (info2)物件名（物件名＋全角スペース＋部屋番号）
-        property_name = row.get('物件名', '')
-        property_name = property_name if pd.notna(property_name) else ''
-        room_number = row.get('物件番号', row.get('部屋番号', ''))
-        if pd.notna(room_number) and str(room_number) != 'nan' and room_number:
-            output_row[2] = f"{property_name}　{room_number}"
-        else:
-            output_row[2] = property_name
-        
-        # 4. (info3)金額（滞納残債をカンマ区切り）
-        amount_val = row.get('滞納残債', row.get('入金予定金額', 0))
-        if pd.notna(amount_val):
-            # 数値として処理を試みる
-            if isinstance(amount_val, (int, float)):
-                output_row[3] = f"{int(amount_val):,}"
-            else:
-                # 文字列の場合はクリーニング
-                amount_str = re.sub(r'[^0-9]', '', str(amount_val))
-                if amount_str:
-                    output_row[3] = f"{int(amount_str):,}"
-                else:
-                    output_row[3] = "0"
-        else:
-            output_row[3] = "0"
-        
-        # 5. (info4)銀行口座（5項目を全角スペースで結合）
-        bank_fields = ['回収口座銀行名', '回収口座支店名', '回収口座種類', '回収口座番号', '回収口座名義人']
-        bank_values = []
-        for field in bank_fields:
-            val = row.get(field, '')
-            if pd.notna(val):
-                if field == '回収口座番号':
-                    # 口座番号の特殊処理
-                    val = str(val).replace('="', '').replace('"', '')
-                bank_values.append(str(val))
-            else:
-                bank_values.append('')
-        output_row[4] = '　'.join(bank_values)
-        
-        # 6. (info5)メモ（管理番号）
-        memo_val = row.get('管理番号', row.get('契約者ID', ''))
-        output_row[5] = str(memo_val) if pd.notna(memo_val) else ''
-        
-        # 7-56. 空列（50個）は既に''で初期化済み
-        
-        # 57. 保証人（保証人SMSの場合のみ）
-        if self.target_type == 'guarantor':
-            person_name_field = COLUMN_MAPPINGS[self.target_type].get('person_name_field')
-            if person_name_field:
-                person_val = row.get(person_name_field, '')
-                output_row[56] = str(person_val) if pd.notna(person_val) else ''
-        
-        # 58. 連絡人（緊急連絡人SMSの場合のみ）
-        elif self.target_type == 'emergency':
-            person_name_field = COLUMN_MAPPINGS[self.target_type].get('person_name_field')
-            if person_name_field:
-                person_val = row.get(person_name_field, '')
-                output_row[57] = str(person_val) if pd.notna(person_val) else ''
-        
-        # 59. 支払期限（事前計算済み）
-        output_row[58] = format_payment_deadline(payment_deadline_date)
-        
-        return output_row
+    # def _create_output_row(self, row: pd.Series) -> List[str]:
+    #     """出力行の作成（システム別）"""
+    #     phone_column = self.target_config['phone_column']
+    #     name_column = self.target_config['name_column'] 
+    #     kana_column = self.target_config['kana_column']
+    #     
+    #     if self.system_type == 'faith':
+    #         return [
+    #             str(row.get('契約者ID', '')),
+    #             format_phone_number(str(row.get(phone_column, ''))),
+    #             clean_text(str(row.get(name_column, ''))),
+    #             clean_text(str(row.get('物件名', ''))),
+    #             clean_text(str(row.get('部屋番号', '')))
+    #         ]
+    #     elif self.system_type == 'mirail':
+    #         return [
+    #             str(row.get('契約者ID', '')),
+    #             format_phone_number(str(row.get(phone_column, ''))),
+    #             clean_text(str(row.get(name_column, ''))),
+    #             clean_text(str(row.get('物件名', ''))),
+    #             clean_text(str(row.get('部屋番号', '')))
+    #         ]
+    #     else:  # plaza
+    #         return [
+    #             str(row.get('顧客管理コード', '')),
+    #             format_phone_number(str(row.get(phone_column, ''))),
+    #             clean_text(str(row.get(kana_column, ''))),
+    #             clean_text(str(row.get('物件所在地１', ''))),
+    #             clean_text(str(row.get('部屋番号', '')))
+    #         ]
+    # 
+    # def _create_full_output_row(self, row: pd.Series, raw_row: pd.Series, phone_idx: int, payment_deadline_date: date) -> List[str]:
+    #     """59列の完全な出力行を作成 - 最適化版"""
+    #     # 事前に59要素のリストを作成（高速）
+    #     output_row = [''] * 59
+    #     
+    #     # 1. 電話番号（列番号から取得）
+    #     if phone_idx < len(raw_row):
+    #         output_row[0] = raw_row.iat[phone_idx] if pd.notna(raw_row.iat[phone_idx]) else ''
+    #     else:
+    #         # 列名でアクセス（テスト用）
+    #         phone_val = row.get(self.target_config['phone_column'], '')
+    #         output_row[0] = phone_val if pd.notna(phone_val) else ''
+    #     
+    #     # 2. (info1)契約者名（常に契約者氏名）
+    #     name_val = row.get('契約者氏名', '')
+    #     output_row[1] = name_val if pd.notna(name_val) else ''
+    #     
+    #     # 3. (info2)物件名（物件名＋全角スペース＋部屋番号）
+    #     property_name = row.get('物件名', '')
+    #     property_name = property_name if pd.notna(property_name) else ''
+    #     room_number = row.get('物件番号', row.get('部屋番号', ''))
+    #     if pd.notna(room_number) and str(room_number) != 'nan' and room_number:
+    #         output_row[2] = f"{property_name}　{room_number}"
+    #     else:
+    #         output_row[2] = property_name
+    #     
+    #     # 4. (info3)金額（滞納残債をカンマ区切り）
+    #     if '滞納残債' not in row:
+    #         raise ValueError(f"必須列「滞納残債」が見つかりません。利用可能な列: {', '.join(list(row.keys())[:20])}")
+    #     
+    #     amount_val = row.get('滞納残債', 0)
+    #     if pd.notna(amount_val):
+    #         # 数値として処理を試みる
+    #         if isinstance(amount_val, (int, float)):
+    #             output_row[3] = f"{int(amount_val):,}"
+    #         else:
+    #             # 文字列の場合はクリーニング
+    #             amount_str = re.sub(r'[^0-9]', '', str(amount_val))
+    #             if amount_str:
+    #                 output_row[3] = f"{int(amount_str):,}"
+    #             else:
+    #                 output_row[3] = "0"
+    #     else:
+    #         output_row[3] = "0"
+    #     
+    #     # 5. (info4)銀行口座（5項目を全角スペースで結合）
+    #     bank_fields = ['回収口座銀行名', '回収口座支店名', '回収口座種類', '回収口座番号', '回収口座名義人']
+    #     bank_values = []
+    #     for field in bank_fields:
+    #         val = row.get(field, '')
+    #         if pd.notna(val):
+    #             if field == '回収口座番号':
+    #                 # 口座番号の特殊処理
+    #                 val = str(val).replace('="', '').replace('"', '')
+    #             bank_values.append(str(val))
+    #         else:
+    #             bank_values.append('')
+    #     output_row[4] = '　'.join(bank_values)
+    #     
+    #     # 6. (info5)メモ（管理番号）
+    #     memo_val = row.get('管理番号', row.get('契約者ID', ''))
+    #     output_row[5] = str(memo_val) if pd.notna(memo_val) else ''
+    #     
+    #     # 7-56. 空列（50個）は既に''で初期化済み
+    #     
+    #     # 57. 保証人（保証人SMSの場合のみ）
+    #     if self.target_type == 'guarantor':
+    #         person_name_field = COLUMN_MAPPINGS[self.target_type].get('person_name_field')
+    #         if person_name_field:
+    #             person_val = row.get(person_name_field, '')
+    #             output_row[56] = str(person_val) if pd.notna(person_val) else ''
+    #     
+    #     # 58. 連絡人（緊急連絡人SMSの場合のみ）
+    #     elif self.target_type == 'emergency':
+    #         person_name_field = COLUMN_MAPPINGS[self.target_type].get('person_name_field')
+    #         if person_name_field:
+    #             person_val = row.get(person_name_field, '')
+    #             output_row[57] = str(person_val) if pd.notna(person_val) else ''
+    #     
+    #     # 59. 支払期限（事前計算済み）
+    #     output_row[58] = format_payment_deadline(payment_deadline_date)
+    #     
+    #     return output_row
     
     def _generate_filename(self) -> str:
         """出力ファイル名の生成（MMDDシステム名SMS対象者.csv形式）"""
