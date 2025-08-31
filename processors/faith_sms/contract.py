@@ -73,7 +73,7 @@ def read_csv_auto_encoding(file_content: bytes) -> pd.DataFrame:
     
     raise ValueError("CSVファイルの読み込みに失敗しました。エンコーディングを確認してください。")
 
-def process_faith_sms_vacated_contract_data(file_content: bytes, payment_deadline_date: date) -> Tuple[pd.DataFrame, List[str], str, dict]:
+def process_faith_sms_contract_data(file_content: bytes, payment_deadline_date: date) -> Tuple[pd.DataFrame, List[str], str, dict]:
     """
     フェイスSMS退去済み契約者データ処理（Streamlit対応版）
     

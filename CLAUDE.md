@@ -71,7 +71,7 @@ business-data-processor/
 │   │
 │   ├── faith_sms/                # 📱 フェイスSMS処理
 │   │   ├── __init__.py           # モジュール初期化
-│   │   ├── vacated_contract.py   # 退去済み契約者SMS処理（実装済み）
+│   │   ├── contract.py           # 契約者SMS処理（実装済み）
 │   │   └── standard.py           # 標準版（将来実装予定）
 │   │
 │   └── ark_registration.py       # 📋 アーク新規登録データ変換
@@ -142,7 +142,7 @@ processors/plaza_autocall/
 ### 📱 SMS処理
 ```
 processors/faith_sms/
-├── vacated_contract.py           # 退去済み契約者SMS（実装済み）
+├── contract.py                   # 契約者SMS（実装済み）
 │   📋 フィルタ条件: 入居ステータス(退去済み), 委託先法人ID(1-4), TEL携帯必須
 └── standard.py                   # 標準版（将来実装予定）
 
@@ -296,7 +296,7 @@ from processors.plaza_autocall.guarantor.standard import process_plaza_guarantor
 from processors.plaza_autocall.contact.standard import process_plaza_contact_data
 
 # フェイスSMS（1種類）
-from processors.faith_sms.vacated_contract import process_faith_sms_vacated_contract_data
+from processors.faith_sms.contract import process_faith_sms_contract_data
 
 # その他
 from processors.ark_registration import process_ark_data

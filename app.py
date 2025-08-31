@@ -103,7 +103,7 @@ from processors.plaza_autocall.main.standard import process_plaza_main_data
 from processors.plaza_autocall.guarantor.standard import process_plaza_guarantor_data
 from processors.plaza_autocall.contact.standard import process_plaza_contact_data
 
-from processors.faith_sms.vacated_contract import process_faith_sms_vacated_contract_data
+from processors.faith_sms.contract import process_faith_sms_contract_data
 from processors.plaza_sms.contract import process_plaza_sms_contract_data
 # 共通化されたSMS処理
 from processors.sms_common.factory import (
@@ -1207,7 +1207,7 @@ def show_faith_sms_vacated():
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
                     # 戻り値を一時変数で受け取る
-                    result = process_faith_sms_vacated_contract_data(uploaded_file.read(), payment_deadline_date)
+                    result = process_faith_sms_contract_data(uploaded_file.read(), payment_deadline_date)
                     result_df, logs, filename, stats = result
                     
                 if not result_df.empty:
