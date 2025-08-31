@@ -69,7 +69,18 @@ def display_processing_logs(logs: list, title: str = "📊 処理ログ", expand
     """処理ログの統一表示関数"""
     with st.expander(title, expanded=expanded):
         for log in logs:
-            st.write(f"• {log}")
+            # セパレータ行の特別処理
+            if log.startswith("="):
+                st.markdown(f"**{log}**")
+            # サマリー行の特別処理
+            elif log.startswith("【") and log.endswith("】"):
+                st.markdown(f"**{log}**")
+            # インデントされたサブアイテム
+            elif log.startswith("- "):
+                st.markdown(f"  • {log}")
+            # 通常のログ
+            else:
+                st.markdown(f"• {log}")
 
 
 def display_filter_conditions(conditions: list, title: str = "**フィルタ条件:**"):

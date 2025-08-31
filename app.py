@@ -28,6 +28,7 @@ from components.common_ui import (
 )
 from components.styles import get_custom_css
 from components.sidebar import build_sidebar_menu
+from components.result_display import display_processing_result, display_error_result
 
 # プロセッサーをインポート
 from processors.mirail_autocall.contract.without10k import process_mirail_contract_without10k_data
@@ -193,23 +194,10 @@ def show_mirail_contract_without10k():
                 with st.spinner("処理中..."):
                     result_df, logs, filename = process_mirail_contract_without10k_data(uploaded_file.read())
                     
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        display_processing_logs(logs)
-                    
-                    # データプレビュー
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    # ダウンロード
-                    # filenameは関数から取得済み
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
+                # 共通コンポーネントで結果表示
+                display_processing_result(result_df, logs, filename)
         except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+            display_error_result(f"エラーが発生しました: {str(e)}")
 
 def show_mirail_contract_with10k():
     st.header("ミライル契約者（10,000円を除外しないパターン）")
@@ -232,23 +220,10 @@ def show_mirail_contract_with10k():
                 with st.spinner("処理中..."):
                     result_df, logs, filename = process_mirail_contract_with10k_data(uploaded_file.read())
                     
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        display_processing_logs(logs)
-                    
-                    # データプレビュー
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    # ダウンロード
-                    # filenameは関数から取得済み
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
+                # 共通コンポーネントで結果表示
+                display_processing_result(result_df, logs, filename)
         except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+            display_error_result(f"エラーが発生しました: {str(e)}")
 
 def show_mirail_guarantor_without10k():
     st.header("ミライル保証人（10,000円を除外するパターン）")
@@ -271,21 +246,10 @@ def show_mirail_guarantor_without10k():
                 with st.spinner("処理中..."):
                     result_df, logs, filename = process_mirail_guarantor_without10k_data(uploaded_file.read())
                     
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        display_processing_logs(logs)
-                    
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    # filenameは関数から取得済み
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
+                # 共通コンポーネントで結果表示
+                display_processing_result(result_df, logs, filename)
         except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+            display_error_result(f"エラーが発生しました: {str(e)}")
 
 def show_faith_sms_guarantor():
     st.title("📱 SMS送信用CSV加工")
@@ -340,7 +304,7 @@ def show_faith_sms_guarantor():
                     display_processing_logs(logs, expanded=True)
                     
         except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+            display_error_result(f"エラーが発生しました: {str(e)}")
     
     # フィルタ条件を常時表示（画面下部）
     st.markdown("**フィルタ条件:**")
@@ -396,7 +360,7 @@ def show_faith_sms_emergency_contact():
                     display_processing_logs(logs, expanded=True)
                     
         except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+            display_error_result(f"エラーが発生しました: {str(e)}")
     
     # フィルタ条件を常時表示（画面下部）
     st.markdown("**フィルタ条件:**")
@@ -452,7 +416,7 @@ def show_mirail_sms_guarantor():
                     display_processing_logs(logs, expanded=True)
                     
         except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+            display_error_result(f"エラーが発生しました: {str(e)}")
     
     # フィルタ条件を常時表示（画面下部）
     st.markdown("**フィルタ条件:**")
@@ -508,7 +472,7 @@ def show_mirail_sms_contract():
                     display_processing_logs(logs, expanded=True)
                     
         except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+            display_error_result(f"エラーが発生しました: {str(e)}")
     
     # フィルタ条件を常時表示（画面下部）
     st.markdown("**フィルタ条件:**")
@@ -564,7 +528,7 @@ def show_mirail_sms_emergencycontact():
                     display_processing_logs(logs, expanded=True)
                     
         except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+            display_error_result(f"エラーが発生しました: {str(e)}")
     
     # フィルタ条件を常時表示（画面下部）
     st.markdown("**フィルタ条件:**")
@@ -597,21 +561,10 @@ def show_mirail_guarantor_with10k():
                 with st.spinner("処理中..."):
                     result_df, logs, filename = process_mirail_guarantor_with10k_data(uploaded_file.read())
                     
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        display_processing_logs(logs)
-                    
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    # filenameは関数から取得済み
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
+                # 共通コンポーネントで結果表示
+                display_processing_result(result_df, logs, filename)
         except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+            display_error_result(f"エラーが発生しました: {str(e)}")
 
 def show_mirail_emergency_without10k():
     st.header("ミライル緊急連絡人（10,000円を除外するパターン）")
@@ -634,21 +587,10 @@ def show_mirail_emergency_without10k():
                 with st.spinner("処理中..."):
                     result_df, logs, filename = process_mirail_emergencycontact_without10k_data(uploaded_file.read())
                     
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        display_processing_logs(logs)
-                    
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    # filenameは関数から取得済み
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
+                # 共通コンポーネントで結果表示
+                display_processing_result(result_df, logs, filename)
         except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+            display_error_result(f"エラーが発生しました: {str(e)}")
 
 def show_mirail_emergency_with10k():
     st.header("ミライル緊急連絡人（10,000円を除外しないパターン）")
@@ -671,21 +613,10 @@ def show_mirail_emergency_with10k():
                 with st.spinner("処理中..."):
                     result_df, logs, filename = process_mirail_emergencycontact_with10k_data(uploaded_file.read())
                     
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        display_processing_logs(logs)
-                    
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    # filenameは関数から取得済み
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
+                # 共通コンポーネントで結果表示
+                display_processing_result(result_df, logs, filename)
         except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+            display_error_result(f"エラーが発生しました: {str(e)}")
 
 def show_faith_contract():
     st.header("フェイス契約者用オートコール")
@@ -708,21 +639,10 @@ def show_faith_contract():
                 with st.spinner("処理中..."):
                     result_df, logs, filename = process_faith_contract_data(uploaded_file.read())
                     
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        display_processing_logs(logs)
-                    
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    # filenameは関数から取得済み
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
+                # 共通コンポーネントで結果表示
+                display_processing_result(result_df, logs, filename)
         except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+            display_error_result(f"エラーが発生しました: {str(e)}")
 
 def show_faith_guarantor():
     st.header("フェイス保証人用オートコール")
@@ -745,21 +665,10 @@ def show_faith_guarantor():
                 with st.spinner("処理中..."):
                     result_df, logs, filename = process_faith_guarantor_data(uploaded_file.read())
                     
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        display_processing_logs(logs)
-                    
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    # filenameは関数から取得済み
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
+                # 共通コンポーネントで結果表示
+                display_processing_result(result_df, logs, filename)
         except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+            display_error_result(f"エラーが発生しました: {str(e)}")
 
 def show_faith_emergency():
     st.header("フェイス緊急連絡人用オートコール")
@@ -782,21 +691,10 @@ def show_faith_emergency():
                 with st.spinner("処理中..."):
                     result_df, logs, filename = process_faith_emergencycontact_data(uploaded_file.read())
                     
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        display_processing_logs(logs)
-                    
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    # filenameは関数から取得済み
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
+                # 共通コンポーネントで結果表示
+                display_processing_result(result_df, logs, filename)
         except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+            display_error_result(f"エラーが発生しました: {str(e)}")
 
 def show_plaza_main():
     st.header("プラザ契約者用オートコール")
@@ -820,27 +718,10 @@ def show_plaza_main():
                 with st.spinner("処理中..."):
                     result_df, logs, filename = process_plaza_main_data(file_content)
                     
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        display_processing_logs(logs)
-                    
-                    # ログ表示
-                    if logs:
-                        st.info("処理ログ:")
-                        for log in logs:
-                            st.write(f"• {log}")
-                    
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    # filenameは関数から取得済み
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
+                # 共通コンポーネントで結果表示
+                display_processing_result(result_df, logs, filename)
         except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+            display_error_result(f"エラーが発生しました: {str(e)}")
 
 def show_plaza_guarantor():
     st.header("プラザ保証人用オートコール")
@@ -864,27 +745,10 @@ def show_plaza_guarantor():
                 with st.spinner("処理中..."):
                     result_df, logs, filename = process_plaza_guarantor_data(file_content)
                     
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        display_processing_logs(logs)
-                    
-                    # ログ表示
-                    if logs:
-                        st.info("処理ログ:")
-                        for log in logs:
-                            st.write(f"• {log}")
-                    
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    # filenameは関数から取得済み
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
+                # 共通コンポーネントで結果表示
+                display_processing_result(result_df, logs, filename)
         except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+            display_error_result(f"エラーが発生しました: {str(e)}")
 
 def show_plaza_contact():
     st.header("プラザ緊急連絡人用オートコール")
@@ -908,27 +772,10 @@ def show_plaza_contact():
                 with st.spinner("処理中..."):
                     result_df, logs, filename = process_plaza_contact_data(file_content)
                     
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        display_processing_logs(logs)
-                    
-                    # ログ表示
-                    if logs:
-                        st.info("処理ログ:")
-                        for log in logs:
-                            st.write(f"• {log}")
-                    
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    # filenameは関数から取得済み
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
+                # 共通コンポーネントで結果表示
+                display_processing_result(result_df, logs, filename)
         except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+            display_error_result(f"エラーが発生しました: {str(e)}")
 
 def show_faith_sms_vacated():
     st.title("📱 SMS送信用CSV加工")
@@ -974,7 +821,7 @@ def show_faith_sms_vacated():
                     display_processing_logs(logs, expanded=True)
                     
         except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+            display_error_result(f"エラーが発生しました: {str(e)}")
     
     # フィルタ条件を常時表示（画面下部）
     st.markdown("**フィルタ条件:**")
@@ -1080,7 +927,7 @@ def show_plaza_sms_contract():
                     st.metric("外国人向け", f"{stats.get('foreign_rows', 0):,}件")
                         
         except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+            display_error_result(f"エラーが発生しました: {str(e)}")
     
 
 def show_plaza_sms_guarantor():
@@ -1140,7 +987,7 @@ def show_plaza_sms_guarantor():
                     st.metric("処理後件数", f"{stats.get('processed_rows', 0):,}件")
                         
         except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+            display_error_result(f"エラーが発生しました: {str(e)}")
 
 def show_plaza_sms_contact():
     st.title("📱 SMS送信用CSV加工")
@@ -1199,7 +1046,7 @@ def show_plaza_sms_contact():
                     st.metric("処理後件数", f"{stats.get('processed_rows', 0):,}件")
                         
         except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+            display_error_result(f"エラーが発生しました: {str(e)}")
 
 def show_ark_registration_tokyo():
     st.header("📋 アーク新規登録（東京）")
@@ -1230,30 +1077,14 @@ def show_ark_registration_tokyo():
                 with st.spinner("処理中..."):
                     result_df, logs, stats = process_ark_data(file_contents[0], file_contents[1], region_code=1)
                     
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        display_processing_logs(logs)
-                    
-                    # ログ表示
-                    if logs:
-                        st.info("処理ログ:")
-                        for log in logs:
-                            st.write(f"• {log}")
-                    
-                    # データプレビュー
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    # ダウンロード
-                    timestamp = datetime.now().strftime("%m%d")
-                    filename = f"{timestamp}アーク_新規登録_東京.csv"
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
+                # ダウンロードファイル名を指定
+                timestamp = datetime.now().strftime("%m%d")
+                filename = f"{timestamp}アーク_新規登録_東京.csv"
+                
+                # 共通コンポーネントで結果表示
+                display_processing_result(result_df, logs, filename)
         except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+            display_error_result(f"エラーが発生しました: {str(e)}")
     elif file1 or file2:
         st.warning("2つのCSVファイルをアップロードしてください。")
 
@@ -1285,27 +1116,14 @@ def show_ark_registration_osaka():
                 with st.spinner("処理中..."):
                     result_df, logs, stats = process_ark_data(file_contents[0], file_contents[1], region_code=2)
                     
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        display_processing_logs(logs)
-                    
-                    if logs:
-                        st.info("処理ログ:")
-                        for log in logs:
-                            st.write(f"• {log}")
-                    
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    timestamp = datetime.now().strftime("%m%d")
-                    filename = f"{timestamp}アーク_新規登録_大阪.csv"
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
+                # ダウンロードファイル名を指定
+                timestamp = datetime.now().strftime("%m%d")
+                filename = f"{timestamp}アーク_新規登録_大阪.csv"
+                
+                # 共通コンポーネントで結果表示
+                display_processing_result(result_df, logs, filename)
         except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+            display_error_result(f"エラーが発生しました: {str(e)}")
     elif file1 or file2:
         st.warning("2つのCSVファイルをアップロードしてください。")
 
@@ -1337,27 +1155,14 @@ def show_ark_registration_hokkaido():
                 with st.spinner("処理中..."):
                     result_df, logs, stats = process_ark_data(file_contents[0], file_contents[1], region_code=3)
                     
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        display_processing_logs(logs)
-                    
-                    if logs:
-                        st.info("処理ログ:")
-                        for log in logs:
-                            st.write(f"• {log}")
-                    
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    timestamp = datetime.now().strftime("%m%d")
-                    filename = f"{timestamp}アーク_新規登録_北海道.csv"
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
+                # ダウンロードファイル名を指定
+                timestamp = datetime.now().strftime("%m%d")
+                filename = f"{timestamp}アーク_新規登録_北海道.csv"
+                
+                # 共通コンポーネントで結果表示
+                display_processing_result(result_df, logs, filename)
         except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+            display_error_result(f"エラーが発生しました: {str(e)}")
     elif file1 or file2:
         st.warning("2つのCSVファイルをアップロードしてください。")
 
@@ -1389,27 +1194,14 @@ def show_ark_registration_kitakanto():
                 with st.spinner("処理中..."):
                     result_df, logs, stats = process_ark_data(file_contents[0], file_contents[1], region_code=4)
                     
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    # 処理ログ表示
-                    if logs:
-                        display_processing_logs(logs)
-                    
-                    if logs:
-                        st.info("処理ログ:")
-                        for log in logs:
-                            st.write(f"• {log}")
-                    
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    timestamp = datetime.now().strftime("%m%d")
-                    filename = f"{timestamp}アーク_新規登録_北関東.csv"
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
+                # ダウンロードファイル名を指定
+                timestamp = datetime.now().strftime("%m%d")
+                filename = f"{timestamp}アーク_新規登録_北関東.csv"
+                
+                # 共通コンポーネントで結果表示
+                display_processing_result(result_df, logs, filename)
         except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+            display_error_result(f"エラーが発生しました: {str(e)}")
     elif file1 or file2:
         st.warning("2つのCSVファイルをアップロードしてください。")
 
@@ -1441,25 +1233,10 @@ def show_arktrust_registration_tokyo():
                 with st.spinner("処理中..."):
                     result_df, logs, filename = process_arktrust_data(file_contents[0], file_contents[1])
                     
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    safe_csv_download(result_df, filename)
-                    
-                    # 処理ログ表示
-                    if logs:
-                        display_processing_logs(logs)
-                    
-                    if logs:
-                        st.info("処理ログ:")
-                        for log in logs:
-                            st.write(f"• {log}")
-                    
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
+                # 共通コンポーネントで結果表示
+                display_processing_result(result_df, logs, filename)
         except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+            display_error_result(f"エラーが発生しました: {str(e)}")
     elif file1 or file2:
         st.warning("2つのCSVファイルをアップロードしてください。")
 
@@ -1490,27 +1267,17 @@ def show_capco_registration():
                 with st.spinner("処理中..."):
                     result_df, logs, filename = process_capco_data(file_contents[0], file_contents[1])
                     
-                if not result_df.empty:
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    
-                    # 処理ログ表示
-                    if logs:
-                        with st.expander("📊 処理ログ", expanded=True):
-                            for log in logs:
-                                st.write(f"• {log}")
-                    
-                    # データプレビュー
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    # ダウンロード
+                # ダウンロードファイル名を再設定（関数からのファイル名を使用）
+                if filename:
+                    # 共通コンポーネントで結果表示
+                    display_processing_result(result_df, logs, filename)
+                else:
+                    # ファイル名がない場合はデフォルトを設定
                     timestamp = datetime.now().strftime("%m%d")
                     filename = f"{timestamp}カプコ_新規登録.csv"
-                    safe_csv_download(result_df, filename)
-                else:
-                    st.warning("条件に合致するデータがありませんでした。")
+                    display_processing_result(result_df, logs, filename)
         except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+            display_error_result(f"エラーが発生しました: {str(e)}")
     elif file1 or file2:
         st.warning("2つのCSVファイルをアップロードしてください。")
 
@@ -1545,18 +1312,12 @@ def show_ark_late_payment():
                     
                 if result is not None:
                     result_df, output_filename = result
-                    st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                    
-                    # データプレビュー
-                    st.subheader("処理結果プレビュー")
-                    safe_dataframe_display(result_df.head(10))
-                    
-                    # ダウンロード
-                    safe_csv_download(result_df, output_filename)
+                    # 共通コンポーネントで結果表示
+                    display_processing_result(result_df, [], output_filename)
                 else:
                     st.warning("条件に合致するデータがありませんでした。")
         except Exception as e:
-            st.error(f"エラーが発生しました: {str(e)}")
+            display_error_result(f"エラーが発生しました: {str(e)}")
     elif file1 or file2:
         st.warning("2つのCSVファイルをアップロードしてください。")
 
@@ -1648,7 +1409,7 @@ def show_capco_debt_update():
                     """)
                     
             except Exception as e:
-                st.error(f"エラーが発生しました: {str(e)}")
+                display_error_result(f"エラーが発生しました: {str(e)}")
     elif file1 or file2:
         st.warning("2つのCSVファイルをアップロードしてください。")
     
