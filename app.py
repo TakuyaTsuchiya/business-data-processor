@@ -29,6 +29,7 @@ from components.common_ui import (
 from components.styles import get_custom_css
 from components.sidebar import build_sidebar_menu
 from components.result_display import display_processing_result, display_error_result
+from components.welcome import show_welcome_screen
 
 # プロセッサーをインポート
 from processors.mirail_autocall.contract.without10k import process_mirail_contract_without10k_data
@@ -119,29 +120,7 @@ def main():
     
     # メインコンテンツエリア
     if st.session_state.selected_processor is None:
-        # ウェルカム画面
-        st.markdown("""
-## Welcome to Business Data Processor
-
-#### 📞 オートコール用CSV加工
-- **ミライル用** (6種類): 契約者・保証人・緊急連絡人（10,000円除外あり/なし）
-- **フェイス用** (3種類): 契約者・保証人・緊急連絡人
-- **プラザ用** (3種類): 契約者・保証人・緊急連絡人
-
-#### 📱 SMS送信用CSV加工
-- **ミライル用SMS** (3種類): 契約者・保証人・緊急連絡人
-- **フェイス用SMS** (3種類): 契約者・保証人・緊急連絡人
-- **プラザ用SMS** (3種類): 契約者・保証人・緊急連絡人（開発中）
-
-#### 📋 新規登録用CSV加工
-- アーク新規登録（東京・大阪・北海道・北関東）
-- アークトラスト新規登録（東京）
-- カプコ新規登録
-
-#### 💰 残債の更新用CSV加工
-- アーク残債の更新
-- カプコ残債の更新
-""")
+        show_welcome_screen()
         return
     
     # 各プロセッサーの処理画面
