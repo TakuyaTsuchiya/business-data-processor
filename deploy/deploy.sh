@@ -115,11 +115,17 @@ EOF
 
 # Nginxをリロード（ダウンタイムなし）
 log "Reloading Nginx configuration..."
-if docker exec bdp-nginx nginx -t &>/dev/null; then
+# 検証出力を可視化してトラブルシュートしやすくする
+if docker exec bdp-nginx nginx -t; then
     docker exec bdp-nginx nginx -s reload
     success "Nginx configuration reloaded successfully"
 else
     error "Nginx configuration test failed"
+    echo "----- nginx -t output (bdp-nginx) -----"
+    # 直近のエラーログも表示
+    docker logs --tail=200 bdp-nginx || true
+    echo "----- current upstream.conf -----"
+    cat ../nginx/upstream.conf || true
     # 元の設定に戻す
     cat > ../nginx/upstream.conf << EOF
 upstream app_backend {

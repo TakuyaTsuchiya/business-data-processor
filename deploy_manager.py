@@ -153,8 +153,17 @@ class DeployManager:
         steps = []
         
         if not skip_git_pull:
-            steps.append(("Pulling latest code from Git", 
-                         f"cd {self.config['PROJECT_PATH']} && git pull origin main"))
+            # ローカル変更（例: nginx/upstream.conf の書き換え）で pull が失敗しないように堅牢化
+            # 1) 通常の pull を試し、失敗したら安全なハードリセットで最新化
+            git_update_cmd = (
+                f"cd {self.config['PROJECT_PATH']} && "
+                # 事前に tracked ファイルのローカル変更を破棄したい場合は以下を有効化:
+                # "git restore --staged --worktree nginx/upstream.conf >/dev/null 2>&1; "
+                "git pull --rebase --autostash origin main || "
+                "(echo '[INFO] git pull failed. Falling back to fetch+reset...' && "
+                "git fetch origin main && git reset --hard origin/main)"
+            )
+            steps.append(("Pulling latest code from Git", git_update_cmd))
         
         steps.extend([
             ("Running Blue-Green deployment", 
