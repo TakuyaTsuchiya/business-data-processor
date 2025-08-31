@@ -10,7 +10,7 @@ from datetime import date
 
 from .processor import CommonSMSProcessor
 from ..plaza_sms.contract import process_plaza_sms_contract_data
-from ..faith_sms.vacated_contract import process_faith_sms_vacated_contract_data
+from ..faith_sms.contract import process_faith_sms_contract_data
 
 
 class SMSProcessorFactory:
@@ -42,7 +42,7 @@ class SMSProcessorFactory:
         # フェイス契約者（退去済み）も現時点では既存処理を使用
         # 将来的に共通化可能
         if system == 'faith' and target == 'contract':
-            return process_faith_sms_vacated_contract_data(uploaded_file, payment_deadline)
+            return process_faith_sms_contract_data(uploaded_file, payment_deadline)
         
         # その他7種類は共通プロセッサを使用
         processor = CommonSMSProcessor(system, target, payment_deadline)
