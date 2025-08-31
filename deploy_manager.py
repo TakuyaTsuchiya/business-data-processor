@@ -23,8 +23,9 @@ RESET = '\033[0m'
 class DeployManager:
     def __init__(self):
         self.config_file = Path('.env.deploy')
-        self.ssh_key = Path.home() / '.ssh' / 'vps-deploy-key'
         self.config = self.load_config()
+        # 解決済みのSSH鍵パスを決定
+        self.ssh_key = self.resolve_ssh_key()
         
     def load_config(self):
         """設定ファイルを読み込む"""
@@ -36,6 +37,30 @@ class DeployManager:
                         key, value = line.strip().split('=', 1)
                         config[key] = value
         return config
+
+    def resolve_ssh_key(self) -> Path:
+        """SSH鍵の場所を解決（設定 > 既定 > フォールバック）"""
+        # 1) 設定で明示されていれば最優先
+        if 'SSH_KEY_PATH' in self.config and self.config['SSH_KEY_PATH']:
+            return Path(os.path.expanduser(self.config['SSH_KEY_PATH']))
+
+        # 2) 既定のデプロイ鍵
+        default_key = Path.home() / '.ssh' / 'vps-deploy-key'
+        if default_key.exists():
+            return default_key
+
+        # 3) よくある既存鍵へフォールバック
+        candidates = [
+            Path.home() / '.ssh' / 'id_ed25519',
+            Path.home() / '.ssh' / 'id_rsa',
+        ]
+        for p in candidates:
+            if p.exists():
+                # 見つかった鍵を使用
+                return p
+
+        # 4) 見つからなければ既定のパスを返す（setupで作成させる）
+        return default_key
     
     def save_config(self):
         """設定を保存する"""
