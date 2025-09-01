@@ -52,21 +52,47 @@ def apply_mirail_with10k_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[s
     
     # 📊 フィルタリング条件の適用
     # 1. 委託先法人IDが空白と5（直接管理・特定委託案件のみ対象）
+    before_filter = len(df)
+    # 除外されるデータの詳細を記録
+    excluded_data = df[~(df["委託先法人ID"].isna() | 
+                        (df["委託先法人ID"].astype(str).str.strip() == "") | 
+                        (df["委託先法人ID"].astype(str).str.strip() == "5"))]
+    if len(excluded_data) > 0:
+        excluded_counts = excluded_data['委託先法人ID'].value_counts().to_dict()
+        excluded_counts_str = {str(k): v for k, v in excluded_counts.items()}
+        logs.append(f"委託先法人ID除外詳細: {excluded_counts_str}")
+    
     df = df[df["委託先法人ID"].isna() | 
            (df["委託先法人ID"].astype(str).str.strip() == "") | 
            (df["委託先法人ID"].astype(str).str.strip() == "5")]
-    logs.append(f"委託先法人ID（空白と5）フィルタ後: {len(df)}件")
+    logs.append(f"委託先法人ID（空白と5）フィルタ後: {len(df)}件 (除外: {before_filter - len(df)}件)")
     
     # 2. 入金予定日のフィルタリング（前日以前またはNaN：当日は除外）
     today = pd.Timestamp.now().normalize()
     df["入金予定日"] = pd.to_datetime(df["入金予定日"], errors='coerce')
+    before_filter = len(df)
+    # 除外されるデータの詳細を記録
+    excluded_data = df[~(df["入金予定日"].isna() | (df["入金予定日"] < today))]
+    if len(excluded_data) > 0:
+        excluded_dates = excluded_data['入金予定日'].dt.strftime('%Y/%m/%d').value_counts().head(10).to_dict()
+        logs.append(f"入金予定日除外詳細（上位10件）: {excluded_dates}")
+        if len(excluded_data) > 10:
+            logs.append(f"  ※他{len(excluded_data) - 10}件の日付も除外")
+    
     df = df[df["入金予定日"].isna() | (df["入金予定日"] < today)]
-    logs.append(f"入金予定日フィルタ後: {len(df)}件")
+    logs.append(f"入金予定日フィルタ後: {len(df)}件 (除外: {before_filter - len(df)}件)")
     
     # 3. 回収ランクのフィルタリング（弁護士介入案件は除外）
     exclude_ranks = ["弁護士介入"]
+    before_filter = len(df)
+    # 除外されるデータの詳細を記録
+    excluded_data = df[df["回収ランク"].isin(exclude_ranks)]
+    if len(excluded_data) > 0:
+        excluded_ranks_data = excluded_data['回収ランク'].value_counts().to_dict()
+        logs.append(f"回収ランク除外詳細: {excluded_ranks_data}")
+    
     df = df[~df["回収ランク"].isin(exclude_ranks)]
-    logs.append(f"回収ランクフィルタ後: {len(df)}件")
+    logs.append(f"回収ランクフィルタ後: {len(df)}件 (除外: {before_filter - len(df)}件)")
     
     # 4. 残債のフィルタリング（with10k版では除外なし - 全件処理）
     # ※ without10k版では残債10,000円・11,000円を除外するが、with10k版は全件処理
@@ -74,17 +100,35 @@ def apply_mirail_with10k_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[s
     logs.append("クライアントCDフィルタ: 除外なし（契約者版は全クライアント対象）")
     
     # 5. TEL携帯のフィルタリング（契約者電話番号が必須）
+    before_filter = len(df)
+    # 除外されるデータの詳細を記録
+    excluded_data = df[~(df["TEL携帯"].notna() &
+                        (~df["TEL携帯"].astype(str).str.strip().isin(["", "nan", "NaN"])))]
+    if len(excluded_data) > 0:
+        tel_data = excluded_data['TEL携帯'].astype(str).str.strip()
+        empty_count = tel_data[tel_data.isin(['', 'nan', 'NaN'])].count()
+        fixed_phone_count = len(excluded_data) - empty_count
+        logs.append(f"携帯電話除外詳細: {{空白/NaN: {empty_count}件, 固定電話等: {fixed_phone_count}件}}")
+    
     df = df[
         df["TEL携帯"].notna() &
         (~df["TEL携帯"].astype(str).str.strip().isin(["", "nan", "NaN"]))
     ]
-    logs.append(f"TEL携帯フィルタ後: {len(df)}件")
+    logs.append(f"TEL携帯フィルタ後: {len(df)}件 (除外: {before_filter - len(df)}件)")
     
     # 6. 入金予定金額のフィルタリング（手数料関連の2,3,5,12円を除外）
     exclude_amounts = [2, 3, 5, 12]
     df["入金予定金額"] = pd.to_numeric(df["入金予定金額"], errors='coerce')
+    before_filter = len(df)
+    # 除外されるデータの詳細を記録
+    excluded_data = df[df["入金予定金額"].isin(exclude_amounts)]
+    if len(excluded_data) > 0:
+        excluded_amounts_data = excluded_data['入金予定金額'].value_counts().to_dict()
+        excluded_amounts_str = {f"{int(k)}円": v for k, v in excluded_amounts_data.items() if pd.notna(k)}
+        logs.append(f"除外金額詳細: {excluded_amounts_str}")
+    
     df = df[~df["入金予定金額"].isin(exclude_amounts)]
-    logs.append(f"入金予定金額フィルタ後: {len(df)}件")
+    logs.append(f"入金予定金額フィルタ後: {len(df)}件 (除外: {before_filter - len(df)}件)")
     
     return df, logs
 
