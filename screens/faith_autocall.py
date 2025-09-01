@@ -11,9 +11,11 @@ Business Data Processor
 import streamlit as st
 from components.common_ui import display_filter_conditions
 from components.result_display import display_processing_result, display_error_result
-from processors.faith_autocall.contract.standard import process_faith_contract_data
-from processors.faith_autocall.guarantor.standard import process_faith_guarantor_data
-from processors.faith_autocall.emergency_contact.standard import process_faith_emergencycontact_data
+from services.autocall import (
+    process_faith_contract_data,
+    process_faith_guarantor_data,
+    process_faith_emergencycontact_data
+)
 
 
 def show_faith_contract():

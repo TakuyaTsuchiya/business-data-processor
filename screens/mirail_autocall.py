@@ -11,12 +11,14 @@ Business Data Processor
 import streamlit as st
 from components.common_ui import display_filter_conditions
 from components.result_display import display_processing_result, display_error_result
-from processors.mirail_autocall.contract.without10k import process_mirail_contract_without10k_data
-from processors.mirail_autocall.contract.with10k import process_mirail_contract_with10k_data
-from processors.mirail_autocall.guarantor.without10k import process_mirail_guarantor_without10k_data
-from processors.mirail_autocall.guarantor.with10k import process_mirail_guarantor_with10k_data
-from processors.mirail_autocall.emergency_contact.without10k import process_mirail_emergencycontact_without10k_data
-from processors.mirail_autocall.emergency_contact.with10k import process_mirail_emergencycontact_with10k_data
+from services.autocall import process_mirail_contract_without10k_data
+from services.autocall import (
+    process_mirail_contract_with10k_data,
+    process_mirail_guarantor_without10k_data,
+    process_mirail_guarantor_with10k_data,
+    process_mirail_emergencycontact_without10k_data,
+    process_mirail_emergencycontact_with10k_data
+)
 
 
 def show_mirail_contract_without10k():

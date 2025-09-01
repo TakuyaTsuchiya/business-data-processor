@@ -11,9 +11,11 @@ Business Data Processor
 import streamlit as st
 from components.common_ui import display_filter_conditions
 from components.result_display import display_processing_result, display_error_result
-from processors.plaza_autocall.main.standard import process_plaza_main_data
-from processors.plaza_autocall.guarantor.standard import process_plaza_guarantor_data
-from processors.plaza_autocall.contact.standard import process_plaza_contact_data
+from services.autocall import (
+    process_plaza_main_data,
+    process_plaza_guarantor_data,
+    process_plaza_contact_data
+)
 
 
 def show_plaza_main():
