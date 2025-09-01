@@ -8,7 +8,7 @@ Business Data Processor
 
 import streamlit as st
 from components.result_display import display_processing_result, display_error_result
-from processors.ark_registration import process_arktrust_data
+from services.registration import process_arktrust_data
 
 
 def show_arktrust_registration_tokyo():

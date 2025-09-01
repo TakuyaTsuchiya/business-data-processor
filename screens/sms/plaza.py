@@ -18,9 +18,11 @@ from components.common_ui import (
     display_filter_conditions
 )
 from components.result_display import display_error_result
-from processors.plaza_sms.contract import process_plaza_sms_contract_data
-from processors.plaza_sms.guarantor import process_plaza_sms_guarantor_data
-from processors.plaza_sms.contact import process_plaza_sms_contact_data
+from services.sms import (
+    process_plaza_sms_contract_data,
+    process_plaza_sms_guarantor_data,
+    process_plaza_sms_contact_data
+)
 
 
 def show_plaza_sms_contract():

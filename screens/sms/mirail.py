@@ -15,9 +15,11 @@ from components.common_ui import (
     display_processing_logs
 )
 from components.result_display import display_error_result
-from processors.mirail_sms.contract import process_mirail_sms_contract_data
-from processors.mirail_sms.guarantor import process_mirail_sms_guarantor_data
-from processors.mirail_sms.emergency_contact import process_mirail_sms_emergency_contact_data
+from services.sms import (
+    process_mirail_sms_contract_data,
+    process_mirail_sms_guarantor_data,
+    process_mirail_sms_emergency_contract_data
+)
 
 
 def show_mirail_sms_contract():

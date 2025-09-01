@@ -7,7 +7,7 @@ Business Data Processor
 
 import streamlit as st
 from components.result_display import display_processing_result, display_error_result
-from processors.ark_late_payment_update import process_ark_late_payment_data
+from services.debt_update import process_ark_late_payment_data
 
 
 def show_ark_late_payment():

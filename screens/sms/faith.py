@@ -15,9 +15,11 @@ from components.common_ui import (
     display_processing_logs
 )
 from components.result_display import display_error_result
-from processors.faith_sms.contract import process_faith_sms_contract_data
-from processors.faith_sms.guarantor import process_faith_sms_guarantor_data
-from processors.faith_sms.emergency_contact import process_faith_sms_emergency_contact_data
+from services.sms import (
+    process_faith_sms_contract_data,
+    process_faith_sms_guarantor_data,
+    process_faith_sms_emergency_contact_data
+)
 
 
 def show_faith_sms_vacated():

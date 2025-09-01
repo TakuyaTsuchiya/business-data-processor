@@ -9,7 +9,7 @@ import streamlit as st
 import time
 from components.common_ui import safe_csv_download
 from components.result_display import display_error_result
-from processors.capco_debt_update import process_capco_debt_update
+from services.debt_update import process_capco_debt_update
 
 
 def show_capco_debt_update():

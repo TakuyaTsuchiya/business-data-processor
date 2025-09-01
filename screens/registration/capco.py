@@ -8,7 +8,7 @@ Business Data Processor
 import streamlit as st
 from datetime import datetime
 from components.result_display import display_processing_result, display_error_result
-from processors.capco_registration import process_capco_data
+from services.registration import process_capco_data
 
 
 def show_capco_registration():
