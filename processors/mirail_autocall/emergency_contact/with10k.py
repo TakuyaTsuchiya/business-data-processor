@@ -153,7 +153,7 @@ def apply_mirail_emergencycontact_with10k_filters(df: pd.DataFrame) -> Tuple[pd.
             tel_data = excluded_data['緊急連絡人１のTEL（携帯）'].astype(str).str.strip()
             empty_count = tel_data[tel_data.isin(['', 'nan', 'NaN'])].count()
             fixed_phone_count = len(excluded_data) - empty_count
-            logs.append(f"緊急連絡人電話除外詳細: {空白/NaN: {empty_count}件, 固定電話等: {fixed_phone_count}件}")
+            logs.append(f"緊急連絡人電話除外詳細: {{空白/NaN: {empty_count}件, 固定電話等: {fixed_phone_count}件}}")
         
         df = df[
             df["緊急連絡人１のTEL（携帯）"].notna() &
