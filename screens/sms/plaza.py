@@ -19,10 +19,8 @@ from components.common_ui import (
 )
 from components.result_display import display_error_result
 from processors.plaza_sms.contract import process_plaza_sms_contract_data
-from processors.sms_common.factory import (
-    process_plaza_guarantor_sms,
-    process_plaza_emergency_sms
-)
+from processors.plaza_sms.guarantor import process_plaza_sms_guarantor_data
+from processors.plaza_sms.contact import process_plaza_sms_contact_data
 
 
 def show_plaza_sms_contract():
@@ -156,7 +154,7 @@ def show_plaza_sms_guarantor():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, logs, output_filename, stats = process_plaza_guarantor_sms(
+                    result_df, logs, output_filename, stats = process_plaza_sms_guarantor_data(
                         file_content, payment_deadline
                     )
                     
@@ -216,7 +214,7 @@ def show_plaza_sms_contact():
             
             if st.button("処理を実行", type="primary"):
                 with st.spinner("処理中..."):
-                    result_df, logs, output_filename, stats = process_plaza_emergency_sms(
+                    result_df, logs, output_filename, stats = process_plaza_sms_contact_data(
                         file_content, payment_deadline
                     )
                     
