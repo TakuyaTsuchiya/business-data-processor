@@ -72,7 +72,7 @@ def read_csv_auto_encoding(file_content: bytes) -> pd.DataFrame:
     
     raise ValueError("CSVファイルの読み込みに失敗しました。エンコーディングを確認してください。")
 
-def process_mirail_sms_emergencycontact_data(file_content: bytes, payment_deadline_date: date) -> Tuple[pd.DataFrame, List[str], str, dict]:
+def process_mirail_sms_emergency_contact_data(file_content: bytes, payment_deadline_date: date) -> Tuple[pd.DataFrame, List[str], str, dict]:
     """
     ミライルSMS連絡人データ処理（Streamlit対応版）
     

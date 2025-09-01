@@ -133,7 +133,7 @@ class CommonSMSProcessor:
             'faith': {
                 'client_ids': [1, 2, 3, 4],
                 'exclude_amounts': [],
-                'date_filter': None,
+                'date_filter': 'before_today',
                 'output_prefix': 'フェイス',
                 'output_columns': [
                     '顧客番号',
@@ -146,7 +146,7 @@ class CommonSMSProcessor:
             'mirail': {
                 'client_ids': ['', '5'],  # 空白と5
                 'exclude_amounts': [],
-                'date_filter': None,
+                'date_filter': 'before_today',
                 'output_prefix': 'ミライル',
                 'output_columns': [
                     '顧客管理番号',
