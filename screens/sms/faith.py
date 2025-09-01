@@ -16,10 +16,8 @@ from components.common_ui import (
 )
 from components.result_display import display_error_result
 from processors.faith_sms.contract import process_faith_sms_contract_data
-from processors.sms_common.factory import (
-    process_faith_guarantor_sms,
-    process_faith_emergency_sms
-)
+from processors.faith_sms.guarantor import process_faith_sms_guarantor_data
+from processors.faith_sms.emergency_contact import process_faith_sms_emergency_contact_data
 
 
 def show_faith_sms_vacated():
@@ -104,7 +102,7 @@ def show_faith_sms_guarantor():
             if st.button("処理を実行", type="primary", key="faith_sms_guarantor_process"):
                 with st.spinner("処理中..."):
                     # 戻り値を一時変数で受け取る
-                    result = process_faith_guarantor_sms(uploaded_file.read(), payment_deadline_date)
+                    result = process_faith_sms_guarantor_data(uploaded_file.read(), payment_deadline_date)
                     result_df, logs, filename, stats = result
                     
                 if not result_df.empty:
@@ -170,7 +168,7 @@ def show_faith_sms_emergency_contact():
             if st.button("処理を実行", type="primary", key="faith_sms_emergency_contact_process"):
                 with st.spinner("処理中..."):
                     # 戻り値を一時変数で受け取る
-                    result = process_faith_emergency_sms(uploaded_file.read(), payment_deadline_date)
+                    result = process_faith_sms_emergency_contact_data(uploaded_file.read(), payment_deadline_date)
                     result_df, logs, filename, stats = result
                     
                 if not result_df.empty:

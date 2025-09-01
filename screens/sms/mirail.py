@@ -15,11 +15,9 @@ from components.common_ui import (
     display_processing_logs
 )
 from components.result_display import display_error_result
-from processors.sms_common.factory import (
-    process_mirail_contract_sms,
-    process_mirail_guarantor_sms,
-    process_mirail_emergency_sms
-)
+from processors.mirail_sms.contract import process_mirail_sms_contract_data
+from processors.mirail_sms.guarantor import process_mirail_sms_guarantor_data
+from processors.mirail_sms.emergency_contact import process_mirail_sms_emergency_contact_data
 
 
 def show_mirail_sms_contract():
@@ -47,7 +45,7 @@ def show_mirail_sms_contract():
             if st.button("処理を実行", type="primary", key="mirail_sms_contract_process"):
                 with st.spinner("処理中..."):
                     # 戻り値を一時変数で受け取る
-                    result = process_mirail_contract_sms(uploaded_file.read(), payment_deadline_date)
+                    result = process_mirail_sms_contract_data(uploaded_file.read(), payment_deadline_date)
                     result_df, logs, filename, stats = result
                     
                 if not result_df.empty:
@@ -104,7 +102,7 @@ def show_mirail_sms_guarantor():
             if st.button("処理を実行", type="primary", key="mirail_sms_guarantor_process"):
                 with st.spinner("処理中..."):
                     # 戻り値を一時変数で受け取る
-                    result = process_mirail_guarantor_sms(uploaded_file.read(), payment_deadline_date)
+                    result = process_mirail_sms_guarantor_data(uploaded_file.read(), payment_deadline_date)
                     result_df, logs, filename, stats = result
                     
                 if not result_df.empty:
@@ -161,7 +159,7 @@ def show_mirail_sms_emergencycontact():
             if st.button("処理を実行", type="primary", key="mirail_sms_emergencycontact_process"):
                 with st.spinner("処理中..."):
                     # 戻り値を一時変数で受け取る
-                    result = process_mirail_emergency_sms(uploaded_file.read(), payment_deadline_date)
+                    result = process_mirail_sms_emergency_contact_data(uploaded_file.read(), payment_deadline_date)
                     result_df, logs, filename, stats = result
                     
                 if not result_df.empty:
