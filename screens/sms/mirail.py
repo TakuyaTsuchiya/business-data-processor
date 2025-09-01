@@ -18,7 +18,7 @@ from components.result_display import display_error_result
 from services.sms import (
     process_mirail_sms_contract_data,
     process_mirail_sms_guarantor_data,
-    process_mirail_sms_emergency_contract_data
+    process_mirail_sms_emergency_contact_data
 )
 
 
