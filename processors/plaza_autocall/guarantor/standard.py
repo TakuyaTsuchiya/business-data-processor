@@ -35,10 +35,10 @@ def apply_plaza_guarantor_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[
     """
     プラザ保証人フィルタリング処理（ミライルwith10kベース + プラザ固有条件）
     
-    フィルタリング条件:
+    📋 フィルタリング条件:
     - 委託先法人ID: 6のみ（プラザ固有）
     - 入金予定日: 前日以前またはNaN（当日は除外、プラザ固有）
-    - 回収ランク: 弁護士介入を除外
+    - 回収ランク: 督促停止、弁護士介入を除外
     - 残債: フィルタなし（10,000円・11,000円も含む全件処理）
     - TEL携帯.1: 空でない値のみ（保証人電話番号）
     - 入金予定金額: 2,3,5,12円を除外（手数料関連）
@@ -47,20 +47,45 @@ def apply_plaza_guarantor_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[
     original_count = len(df)
     logs.append(f"元データ件数: {original_count}件")
     
+    # 📊 フィルタリング条件の適用
     # 1. 委託先法人IDが6のみ（プラザ固有）
+    before_filter = len(df)
+    # 除外されるデータの詳細を記録
+    excluded_data = df[df["委託先法人ID"].astype(str).str.strip() != "6"]
+    if len(excluded_data) > 0:
+        excluded_counts = excluded_data['委託先法人ID'].value_counts().to_dict()
+        excluded_counts_str = {str(k): v for k, v in excluded_counts.items()}
+        logs.append(f"委託先法人ID除外詳細: {excluded_counts_str}")
+    
     df = df[df["委託先法人ID"].astype(str).str.strip() == "6"]
-    logs.append(f"委託先法人ID（6のみ）フィルタ後: {len(df)}件")
+    logs.append(f"委託先法人ID（6のみ）フィルタ後: {len(df)}件 (除外: {before_filter - len(df)}件)")
     
     # 2. 入金予定日のフィルタリング（前日以前またはNaN：当日は除外）
     today = pd.Timestamp.now().normalize()
     df["入金予定日"] = pd.to_datetime(df["入金予定日"], errors='coerce')
+    before_filter = len(df)
+    # 除外されるデータの詳細を記録
+    excluded_data = df[~(df["入金予定日"].isna() | (df["入金予定日"] < today))]
+    if len(excluded_data) > 0:
+        excluded_dates = excluded_data['入金予定日'].dt.strftime('%Y/%m/%d').value_counts().head(10).to_dict()
+        logs.append(f"入金予定日除外詳細（上位10件）: {excluded_dates}")
+        if len(excluded_data) > 10:
+            logs.append(f"  ※他{len(excluded_data) - 10}件の日付も除外")
+    
     df = df[df["入金予定日"].isna() | (df["入金予定日"] < today)]
-    logs.append(f"入金予定日フィルタ後: {len(df)}件")
+    logs.append(f"入金予定日フィルタ後: {len(df)}件 (除外: {before_filter - len(df)}件)")
     
     # 3. 回収ランクのフィルタリング（督促停止・弁護士介入案件は除外）
     exclude_ranks = ["督促停止", "弁護士介入"]
+    before_filter = len(df)
+    # 除外されるデータの詳細を記録
+    excluded_data = df[df["回収ランク"].isin(exclude_ranks)]
+    if len(excluded_data) > 0:
+        excluded_ranks_data = excluded_data['回収ランク'].value_counts().to_dict()
+        logs.append(f"回収ランク除外詳細: {excluded_ranks_data}")
+    
     df = df[~df["回収ランク"].isin(exclude_ranks)]
-    logs.append(f"回収ランクフィルタ後: {len(df)}件")
+    logs.append(f"回収ランクフィルタ後: {len(df)}件 (除外: {before_filter - len(df)}件)")
     
     # 4. 残債・クライアントCDのフィルタリング（with10k版では除外なし - 全件処理）
     logs.append("残債フィルタ: 除外なし（with10k版：10,000円・11,000円も含む全件処理）")
@@ -69,15 +94,33 @@ def apply_plaza_guarantor_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[
     # 5. 入金予定金額のフィルタリング（2,3,5,12を除外）
     exclude_amounts = [2, 3, 5, 12]
     df["入金予定金額"] = pd.to_numeric(df["入金予定金額"], errors='coerce')
+    before_filter = len(df)
+    # 除外されるデータの詳細を記録
+    excluded_data = df[df["入金予定金額"].isin(exclude_amounts)]
+    if len(excluded_data) > 0:
+        excluded_amounts_data = excluded_data['入金予定金額'].value_counts().to_dict()
+        excluded_amounts_str = {f"{int(k)}円": v for k, v in excluded_amounts_data.items() if pd.notna(k)}
+        logs.append(f"除外金額詳細: {excluded_amounts_str}")
+    
     df = df[df["入金予定金額"].isna() | ~df["入金予定金額"].isin(exclude_amounts)]
-    logs.append(f"入金予定金額フィルタ後: {len(df)}件")
+    logs.append(f"入金予定金額フィルタ後: {len(df)}件 (除外: {before_filter - len(df)}件)")
     
     # 6. TEL携帯.1のフィルタリング（保証人電話番号が必須）
+    before_filter = len(df)
+    # 除外されるデータの詳細を記録
+    excluded_data = df[~(df["TEL携帯.1"].notna() &
+                        (~df["TEL携帯.1"].astype(str).str.strip().isin(["", "nan", "NaN"])))]
+    if len(excluded_data) > 0:
+        tel_data = excluded_data['TEL携帯.1'].astype(str).str.strip()
+        empty_count = tel_data[tel_data.isin(['', 'nan', 'NaN'])].count()
+        fixed_phone_count = len(excluded_data) - empty_count
+        logs.append(f"保証人電話除外詳細: {{空白/NaN: {empty_count}件, 固定電話等: {fixed_phone_count}件}}")
+    
     df = df[
         df["TEL携帯.1"].notna() &
         (~df["TEL携帯.1"].astype(str).str.strip().isin(["", "nan", "NaN"]))
     ]
-    logs.append(f"TEL携帯.1フィルタ後: {len(df)}件")
+    logs.append(f"TEL携帯.1フィルタ後: {len(df)}件 (除外: {before_filter - len(df)}件)")
     
     return df, logs
 
