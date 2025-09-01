@@ -80,7 +80,7 @@ def show_faith_emergency():
         "回収ランク → 「死亡決定」「破産決定」「弁護士介入」除外",
         "入金予定金額 → 2,3,5,12除外",
         "滞納残債フィルタ → なし（全件処理）",
-        "「TEL携帯.2」 → 空でない値のみ"
+        "「緊急連絡人１のTEL（携帯）」 → 空でない値のみ"
     ])
     
     uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type="csv", key="faith_emergency_file")
