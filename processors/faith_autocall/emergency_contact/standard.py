@@ -15,6 +15,7 @@ processors_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath
 if processors_dir not in sys.path:
     sys.path.append(processors_dir)
 from autocall_common import AUTOCALL_OUTPUT_COLUMNS
+from domain.rules.business_rules import CLIENT_IDS, EXCLUDE_AMOUNTS
 
 
 def read_csv_auto_encoding(file_content: bytes) -> pd.DataFrame:
@@ -39,7 +40,7 @@ def apply_faith_emergencycontact_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame
     # フィルタリング条件
     # 1. 委託先法人IDのフィルタリング（1,2,3,4のみ）
     df["委託先法人ID"] = pd.to_numeric(df["委託先法人ID"], errors="coerce")
-    df = df[df["委託先法人ID"].isin([1, 2, 3, 4])]
+    df = df[df["委託先法人ID"].isin(CLIENT_IDS['faith'])]
     logs.append(f"委託先法人IDフィルタ後: {len(df)}件")
     
     # 2. 入金予定日のフィルタリング（前日以前またはNaN）
@@ -50,7 +51,7 @@ def apply_faith_emergencycontact_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame
     
     # 3. 入金予定金額のフィルタリング（2,3,5を除外）
     df["入金予定金額"] = pd.to_numeric(df["入金予定金額"], errors='coerce')
-    df = df[df["入金予定金額"].isna() | ~df["入金予定金額"].isin([2, 3, 5])]
+    df = df[df["入金予定金額"].isna() | ~df["入金予定金額"].isin(EXCLUDE_AMOUNTS['faith'])]
     logs.append(f"入金予定金額フィルタ後: {len(df)}件")
     
     # 4. 回収ランクのフィルタリング（死亡決定、破産決定、弁護士介入を除外）

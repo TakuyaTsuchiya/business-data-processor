@@ -16,6 +16,7 @@ import os
 from .config import SMSConfig
 from .validators import validate_phone_number, is_mobile_number
 from .utils import format_phone_number, clean_text, generate_output_filename
+from domain.rules.business_rules import CLIENT_IDS, EXCLUDE_AMOUNTS
 
 
 # 列番号マッピング（0ベースインデックス）
@@ -131,7 +132,7 @@ class CommonSMSProcessor:
         """システム別の設定を取得"""
         configs = {
             'faith': {
-                'client_ids': [1, 2, 3, 4],
+                'client_ids': CLIENT_IDS['faith'],
                 'exclude_amounts': [],
                 'date_filter': 'before_today',
                 'output_prefix': 'フェイス',
@@ -144,7 +145,7 @@ class CommonSMSProcessor:
                 ]
             },
             'mirail': {
-                'client_ids': ['', '5'],  # 空白と5
+                'client_ids': CLIENT_IDS['mirail'],
                 'exclude_amounts': [],
                 'date_filter': 'before_today',
                 'output_prefix': 'ミライル',
@@ -157,8 +158,8 @@ class CommonSMSProcessor:
                 ]
             },
             'plaza': {
-                'client_ids': [6],
-                'exclude_amounts': [2, 3, 5, 12],
+                'client_ids': CLIENT_IDS['plaza'],
+                'exclude_amounts': EXCLUDE_AMOUNTS['plaza'],
                 'date_filter': 'before_today',  # 前日以前
                 'output_prefix': 'プラザ',
                 'output_columns': [

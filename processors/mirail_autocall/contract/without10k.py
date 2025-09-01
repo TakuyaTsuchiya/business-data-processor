@@ -15,6 +15,7 @@ processors_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath
 if processors_dir not in sys.path:
     sys.path.append(processors_dir)
 from autocall_common import AUTOCALL_OUTPUT_COLUMNS
+from domain.rules.business_rules import MIRAIL_DEBT_EXCLUDE
 
 
 class MirailConfig:
@@ -25,7 +26,7 @@ class MirailConfig:
         "委託先法人ID": "空白と5",
         "入金予定日": "前日以前またはNaN",
         "回収ランク_not_in": ["弁護士介入"],
-        "滞納残債_not_in": [10000, 11000],
+        "滞納残債_not_in": MIRAIL_DEBT_EXCLUDE,
         "TEL携帯": "空でない値のみ",
         "入金予定金額_not_in": [2, 3, 5, 12]
     }

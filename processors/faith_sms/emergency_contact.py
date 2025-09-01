@@ -4,6 +4,7 @@ import re
 import os
 from datetime import datetime, date
 from typing import Tuple, List
+from domain.rules.business_rules import CLIENT_IDS, EXCLUDE_AMOUNTS
 
 def format_payment_deadline(date_input: date) -> str:
     """
@@ -95,7 +96,7 @@ def process_faith_sms_emergency_contact_data(file_content: bytes, payment_deadli
         logs.append(f"元データ読み込み: {initial_rows}件")
         
         # Filter 1: 委託先法人ID (Keep only 1, 2, 3, 4)
-        trustee_ids_to_keep = [1, 2, 3, 4]
+        trustee_ids_to_keep = CLIENT_IDS['faith']
         df['委託先法人ID'] = pd.to_numeric(df['委託先法人ID'], errors='coerce').fillna(-1).astype(int)
         
         # 除外データの詳細を記録
@@ -121,8 +122,8 @@ def process_faith_sms_emergency_contact_data(file_content: bytes, payment_deadli
         logs.append(f"フィルター2 - 入金予定日(前日以前+空白): {len(df)}件")
         
         # Filter 3: 入金予定金額 (Exclude specific amounts: 2, 3, 5 as numeric or string values)
-        payment_amount_exclude_numeric = [2, 3, 5]
-        payment_amount_exclude_string = ["2", "3", "5"]
+        payment_amount_exclude_numeric = EXCLUDE_AMOUNTS['faith']
+        payment_amount_exclude_string = [str(x) for x in EXCLUDE_AMOUNTS['faith']]
         df['入金予定金額_numeric'] = pd.to_numeric(df['入金予定金額'], errors='coerce')
         df['入金予定金額_string'] = df['入金予定金額'].astype(str)
         
