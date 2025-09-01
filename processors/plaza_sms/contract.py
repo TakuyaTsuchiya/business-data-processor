@@ -28,7 +28,7 @@ def load_faith_sms_template_headers() -> List[str]:
     # 新しい共通テンプレート → 旧フェイス専用テンプレートの順で検索
     candidate_filenames = [
         'sms_template_headers.txt',
-        'faith_sms_template_headers.txt',
+        'sms_template_headers.txt',
     ]
 
     # 複数のパス候補を試行

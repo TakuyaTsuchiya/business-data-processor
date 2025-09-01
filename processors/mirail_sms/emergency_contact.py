@@ -28,10 +28,10 @@ def load_faith_sms_template_headers() -> List[str]:
     
     # パス候補リスト
     template_paths = [
-        os.path.join(current_dir, '..', '..', 'templates', 'faith_sms_template_headers.txt'),  # 相対パス
-        os.path.abspath(os.path.join(current_dir, '..', '..', 'templates', 'faith_sms_template_headers.txt')),  # 絶対パス
-        'templates/faith_sms_template_headers.txt',  # カレントディレクトリから
-        './templates/faith_sms_template_headers.txt',  # カレントディレクトリから
+        os.path.join(current_dir, '..', '..', 'templates', 'sms_template_headers.txt'),  # 相対パス
+        os.path.abspath(os.path.join(current_dir, '..', '..', 'templates', 'sms_template_headers.txt')),  # 絶対パス
+        'templates/sms_template_headers.txt',  # カレントディレクトリから
+        './templates/sms_template_headers.txt',  # カレントディレクトリから
     ]
     
     # 各パスを試行

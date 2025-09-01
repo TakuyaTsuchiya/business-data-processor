@@ -27,7 +27,7 @@ def load_faith_sms_template_headers() -> List[str]:
 
     candidate_filenames = [
         'sms_template_headers.txt',
-        'faith_sms_template_headers.txt',
+        'sms_template_headers.txt',
     ]
 
     template_paths: List[str] = []
