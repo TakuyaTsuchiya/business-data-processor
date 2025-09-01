@@ -115,7 +115,7 @@ def apply_faith_emergencycontact_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame
         df["緊急連絡人１のTEL（携帯）"].notna() &
         (~df["緊急連絡人１のTEL（携帯）"].astype(str).str.strip().isin(["", "nan", "NaN"]))
     ]
-    logs.append(f"緊急連絡人１のTEL（携帯）フィルタ後: {len(df)}件 (除嚖: {before_filter - len(df)}件)")
+    logs.append(f"緊急連絡人１のTEL（携帯）フィルタ後: {len(df)}件 (除外: {before_filter - len(df)}件)")
     
     return df, logs
 
