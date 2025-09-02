@@ -1,82 +1,15 @@
 import pandas as pd
-import io
 import re
-import os
 from datetime import datetime, date
 from typing import Tuple, List, Dict
 
-def format_payment_deadline(date_input: date) -> str:
-    """
-    日付オブジェクトを日本語形式に変換
-    
-    Args:
-        date_input: datetimeのdateオブジェクト
-        
-    Returns:
-        str: 'YYYY年MM月DD日' 形式の文字列
-        
-    Examples:
-        format_payment_deadline(date(2025, 6, 30)) -> '2025年6月30日'
-        format_payment_deadline(date(2025, 12, 1)) -> '2025年12月1日'
-    """
-    return date_input.strftime("%Y年%m月%d日")
+# SMS共通モジュールから関数とヘッダーをインポート
+from processors.sms_common import (
+    SMS_TEMPLATE_HEADERS,
+    format_payment_deadline,
+    read_csv_auto_encoding
+)
 
-def load_faith_sms_template_headers() -> List[str]:
-    """SMSテンプレートヘッダーを読み込み（新共通ファイル優先、旧ファイルへフォールバック）"""
-    current_dir = os.path.dirname(__file__)
-
-    # 新しい共通テンプレート → 旧フェイス専用テンプレートの順で検索
-    candidate_filenames = [
-        'sms_template_headers.txt',
-        'sms_template_headers.txt',
-    ]
-
-    # 複数のパス候補を試行
-    template_paths: List[str] = []
-    for filename in candidate_filenames:
-        template_paths.extend([
-            os.path.join(current_dir, '..', '..', 'templates', filename),
-            os.path.abspath(os.path.join(current_dir, '..', '..', 'templates', filename)),
-            f'templates/{filename}',
-            f'./templates/{filename}',
-        ])
-
-    for template_path in template_paths:
-        if os.path.exists(template_path):
-            try:
-                encodings = ['utf-8', 'utf-8-sig', 'cp932', 'shift_jis']
-                header_line = None
-
-                for encoding in encodings:
-                    try:
-                        with open(template_path, 'r', encoding=encoding) as f:
-                            header_line = f.read().strip()
-                        break
-                    except UnicodeDecodeError:
-                        continue
-
-                if header_line is None:
-                    raise Exception('ヘッダーファイルの読み込みに失敗しました（エンコーディングエラー）')
-
-                return header_line.split(',')
-            except Exception:
-                continue  # 次のパスを試行
-
-    raise FileNotFoundError(
-        f"SMSテンプレートヘッダーファイルが見つかりません。試行パス: {template_paths}"
-    )
-
-def read_csv_auto_encoding(file_content: bytes) -> pd.DataFrame:
-    """アップロードされたCSVファイルを自動エンコーディング判定で読み込み"""
-    encodings = ['utf-8', 'utf-8-sig', 'shift_jis', 'cp932', 'euc_jp']
-    
-    for enc in encodings:
-        try:
-            return pd.read_csv(io.BytesIO(file_content), encoding=enc, dtype=str)
-        except Exception:
-            continue
-    
-    raise ValueError("CSVファイルの読み込みに失敗しました。エンコーディングを確認してください。")
 
 def process_plaza_sms_contract_data(
     contract_file_content: bytes, 
@@ -221,7 +154,7 @@ def process_plaza_sms_contract_data(
         logs.append(f"国籍による分離完了 - 日本人: {len(japanese_df)}件, 外国人: {len(foreign_df)}件")
         
         # SMS出力フォーマット用のヘッダーを読み込み
-        output_column_order = load_faith_sms_template_headers()
+        output_column_order = SMS_TEMPLATE_HEADERS
         
         # 日本人向けと外国人向けのDataFrameを作成
         output_dfs = []

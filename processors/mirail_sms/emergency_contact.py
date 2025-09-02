@@ -1,78 +1,19 @@
 import pandas as pd
-import io
 import re
-import os
 from datetime import datetime, date
 from typing import Tuple, List
 
-def format_payment_deadline(date_input: date) -> str:
-    """
-    日付オブジェクトを日本語形式に変換
-    
-    Args:
-        date_input: datetimeのdateオブジェクト
-        
-    Returns:
-        str: 'YYYY年MM月DD日' 形式の文字列
-        
-    Examples:
-        format_payment_deadline(date(2025, 6, 30)) -> '2025年6月30日'
-        format_payment_deadline(date(2025, 12, 1)) -> '2025年12月1日'
-    """
-    return date_input.strftime("%Y年%m月%d日")
+# SMS共通モジュールから関数とヘッダーをインポート
+from processors.sms_common import (
+    SMS_TEMPLATE_HEADERS,
+    format_payment_deadline,
+    read_csv_auto_encoding
+)
 
-def load_faith_sms_template_headers() -> List[str]:
-    """外部ファイルからフェイスSMSテンプレートヘッダーを読み込み"""
-    # 複数のパス候補を試行
-    current_dir = os.path.dirname(__file__)
-    
-    # パス候補リスト
-    template_paths = [
-        os.path.join(current_dir, '..', '..', 'templates', 'sms_template_headers.txt'),  # 相対パス
-        os.path.abspath(os.path.join(current_dir, '..', '..', 'templates', 'sms_template_headers.txt')),  # 絶対パス
-        'templates/sms_template_headers.txt',  # カレントディレクトリから
-        './templates/sms_template_headers.txt',  # カレントディレクトリから
-    ]
-    
-    # 各パスを試行
-    for template_path in template_paths:
-        if os.path.exists(template_path):
-            try:
-                # 複数のエンコーディングで試行
-                encodings = ['utf-8', 'utf-8-sig', 'cp932', 'shift_jis']
-                header_line = None
-                
-                for encoding in encodings:
-                    try:
-                        with open(template_path, 'r', encoding=encoding) as f:
-                            header_line = f.read().strip()
-                        break
-                    except UnicodeDecodeError:
-                        continue
-                        
-                if header_line is None:
-                    raise Exception("ヘッダーファイルの読み込みに失敗しました（エンコーディングエラー）")
-                    
-                return header_line.split(',')
-            except Exception as e:
-                continue  # 次のパスを試行
-    
-    # すべてのパスで失敗した場合
-    raise FileNotFoundError(f"SMSテンプレートヘッダーファイルが見つかりません。試行パス: {template_paths}")
 
-def read_csv_auto_encoding(file_content: bytes) -> pd.DataFrame:
-    """アップロードされたCSVファイルを自動エンコーディング判定で読み込み"""
-    encodings = ['utf-8', 'utf-8-sig', 'shift_jis', 'cp932', 'euc_jp']
-    
-    for enc in encodings:
-        try:
-            return pd.read_csv(io.BytesIO(file_content), encoding=enc, dtype=str)
-        except Exception:
-            continue
-    
-    raise ValueError("CSVファイルの読み込みに失敗しました。エンコーディングを確認してください。")
 
-def process_mirail_sms_emergency_contact_data(file_content: bytes, payment_deadline_date: date) -> Tuple[pd.DataFrame, List[str], str, dict]:
+
+def process_mirail_sms_emergencycontact_data(file_content: bytes, payment_deadline_date: date) -> Tuple[pd.DataFrame, List[str], str, dict]:
     """
     ミライルSMS連絡人データ処理（Streamlit対応版）
     
@@ -200,7 +141,7 @@ def process_mirail_sms_emergency_contact_data(file_content: bytes, payment_deadl
         logs.append(f"フィルター5 - BE列TEL携帯(090/080/070のみ): {len(df)}件")
         
         # Data mapping to output format - load from external template
-        output_column_order = load_faith_sms_template_headers()
+        output_column_order = SMS_TEMPLATE_HEADERS
         
         # Create temporary column names for DataFrame construction (to handle empty column names)
         temp_column_order = []
