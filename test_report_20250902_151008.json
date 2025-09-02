@@ -1,0 +1,371 @@
+{
+  "test_date": "2025-09-02T15:10:05.141913",
+  "duration": "0:00:03.318410",
+  "summary": {
+    "success": 2,
+    "error": 37,
+    "warning": 0
+  },
+  "results": [
+    {
+      "time": "2025-09-02 15:10:05",
+      "status": "INFO",
+      "message": "=== Docker Desktop インストール確認 ==="
+    },
+    {
+      "time": "2025-09-02 15:10:05",
+      "status": "INFO",
+      "message": "実行中: Docker バージョン確認"
+    },
+    {
+      "time": "2025-09-02 15:10:05",
+      "status": "SUCCESS",
+      "message": "✅ 成功: Docker バージョン確認"
+    },
+    {
+      "time": "2025-09-02 15:10:05",
+      "status": "INFO",
+      "message": "Docker バージョン: Docker version 28.3.2, build 578ccf6"
+    },
+    {
+      "time": "2025-09-02 15:10:05",
+      "status": "INFO",
+      "message": "実行中: Docker Compose バージョン確認"
+    },
+    {
+      "time": "2025-09-02 15:10:05",
+      "status": "SUCCESS",
+      "message": "✅ 成功: Docker Compose バージョン確認"
+    },
+    {
+      "time": "2025-09-02 15:10:05",
+      "status": "INFO",
+      "message": "Docker Compose バージョン: Docker Compose version v2.38.2-desktop.1"
+    },
+    {
+      "time": "2025-09-02 15:10:05",
+      "status": "INFO",
+      "message": "実行中: Docker デーモン動作確認"
+    },
+    {
+      "time": "2025-09-02 15:10:05",
+      "status": "ERROR",
+      "message": "❌ 失敗: Docker デーモン動作確認 - Cannot connect to the Docker daemon at unix:///Users/tchytky/.docker/run/docker.sock. Is the docker daemon running?\n"
+    },
+    {
+      "time": "2025-09-02 15:10:05",
+      "status": "INFO",
+      "message": "=== コンテナビルドテスト ==="
+    },
+    {
+      "time": "2025-09-02 15:10:05",
+      "status": "INFO",
+      "message": "実行中: コンテナイメージのビルド"
+    },
+    {
+      "time": "2025-09-02 15:10:05",
+      "status": "ERROR",
+      "message": "❌ 失敗: コンテナイメージのビルド - time=\"2025-09-02T15:10:05+09:00\" level=warning msg=\"/Users/tchytky/Desktop/business-data-processor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion\"\nCannot connect to the Docker daemon at unix:///Users/tchytky/.docker/run/docker.sock. Is the docker daemon running?\n\n"
+    },
+    {
+      "time": "2025-09-02 15:10:05",
+      "status": "INFO",
+      "message": "=== コンテナ起動テスト ==="
+    },
+    {
+      "time": "2025-09-02 15:10:05",
+      "status": "INFO",
+      "message": "実行中: 既存コンテナの停止"
+    },
+    {
+      "time": "2025-09-02 15:10:06",
+      "status": "ERROR",
+      "message": "❌ 失敗: 既存コンテナの停止 - time=\"2025-09-02T15:10:06+09:00\" level=warning msg=\"/Users/tchytky/Desktop/business-data-processor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion\"\nCannot connect to the Docker daemon at unix:///Users/tchytky/.docker/run/docker.sock. Is the docker daemon running?\n"
+    },
+    {
+      "time": "2025-09-02 15:10:06",
+      "status": "INFO",
+      "message": "実行中: コンテナの起動"
+    },
+    {
+      "time": "2025-09-02 15:10:06",
+      "status": "ERROR",
+      "message": "❌ 失敗: コンテナの起動 - time=\"2025-09-02T15:10:06+09:00\" level=warning msg=\"/Users/tchytky/Desktop/business-data-processor/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion\"\nunable to get image 'business-data-processor:v2.1.0-docker': Cannot connect to the Docker daemon at unix:///Users/tchytky/.docker/run/docker.sock. Is the docker daemon running?\n"
+    },
+    {
+      "time": "2025-09-02 15:10:06",
+      "status": "INFO",
+      "message": "=== ボリュームマウントテスト ==="
+    },
+    {
+      "time": "2025-09-02 15:10:06",
+      "status": "INFO",
+      "message": "実行中: data フォルダのマウント確認"
+    },
+    {
+      "time": "2025-09-02 15:10:06",
+      "status": "ERROR",
+      "message": "❌ 失敗: data フォルダのマウント確認 - Cannot connect to the Docker daemon at unix:///Users/tchytky/.docker/run/docker.sock. Is the docker daemon running?\n"
+    },
+    {
+      "time": "2025-09-02 15:10:06",
+      "status": "ERROR",
+      "message": "❌ data フォルダのマウントに問題があります"
+    },
+    {
+      "time": "2025-09-02 15:10:06",
+      "status": "INFO",
+      "message": "=== 日本語環境テスト ==="
+    },
+    {
+      "time": "2025-09-02 15:10:06",
+      "status": "INFO",
+      "message": "実行中: ロケール設定確認"
+    },
+    {
+      "time": "2025-09-02 15:10:06",
+      "status": "ERROR",
+      "message": "❌ 失敗: ロケール設定確認 - Cannot connect to the Docker daemon at unix:///Users/tchytky/.docker/run/docker.sock. Is the docker daemon running?\n"
+    },
+    {
+      "time": "2025-09-02 15:10:06",
+      "status": "INFO",
+      "message": "実行中: Python 日本語処理テスト"
+    },
+    {
+      "time": "2025-09-02 15:10:06",
+      "status": "ERROR",
+      "message": "❌ 失敗: Python 日本語処理テスト - Cannot connect to the Docker daemon at unix:///Users/tchytky/.docker/run/docker.sock. Is the docker daemon running?\n"
+    },
+    {
+      "time": "2025-09-02 15:10:06",
+      "status": "ERROR",
+      "message": "❌ Python での日本語処理に問題があります"
+    },
+    {
+      "time": "2025-09-02 15:10:06",
+      "status": "INFO",
+      "message": "=== プロセッサーインポートテスト ==="
+    },
+    {
+      "time": "2025-09-02 15:10:06",
+      "status": "INFO",
+      "message": "実行中: mirail_contract_without10k インポートテスト"
+    },
+    {
+      "time": "2025-09-02 15:10:06",
+      "status": "ERROR",
+      "message": "❌ 失敗: mirail_contract_without10k インポートテスト - Cannot connect to the Docker daemon at unix:///Users/tchytky/.docker/run/docker.sock. Is the docker daemon running?\n"
+    },
+    {
+      "time": "2025-09-02 15:10:06",
+      "status": "ERROR",
+      "message": "❌ mirail_contract_without10k のインポートに失敗しました"
+    },
+    {
+      "time": "2025-09-02 15:10:06",
+      "status": "INFO",
+      "message": "実行中: mirail_contract_with10k インポートテスト"
+    },
+    {
+      "time": "2025-09-02 15:10:07",
+      "status": "ERROR",
+      "message": "❌ 失敗: mirail_contract_with10k インポートテスト - Cannot connect to the Docker daemon at unix:///Users/tchytky/.docker/run/docker.sock. Is the docker daemon running?\n"
+    },
+    {
+      "time": "2025-09-02 15:10:07",
+      "status": "ERROR",
+      "message": "❌ mirail_contract_with10k のインポートに失敗しました"
+    },
+    {
+      "time": "2025-09-02 15:10:07",
+      "status": "INFO",
+      "message": "実行中: mirail_guarantor_without10k インポートテスト"
+    },
+    {
+      "time": "2025-09-02 15:10:07",
+      "status": "ERROR",
+      "message": "❌ 失敗: mirail_guarantor_without10k インポートテスト - Cannot connect to the Docker daemon at unix:///Users/tchytky/.docker/run/docker.sock. Is the docker daemon running?\n"
+    },
+    {
+      "time": "2025-09-02 15:10:07",
+      "status": "ERROR",
+      "message": "❌ mirail_guarantor_without10k のインポートに失敗しました"
+    },
+    {
+      "time": "2025-09-02 15:10:07",
+      "status": "INFO",
+      "message": "実行中: mirail_guarantor_with10k インポートテスト"
+    },
+    {
+      "time": "2025-09-02 15:10:07",
+      "status": "ERROR",
+      "message": "❌ 失敗: mirail_guarantor_with10k インポートテスト - Cannot connect to the Docker daemon at unix:///Users/tchytky/.docker/run/docker.sock. Is the docker daemon running?\n"
+    },
+    {
+      "time": "2025-09-02 15:10:07",
+      "status": "ERROR",
+      "message": "❌ mirail_guarantor_with10k のインポートに失敗しました"
+    },
+    {
+      "time": "2025-09-02 15:10:07",
+      "status": "INFO",
+      "message": "実行中: mirail_emergencycontact_without10k インポートテスト"
+    },
+    {
+      "time": "2025-09-02 15:10:07",
+      "status": "ERROR",
+      "message": "❌ 失敗: mirail_emergencycontact_without10k インポートテスト - Cannot connect to the Docker daemon at unix:///Users/tchytky/.docker/run/docker.sock. Is the docker daemon running?\n"
+    },
+    {
+      "time": "2025-09-02 15:10:07",
+      "status": "ERROR",
+      "message": "❌ mirail_emergencycontact_without10k のインポートに失敗しました"
+    },
+    {
+      "time": "2025-09-02 15:10:07",
+      "status": "INFO",
+      "message": "実行中: mirail_emergencycontact_with10k インポートテスト"
+    },
+    {
+      "time": "2025-09-02 15:10:07",
+      "status": "ERROR",
+      "message": "❌ 失敗: mirail_emergencycontact_with10k インポートテスト - Cannot connect to the Docker daemon at unix:///Users/tchytky/.docker/run/docker.sock. Is the docker daemon running?\n"
+    },
+    {
+      "time": "2025-09-02 15:10:07",
+      "status": "ERROR",
+      "message": "❌ mirail_emergencycontact_with10k のインポートに失敗しました"
+    },
+    {
+      "time": "2025-09-02 15:10:07",
+      "status": "INFO",
+      "message": "実行中: faith_contract インポートテスト"
+    },
+    {
+      "time": "2025-09-02 15:10:07",
+      "status": "ERROR",
+      "message": "❌ 失敗: faith_contract インポートテスト - Cannot connect to the Docker daemon at unix:///Users/tchytky/.docker/run/docker.sock. Is the docker daemon running?\n"
+    },
+    {
+      "time": "2025-09-02 15:10:07",
+      "status": "ERROR",
+      "message": "❌ faith_contract のインポートに失敗しました"
+    },
+    {
+      "time": "2025-09-02 15:10:07",
+      "status": "INFO",
+      "message": "実行中: faith_guarantor インポートテスト"
+    },
+    {
+      "time": "2025-09-02 15:10:07",
+      "status": "ERROR",
+      "message": "❌ 失敗: faith_guarantor インポートテスト - Cannot connect to the Docker daemon at unix:///Users/tchytky/.docker/run/docker.sock. Is the docker daemon running?\n"
+    },
+    {
+      "time": "2025-09-02 15:10:07",
+      "status": "ERROR",
+      "message": "❌ faith_guarantor のインポートに失敗しました"
+    },
+    {
+      "time": "2025-09-02 15:10:07",
+      "status": "INFO",
+      "message": "実行中: faith_emergencycontact インポートテスト"
+    },
+    {
+      "time": "2025-09-02 15:10:07",
+      "status": "ERROR",
+      "message": "❌ 失敗: faith_emergencycontact インポートテスト - Cannot connect to the Docker daemon at unix:///Users/tchytky/.docker/run/docker.sock. Is the docker daemon running?\n"
+    },
+    {
+      "time": "2025-09-02 15:10:07",
+      "status": "ERROR",
+      "message": "❌ faith_emergencycontact のインポートに失敗しました"
+    },
+    {
+      "time": "2025-09-02 15:10:07",
+      "status": "INFO",
+      "message": "実行中: plaza_main インポートテスト"
+    },
+    {
+      "time": "2025-09-02 15:10:08",
+      "status": "ERROR",
+      "message": "❌ 失敗: plaza_main インポートテスト - Cannot connect to the Docker daemon at unix:///Users/tchytky/.docker/run/docker.sock. Is the docker daemon running?\n"
+    },
+    {
+      "time": "2025-09-02 15:10:08",
+      "status": "ERROR",
+      "message": "❌ plaza_main のインポートに失敗しました"
+    },
+    {
+      "time": "2025-09-02 15:10:08",
+      "status": "INFO",
+      "message": "実行中: plaza_guarantor インポートテスト"
+    },
+    {
+      "time": "2025-09-02 15:10:08",
+      "status": "ERROR",
+      "message": "❌ 失敗: plaza_guarantor インポートテスト - Cannot connect to the Docker daemon at unix:///Users/tchytky/.docker/run/docker.sock. Is the docker daemon running?\n"
+    },
+    {
+      "time": "2025-09-02 15:10:08",
+      "status": "ERROR",
+      "message": "❌ plaza_guarantor のインポートに失敗しました"
+    },
+    {
+      "time": "2025-09-02 15:10:08",
+      "status": "INFO",
+      "message": "実行中: plaza_contact インポートテスト"
+    },
+    {
+      "time": "2025-09-02 15:10:08",
+      "status": "ERROR",
+      "message": "❌ 失敗: plaza_contact インポートテスト - Cannot connect to the Docker daemon at unix:///Users/tchytky/.docker/run/docker.sock. Is the docker daemon running?\n"
+    },
+    {
+      "time": "2025-09-02 15:10:08",
+      "status": "ERROR",
+      "message": "❌ plaza_contact のインポートに失敗しました"
+    },
+    {
+      "time": "2025-09-02 15:10:08",
+      "status": "INFO",
+      "message": "実行中: ark_registration インポートテスト"
+    },
+    {
+      "time": "2025-09-02 15:10:08",
+      "status": "ERROR",
+      "message": "❌ 失敗: ark_registration インポートテスト - Cannot connect to the Docker daemon at unix:///Users/tchytky/.docker/run/docker.sock. Is the docker daemon running?\n"
+    },
+    {
+      "time": "2025-09-02 15:10:08",
+      "status": "ERROR",
+      "message": "❌ ark_registration のインポートに失敗しました"
+    },
+    {
+      "time": "2025-09-02 15:10:08",
+      "status": "INFO",
+      "message": "=== Web アクセステスト ==="
+    },
+    {
+      "time": "2025-09-02 15:10:08",
+      "status": "INFO",
+      "message": "実行中: Web UI アクセステスト"
+    },
+    {
+      "time": "2025-09-02 15:10:08",
+      "status": "ERROR",
+      "message": "❌ 失敗: Web UI アクセステスト - "
+    },
+    {
+      "time": "2025-09-02 15:10:08",
+      "status": "ERROR",
+      "message": "❌ Web UI にアクセスできません"
+    },
+    {
+      "time": "2025-09-02 15:10:08",
+      "status": "INFO",
+      "message": "=== テスト結果サマリー ==="
+    }
+  ]
+}

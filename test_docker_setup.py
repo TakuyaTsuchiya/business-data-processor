@@ -217,12 +217,12 @@ print(f'Test string: {test_str}')
         # 15種類のプロセッサーをテスト
         processors = [
             # ミライル（6種類）
-            ("mirail_contract_without10k", "from processors.mirail_autocall.contract.without10k import process_mirail_contract_without10k_data"),
-            ("mirail_contract_with10k", "from processors.mirail_autocall.contract.with10k import process_mirail_contract_with10k_data"),
-            ("mirail_guarantor_without10k", "from processors.mirail_autocall.guarantor.without10k import process_mirail_guarantor_without10k_data"),
-            ("mirail_guarantor_with10k", "from processors.mirail_autocall.guarantor.with10k import process_mirail_guarantor_with10k_data"),
-            ("mirail_emergencycontact_without10k", "from processors.mirail_autocall.emergency_contact.without10k import process_mirail_emergencycontact_without10k_data"),
-            ("mirail_emergencycontact_with10k", "from processors.mirail_autocall.emergency_contact.with10k import process_mirail_emergencycontact_with10k_data"),
+            ("mirail_contract_without10k", "from processors.mirail_autocall.contract.without10k_refactored import process_mirail_contract_without10k_data"),
+            ("mirail_contract_with10k", "from processors.mirail_autocall.contract.with10k_refactored import process_mirail_contract_with10k_data"),
+            ("mirail_guarantor_without10k", "from processors.mirail_autocall.guarantor.without10k_refactored import process_mirail_guarantor_without10k_data"),
+            ("mirail_guarantor_with10k", "from processors.mirail_autocall.guarantor.with10k_refactored import process_mirail_guarantor_with10k_data"),
+            ("mirail_emergencycontact_without10k", "from processors.mirail_autocall.emergency_contact.without10k_refactored import process_mirail_emergency_contact_without10k_data"),
+            ("mirail_emergencycontact_with10k", "from processors.mirail_autocall.emergency_contact.with10k_refactored import process_mirail_emergency_contact_with10k_data"),
             
             # フェイス（3種類）
             ("faith_contract", "from processors.faith_autocall.contract.standard import process_faith_contract_data"),

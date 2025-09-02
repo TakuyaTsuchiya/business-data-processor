@@ -16,8 +16,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import app
 from processors.ark_late_payment_update import process_ark_late_payment_data
 from processors.ark_registration import process_ark_data
-from processors.mirail_autocall.contract.without10k import process_mirail_contract_without10k_data
-from processors.mirail_autocall.contract.with10k import process_mirail_contract_with10k_data
+from processors.mirail_autocall.contract.without10k_refactored import process_mirail_contract_without10k_data
+from processors.mirail_autocall.contract.with10k_refactored import process_mirail_contract_with10k_data
 
 
 class TestAppIntegration:
