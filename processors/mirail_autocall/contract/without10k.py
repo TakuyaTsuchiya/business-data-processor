@@ -16,6 +16,8 @@ if processors_dir not in sys.path:
     sys.path.append(processors_dir)
 from autocall_common import AUTOCALL_OUTPUT_COLUMNS
 from domain.rules.business_rules import MIRAIL_DEBT_EXCLUDE
+from common.contract_list_columns import ContractListColumns as COL
+from common.detailed_logger import DetailedLogger
 
 # 新しいフィルタ関数のインポート
 from .filters import (
@@ -42,17 +44,17 @@ class MirailConfig:
         "入金予定金額_not_in": [2, 3, 5, 12]
     }
     
-    # マッピングルール
+    # マッピングルール（列番号ベース）
     MAPPING_RULES = {
-        "電話番号": "TEL携帯",
-        "架電番号": "TEL携帯",
-        "入居ステータス": "入居ステータス",
-        "滞納ステータス": "滞納ステータス",
-        "管理番号": "管理番号",
-        "契約者名（カナ）": "契約者カナ",
-        "物件名": "物件名",
-        "クライアント": "クライアント名",
-        "残債": "滞納残債"  # J列「残債」にBT列「滞納残債」を格納
+        "電話番号": COL.TEL_MOBILE,
+        "架電番号": COL.TEL_MOBILE,
+        "入居ステータス": COL.RESIDENCE_STATUS,
+        "滞納ステータス": COL.DELINQUENT_STATUS,
+        "管理番号": COL.MANAGEMENT_NO,
+        "契約者名（カナ）": COL.CONTRACT_KANA,
+        "物件名": COL.PROPERTY_NAME,
+        "クライアント": COL.CLIENT_NAME,
+        "残債": COL.DEBT_AMOUNT  # J列「残債」にBT列「滞納残債」を格納
     }
     
     OUTPUT_FILE_PREFIX = "ミライル_without10k_契約者"
@@ -151,7 +153,7 @@ def apply_filters_new(df_input: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
     logs = []
     
     initial_count = len(df)
-    logs.append(f"初期データ件数: {initial_count}件")
+    logs.append(DetailedLogger.log_initial_load(initial_count))
     
     # 日付の前処理（filter_payment_dateで使用）
     df["入金予定日"] = pd.to_datetime(df["入金予定日"], errors='coerce')
@@ -179,51 +181,49 @@ def apply_filters_new(df_input: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
         excluded_data = df[~mask]
         if len(excluded_data) > 0:
             if filter_name == '委託先法人ID':
-                # 除外される委託先法人IDの内訳
-                excluded_counts = excluded_data['委託先法人ID'].value_counts().to_dict()
-                # NaNを文字列に変換して表示
-                excluded_counts_str = {str(k) if pd.notna(k) else '空白': v for k, v in excluded_counts.items()}
-                logs.append(f"委託先法人ID除外詳細: {excluded_counts_str}")
+                # 列番号使用に変更
+                detail_log = DetailedLogger.log_exclusion_details(excluded_data, COL.TRUSTEE_ID, '委託先法人ID', 'id')
+                if detail_log:
+                    logs.append(detail_log)
                 
             elif filter_name == '入金予定日':
-                # 除外される日付の内訳（上位10件）
-                excluded_dates = excluded_data['入金予定日'].dt.strftime('%Y/%m/%d').value_counts().head(10).to_dict()
-                total_excluded = len(excluded_data)
-                logs.append(f"入金予定日除外詳細（上位10件）: {excluded_dates}")
-                if total_excluded > 10:
-                    logs.append(f"  ※他{total_excluded - 10}件の日付も除外")
+                # 列番号使用、上位3件に変更
+                detail_log = DetailedLogger.log_exclusion_details(excluded_data, COL.PAYMENT_DATE, '入金予定日', 'date', top_n=3)
+                if detail_log:
+                    logs.append(detail_log)
                     
             elif filter_name == '回収ランク':
-                # 除外される回収ランクの内訳
-                excluded_ranks = excluded_data['回収ランク'].value_counts().to_dict()
-                logs.append(f"回収ランク除外詳細: {excluded_ranks}")
+                # 列番号使用に変更
+                detail_log = DetailedLogger.log_exclusion_details(excluded_data, COL.COLLECTION_RANK, '回収ランク', 'category')
+                if detail_log:
+                    logs.append(detail_log)
                 
             elif filter_name == 'ミライル特殊残債':
-                # CD×残債の組み合わせ
-                special_debt_data = excluded_data[['クライアントCD', '滞納残債']].copy()
+                # CD×残債の組み合わせ（特殊処理なのでそのまま）
+                special_debt_data = excluded_data.iloc[:, [COL.CLIENT_CD, COL.DEBT_AMOUNT]].copy()
+                special_debt_data.columns = ['クライアントCD', '滞納残債']
                 special_debt_counts = special_debt_data.groupby(['クライアントCD', '滞納残債']).size().to_dict()
                 special_debt_str = {f"CD={int(k[0])}, {int(k[1])}円": v for k, v in special_debt_counts.items()}
                 logs.append(f"ミライル特殊残債除外詳細: {special_debt_str}")
                 
             elif filter_name == '携帯電話':
-                # 携帯電話の除外理由を分類
-                tel_data = excluded_data['TEL携帯'].astype(str).str.strip()
-                empty_count = tel_data[tel_data.isin(['', 'nan', 'NaN'])].count()
-                fixed_phone_count = len(excluded_data) - empty_count
-                logs.append(f"携帯電話除外詳細: {{空白/NaN: {empty_count}件, 固定電話等: {fixed_phone_count}件}}")
+                # 列番号使用に変更
+                detail_log = DetailedLogger.log_exclusion_details(excluded_data, COL.TEL_MOBILE, '携帯電話', 'phone')
+                if detail_log:
+                    logs.append(detail_log)
                 
             elif filter_name == '除外金額':
-                # 除外される金額の内訳
-                excluded_amounts = excluded_data['入金予定金額'].value_counts().to_dict()
-                excluded_amounts_str = {f"{int(k)}円": v for k, v in excluded_amounts.items() if pd.notna(k)}
-                logs.append(f"除外金額詳細: {excluded_amounts_str}")
+                # 列番号使用に変更
+                detail_log = DetailedLogger.log_exclusion_details(excluded_data, COL.PAYMENT_AMOUNT, '除外金額', 'amount')
+                if detail_log:
+                    logs.append(detail_log)
         
         df = df[mask]
         after_count = len(df)
         
-        logs.append(f"{filter_name}フィルタリング後: {after_count}件 (除外: {before_count - after_count}件)")
+        logs.append(DetailedLogger.log_filter_result(before_count, after_count, filter_name))
     
-    logs.append(f"最終フィルタリング結果: {len(df)}件")
+    logs.append(DetailedLogger.log_final_result(len(df)))
     return df, logs
 
 
@@ -247,12 +247,12 @@ def map_data_to_template(df_filtered: pd.DataFrame) -> pd.DataFrame:
     df_template = create_template_dataframe(len(df_filtered))
     mapping_rules = MirailConfig.MAPPING_RULES
     
-    # マッピングルールに従ってデータを転記
-    for template_col, input_col in mapping_rules.items():
-        if template_col in df_template.columns and input_col in df_filtered.columns:
-            df_template[template_col] = df_filtered[input_col].values
-        elif template_col in df_template.columns:
-            df_template[template_col] = ""
+    # マッピングルールに従ってデータを転記（列番号ベース）
+    for i in range(len(df_filtered)):
+        for template_col, col_index in mapping_rules.items():
+            if template_col in df_template.columns:
+                value = df_filtered.iloc[i, col_index]
+                df_template.at[i, template_col] = str(value) if pd.notna(value) else ""
     
     return df_template
 
