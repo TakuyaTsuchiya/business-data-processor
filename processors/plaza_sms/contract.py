@@ -9,6 +9,7 @@ from processors.sms_common import (
     format_payment_deadline,
     read_csv_auto_encoding
 )
+from processors.common.detailed_logger import DetailedLogger
 
 
 def process_plaza_sms_contract_data(
@@ -35,7 +36,7 @@ def process_plaza_sms_contract_data(
         logs.append("ContractList.csvを読み込み中...")
         contract_df = read_csv_auto_encoding(contract_file_content)
         initial_rows = len(contract_df)
-        logs.append(f"ContractList読み込み完了: {initial_rows}件")
+        logs.append(DetailedLogger.log_initial_load(initial_rows))
         
         logs.append("コールセンター回収委託CSVを読み込み中...")
         callcenter_df = read_csv_auto_encoding(callcenter_file_content)
@@ -53,27 +54,37 @@ def process_plaza_sms_contract_data(
         # Filter 1: 委託先法人ID (Keep only 6)
         contract_df['委託先法人ID'] = pd.to_numeric(contract_df['委託先法人ID'], errors='coerce').fillna(-1).astype(int)
         
-        # 除外データの詳細を記録
+        # フィルター適用
+        before_count = len(contract_df)
         excluded_trustee = contract_df[contract_df['委託先法人ID'] != 6]
-        if len(excluded_trustee) > 0:
-            excluded_ids = excluded_trustee['委託先法人ID'].value_counts().head(5).to_dict()
-            logs.append(f"フィルター1除外 - 委託先法人ID詳細: {excluded_ids}")
-        
         contract_df = contract_df[contract_df['委託先法人ID'] == 6]
-        logs.append(f"フィルター1 - 委託先法人ID(6のみ): {len(contract_df)}件")
+        logs.append(DetailedLogger.log_filter_result(before_count, len(contract_df), '委託先法人ID'))
+        
+        # 除外データの詳細を記録
+        if len(excluded_trustee) > 0:
+            detail = DetailedLogger.log_exclusion_details(
+                excluded_trustee, 118, '委託先法人ID', 'id', top_n=3
+            )
+            if detail:
+                logs.append(detail)
         
         # Filter 2: 入金予定日 (Keep empty or dates before today)
         contract_df['入金予定日'] = pd.to_datetime(contract_df['入金予定日'], format='%Y/%m/%d', errors='coerce')
         today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         
-        # 除外データの詳細を記録
+        # フィルター適用
+        before_count = len(contract_df)
         excluded_dates = contract_df[~(contract_df['入金予定日'].isna() | (contract_df['入金予定日'] < today))]
-        if len(excluded_dates) > 0:
-            future_dates = excluded_dates['入金予定日'].dropna().dt.strftime('%Y/%m/%d').value_counts().head(3).to_dict()
-            logs.append(f"フィルター2除外 - 未来日付例: {future_dates}")
-        
         contract_df = contract_df[contract_df['入金予定日'].isna() | (contract_df['入金予定日'] < today)]
-        logs.append(f"フィルター2 - 入金予定日(前日以前+空白): {len(contract_df)}件")
+        logs.append(DetailedLogger.log_filter_result(before_count, len(contract_df), '入金予定日'))
+        
+        # 除外データの詳細を記録
+        if len(excluded_dates) > 0:
+            detail = DetailedLogger.log_exclusion_details(
+                excluded_dates, 72, '入金予定日', 'date', top_n=3
+            )
+            if detail:
+                logs.append(detail)
         
         # Filter 3: 入金予定金額 (Exclude specific amounts: 2, 3, 5, 12 as numeric or string values)
         payment_amount_exclude_numeric = [2, 3, 5, 12]
@@ -81,29 +92,39 @@ def process_plaza_sms_contract_data(
         contract_df['入金予定金額_numeric'] = pd.to_numeric(contract_df['入金予定金額'], errors='coerce')
         contract_df['入金予定金額_string'] = contract_df['入金予定金額'].astype(str)
         
-        # 除外データの詳細を記録
+        # フィルター適用
+        before_count = len(contract_df)
         excluded_amounts = contract_df[(contract_df['入金予定金額_numeric'].isin(payment_amount_exclude_numeric) | 
                                        contract_df['入金予定金額_string'].isin(payment_amount_exclude_string))]
-        if len(excluded_amounts) > 0:
-            excluded_values = excluded_amounts['入金予定金額'].value_counts().head(5).to_dict()
-            logs.append(f"フィルター3除外 - 金額詳細: {excluded_values}")
-        
         contract_df = contract_df[~(contract_df['入金予定金額_numeric'].isin(payment_amount_exclude_numeric) | 
                                    contract_df['入金予定金額_string'].isin(payment_amount_exclude_string))]
         contract_df = contract_df.drop(['入金予定金額_numeric', '入金予定金額_string'], axis=1)
-        logs.append(f"フィルター3 - 入金予定金額(2,3,5,12円除外): {len(contract_df)}件")
+        logs.append(DetailedLogger.log_filter_result(before_count, len(contract_df), '入金予定金額'))
+        
+        # 除外データの詳細を記録
+        if len(excluded_amounts) > 0:
+            detail = DetailedLogger.log_exclusion_details(
+                excluded_amounts, 73, '入金予定金額', 'amount', top_n=3
+            )
+            if detail:
+                logs.append(detail)
         
         # Filter 4: 回収ランク (Exclude specific ranks)
         collection_rank_exclude = ["弁護士介入", "死亡決定", "破産決定"]
         
-        # 除外データの詳細を記録
+        # フィルター適用
+        before_count = len(contract_df)
         excluded_ranks = contract_df[contract_df['回収ランク'].isin(collection_rank_exclude)]
-        if len(excluded_ranks) > 0:
-            excluded_rank_counts = excluded_ranks['回収ランク'].value_counts().to_dict()
-            logs.append(f"フィルター4除外 - 回収ランク詳細: {excluded_rank_counts}")
-        
         contract_df = contract_df[~contract_df['回収ランク'].isin(collection_rank_exclude)]
-        logs.append(f"フィルター4 - 回収ランク(弁護士介入等除外): {len(contract_df)}件")
+        logs.append(DetailedLogger.log_filter_result(before_count, len(contract_df), '回収ランク'))
+        
+        # 除外データの詳細を記録
+        if len(excluded_ranks) > 0:
+            detail = DetailedLogger.log_exclusion_details(
+                excluded_ranks, 86, '回収ランク', 'category', top_n=3
+            )
+            if detail:
+                logs.append(detail)
         
         # Filter 5: 電話番号 (Keep only valid mobile phone numbers)
         mobile_phone_regex = r'^(090|080|070)-\d{4}-\d{4}$'
@@ -116,14 +137,20 @@ def process_plaza_sms_contract_data(
                 return False
             return bool(re.match(mobile_phone_regex, phone_number))
         
-        # 除外データの詳細を記録
+        # フィルター適用
+        before_count = len(contract_df)
         excluded_phones_mask = ~phone_series.apply(is_mobile_phone)
-        if excluded_phones_mask.sum() > 0:
-            invalid_phone_samples = phone_series[excluded_phones_mask].value_counts().head(5).to_dict()
-            logs.append(f"フィルター5除外 - 携帯電話形式外例: {invalid_phone_samples}")
-        
+        excluded_phones_df = contract_df[excluded_phones_mask]
         contract_df = contract_df[phone_series.apply(is_mobile_phone)]
-        logs.append(f"フィルター5 - 契約者携帯電話(090/080/070のみ): {len(contract_df)}件")
+        logs.append(DetailedLogger.log_filter_result(before_count, len(contract_df), 'TEL携帯'))
+        
+        # 除外データの詳細を記録
+        if len(excluded_phones_df) > 0:
+            detail = DetailedLogger.log_exclusion_details(
+                excluded_phones_df, 27, 'TEL携帯', 'phone', top_n=3
+            )
+            if detail:
+                logs.append(detail)
         
         # VLOOKUP処理：国籍情報の結合
         logs.append("国籍情報のVLOOKUP処理を開始...")
@@ -232,6 +259,9 @@ def process_plaza_sms_contract_data(
         date_str = datetime.now().strftime("%m%d")
         japanese_filename = f"{date_str}プラザ契約者SMS日本.csv"
         foreign_filename = f"{date_str}プラザ契約者SMS外国.csv"
+        
+        # 最終結果のログ
+        logs.append(DetailedLogger.log_final_result(len(merged_df)))
         
         # 統計情報を辞書形式で作成
         stats = {

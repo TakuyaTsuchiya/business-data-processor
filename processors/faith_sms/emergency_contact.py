@@ -10,6 +10,7 @@ from processors.sms_common import (
     read_csv_auto_encoding
 )
 from domain.rules.business_rules import CLIENT_IDS, EXCLUDE_AMOUNTS
+from processors.common.detailed_logger import DetailedLogger
 
 
 def process_faith_sms_emergencycontact_data(file_content: bytes, payment_deadline_date: date) -> Tuple[pd.DataFrame, List[str], str, dict]:
@@ -31,33 +32,43 @@ def process_faith_sms_emergencycontact_data(file_content: bytes, payment_deadlin
         df = read_csv_auto_encoding(file_content)
 
         initial_rows = len(df)
-        logs.append(f"元データ読み込み: {initial_rows}件")
+        logs.append(DetailedLogger.log_initial_load(initial_rows))
         
         # Filter 1: 委託先法人ID (Keep only 1, 2, 3, 4)
         trustee_ids_to_keep = CLIENT_IDS['faith']
         df['委託先法人ID'] = pd.to_numeric(df['委託先法人ID'], errors='coerce').fillna(-1).astype(int)
         
-        # 除外データの詳細を記録
+        # フィルター適用
+        before_count = len(df)
         excluded_trustee = df[~df['委託先法人ID'].isin(trustee_ids_to_keep)]
-        if len(excluded_trustee) > 0:
-            excluded_ids = excluded_trustee['委託先法人ID'].value_counts().head(5).to_dict()
-            logs.append(f"フィルター1除外 - 委託先法人ID詳細: {excluded_ids}")
-        
         df = df[df['委託先法人ID'].isin(trustee_ids_to_keep)]
-        logs.append(f"フィルター1 - 委託先法人ID(1-4): {len(df)}件")
+        logs.append(DetailedLogger.log_filter_result(before_count, len(df), '委託先法人ID'))
+        
+        # 除外データの詳細を記録
+        if len(excluded_trustee) > 0:
+            detail = DetailedLogger.log_exclusion_details(
+                excluded_trustee, 118, '委託先法人ID', 'id', top_n=3
+            )
+            if detail:
+                logs.append(detail)
         
         # Filter 2: 入金予定日 (Keep empty or dates before today)
         df['入金予定日'] = pd.to_datetime(df['入金予定日'], format='%Y/%m/%d', errors='coerce')
         today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         
-        # 除外データの詳細を記録
+        # フィルター適用
+        before_count = len(df)
         excluded_dates = df[~(df['入金予定日'].isna() | (df['入金予定日'] < today))]
-        if len(excluded_dates) > 0:
-            future_dates = excluded_dates['入金予定日'].dropna().dt.strftime('%Y/%m/%d').value_counts().head(3).to_dict()
-            logs.append(f"フィルター2除外 - 未来日付例: {future_dates}")
-        
         df = df[df['入金予定日'].isna() | (df['入金予定日'] < today)]
-        logs.append(f"フィルター2 - 入金予定日(前日以前+空白): {len(df)}件")
+        logs.append(DetailedLogger.log_filter_result(before_count, len(df), '入金予定日'))
+        
+        # 除外データの詳細を記録
+        if len(excluded_dates) > 0:
+            detail = DetailedLogger.log_exclusion_details(
+                excluded_dates, 72, '入金予定日', 'date', top_n=3
+            )
+            if detail:
+                logs.append(detail)
         
         # Filter 3: 入金予定金額 (Exclude specific amounts: 2, 3, 5 as numeric or string values)
         payment_amount_exclude_numeric = EXCLUDE_AMOUNTS['faith']
@@ -65,29 +76,39 @@ def process_faith_sms_emergencycontact_data(file_content: bytes, payment_deadlin
         df['入金予定金額_numeric'] = pd.to_numeric(df['入金予定金額'], errors='coerce')
         df['入金予定金額_string'] = df['入金予定金額'].astype(str)
         
-        # 除外データの詳細を記録
+        # フィルター適用
+        before_count = len(df)
         excluded_amounts = df[(df['入金予定金額_numeric'].isin(payment_amount_exclude_numeric) | 
                               df['入金予定金額_string'].isin(payment_amount_exclude_string))]
-        if len(excluded_amounts) > 0:
-            excluded_values = excluded_amounts['入金予定金額'].value_counts().head(3).to_dict()
-            logs.append(f"フィルター3除外 - 金額詳細: {excluded_values}")
-        
         df = df[~(df['入金予定金額_numeric'].isin(payment_amount_exclude_numeric) | 
                   df['入金予定金額_string'].isin(payment_amount_exclude_string))]
         df = df.drop(['入金予定金額_numeric', '入金予定金額_string'], axis=1)
-        logs.append(f"フィルター3 - 入金予定金額(2,3,5円除外): {len(df)}件")
+        logs.append(DetailedLogger.log_filter_result(before_count, len(df), '入金予定金額'))
+        
+        # 除外データの詳細を記録
+        if len(excluded_amounts) > 0:
+            detail = DetailedLogger.log_exclusion_details(
+                excluded_amounts, 73, '入金予定金額', 'amount', top_n=3
+            )
+            if detail:
+                logs.append(detail)
         
         # Filter 4: 回収ランク (Exclude specific ranks)
         collection_rank_exclude = ["弁護士介入", "破産決定", "死亡決定"]
         
-        # 除外データの詳細を記録
+        # フィルター適用
+        before_count = len(df)
         excluded_ranks = df[df['回収ランク'].isin(collection_rank_exclude)]
-        if len(excluded_ranks) > 0:
-            excluded_rank_counts = excluded_ranks['回収ランク'].value_counts().to_dict()
-            logs.append(f"フィルター4除外 - 回収ランク詳細: {excluded_rank_counts}")
-        
         df = df[~df['回収ランク'].isin(collection_rank_exclude)]
-        logs.append(f"フィルター4 - 回収ランク(弁護士介入等除外): {len(df)}件")
+        logs.append(DetailedLogger.log_filter_result(before_count, len(df), '回収ランク'))
+        
+        # 除外データの詳細を記録
+        if len(excluded_ranks) > 0:
+            detail = DetailedLogger.log_exclusion_details(
+                excluded_ranks, 86, '回収ランク', 'category', top_n=3
+            )
+            if detail:
+                logs.append(detail)
         
         # Filter 5: BE列「緊急連絡人１のTEL携帯」 (Keep only valid mobile phone numbers) - 列番号56を使用
         mobile_phone_regex = r'^(090|080|070)-\d{4}-\d{4}$'
@@ -100,14 +121,20 @@ def process_faith_sms_emergencycontact_data(file_content: bytes, payment_deadlin
                 return False
             return bool(re.match(mobile_phone_regex, phone_number))
         
-        # 除外データの詳細を記録
+        # フィルター適用
+        before_count = len(df)
         excluded_phones_mask = ~emergency_phone_series.apply(is_mobile_phone)
-        if excluded_phones_mask.sum() > 0:
-            invalid_phone_samples = emergency_phone_series[excluded_phones_mask].value_counts().head(5).to_dict()
-            logs.append(f"フィルター5除外 - BE列「緊急連絡人１のTEL携帯」形式例: {invalid_phone_samples}")
+        excluded_phones_df = df[excluded_phones_mask]  # 除外データを取得してから
+        df = df[emergency_phone_series.apply(is_mobile_phone)]  # フィルタリング
+        logs.append(DetailedLogger.log_filter_result(before_count, len(df), 'BE列「緊急連絡人１のTEL携帯」'))
         
-        df = df[emergency_phone_series.apply(is_mobile_phone)]
-        logs.append(f"フィルター5 - BE列「緊急連絡人１のTEL携帯」(090/080/070のみ): {len(df)}件")
+        # 除外データの詳細を記録
+        if len(excluded_phones_df) > 0:
+            detail = DetailedLogger.log_exclusion_details(
+                excluded_phones_df, 56, 'BE列「緊急連絡人１のTEL携帯」', 'phone', top_n=3
+            )
+            if detail:
+                logs.append(detail)
         
         # Data mapping to output format - load from external template
         output_column_order = SMS_TEMPLATE_HEADERS
@@ -175,6 +202,9 @@ def process_faith_sms_emergencycontact_data(file_content: bytes, payment_deadlin
         # Restore original column names from template (convert _empty_X back to blank)
         df_copy = output_df.copy()
         df_copy.columns = output_column_order
+        
+        # 最終結果のログ
+        logs.append(DetailedLogger.log_final_result(len(output_df)))
         
         # 統計情報を辞書形式で作成
         stats = {

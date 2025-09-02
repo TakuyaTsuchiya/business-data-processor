@@ -9,6 +9,7 @@ from processors.sms_common import (
     format_payment_deadline,
     read_csv_auto_encoding
 )
+from processors.common.detailed_logger import DetailedLogger
 
 
 
@@ -49,7 +50,7 @@ def process_mirail_sms_guarantor_data(file_content: bytes, payment_deadline_date
         df = read_csv_auto_encoding(file_content)
 
         initial_rows = len(df)
-        logs.append(f"元データ読み込み: {initial_rows}件")
+        logs.append(DetailedLogger.log_initial_load(initial_rows))
         
         # Filter 1: DO列　委託先法人ID (Keep only 5 and blank)
         # DO列は列番号118（0ベース）
@@ -58,14 +59,19 @@ def process_mirail_sms_guarantor_data(file_content: bytes, payment_deadline_date
         # 5または空白（NaN含む）のみ保持
         valid_trustee_mask = (trustee_id_column == '5') | (trustee_id_column == '') | (trustee_id_column == 'nan')
         
-        # 除外データの詳細を記録
+        # フィルター適用
+        before_count = len(df)
         excluded_trustee = df[~valid_trustee_mask]
-        if len(excluded_trustee) > 0:
-            excluded_ids = trustee_id_column[~valid_trustee_mask].value_counts().head(5).to_dict()
-            logs.append(f"フィルター1除外 - 委託先法人ID詳細: {excluded_ids}")
-        
         df = df[valid_trustee_mask]
-        logs.append(f"フィルター1 - 委託先法人ID(5と空白): {len(df)}件")
+        logs.append(DetailedLogger.log_filter_result(before_count, len(df), '委託先法人ID'))
+        
+        # 除外データの詳細を記録
+        if len(excluded_trustee) > 0:
+            detail = DetailedLogger.log_exclusion_details(
+                excluded_trustee, 118, '委託先法人ID', 'id', top_n=3
+            )
+            if detail:
+                logs.append(detail)
         
         # Filter 2: BU列　入金予定日 (Keep dates before today, exclude today and future)
         # BU列は列番号72（0ベース）
@@ -76,14 +82,19 @@ def process_mirail_sms_guarantor_data(file_content: bytes, payment_deadline_date
         # 前日以前のみ保持（当日は除外）
         valid_date_mask = df['入金予定日_parsed'].isna() | (df['入金予定日_parsed'] < today)
         
-        # 除外データの詳細を記録
+        # フィルター適用
+        before_count = len(df)
         excluded_dates = df[~valid_date_mask]
-        if len(excluded_dates) > 0:
-            future_dates = excluded_dates['入金予定日_parsed'].dropna().dt.strftime('%Y/%m/%d').value_counts().head(3).to_dict()
-            logs.append(f"フィルター2除外 - 当日・未来日付例: {future_dates}")
-        
         df = df[valid_date_mask]
-        logs.append(f"フィルター2 - 入金予定日(前日以前): {len(df)}件")
+        logs.append(DetailedLogger.log_filter_result(before_count, len(df), '入金予定日'))
+        
+        # 除外データの詳細を記録
+        if len(excluded_dates) > 0:
+            detail = DetailedLogger.log_exclusion_details(
+                excluded_dates, 72, '入金予定日', 'date', top_n=3
+            )
+            if detail:
+                logs.append(detail)
         
         # Filter 3: BV列　入金予定金額 (Exclude specific amounts: 2, 3, 5, 12)
         # BV列は列番号73（0ベース）
@@ -94,32 +105,42 @@ def process_mirail_sms_guarantor_data(file_content: bytes, payment_deadline_date
         df['入金予定金額_numeric'] = pd.to_numeric(payment_amount_column, errors='coerce')
         df['入金予定金額_string'] = payment_amount_column.astype(str)
         
-        # 除外データの詳細を記録
+        # フィルター適用
+        before_count = len(df)
         excluded_amounts = df[(df['入金予定金額_numeric'].isin(payment_amount_exclude_numeric) | 
                               df['入金予定金額_string'].isin(payment_amount_exclude_string))]
-        if len(excluded_amounts) > 0:
-            excluded_values = payment_amount_column[excluded_amounts.index].value_counts().head(3).to_dict()
-            logs.append(f"フィルター3除外 - 金額詳細: {excluded_values}")
-        
         valid_amount_mask = ~(df['入金予定金額_numeric'].isin(payment_amount_exclude_numeric) | 
                              df['入金予定金額_string'].isin(payment_amount_exclude_string))
         df = df[valid_amount_mask]
         df = df.drop(['入金予定金額_numeric', '入金予定金額_string'], axis=1)
-        logs.append(f"フィルター3 - 入金予定金額(2,3,5,12円除外): {len(df)}件")
+        logs.append(DetailedLogger.log_filter_result(before_count, len(df), '入金予定金額'))
+        
+        # 除外データの詳細を記録
+        if len(excluded_amounts) > 0:
+            detail = DetailedLogger.log_exclusion_details(
+                excluded_amounts, 73, '入金予定金額', 'amount', top_n=3
+            )
+            if detail:
+                logs.append(detail)
         
         # Filter 4: CI列　回収ランク (Exclude specific ranks: 弁護士介入, 訴訟中)
         # CI列は列番号86（0ベース）
         collection_rank_exclude = ["弁護士介入", "訴訟中"]
         collection_rank_column = df.iloc[:, 86]
         
-        # 除外データの詳細を記録
+        # フィルター適用
+        before_count = len(df)
         excluded_ranks = df[collection_rank_column.isin(collection_rank_exclude)]
-        if len(excluded_ranks) > 0:
-            excluded_rank_counts = collection_rank_column[excluded_ranks.index].value_counts().to_dict()
-            logs.append(f"フィルター4除外 - 回収ランク詳細: {excluded_rank_counts}")
-        
         df = df[~collection_rank_column.isin(collection_rank_exclude)]
-        logs.append(f"フィルター4 - 回収ランク(弁護士介入・訴訟中除外): {len(df)}件")
+        logs.append(DetailedLogger.log_filter_result(before_count, len(df), '回収ランク'))
+        
+        # 除外データの詳細を記録
+        if len(excluded_ranks) > 0:
+            detail = DetailedLogger.log_exclusion_details(
+                excluded_ranks, 86, '回収ランク', 'category', top_n=3
+            )
+            if detail:
+                logs.append(detail)
         
         # Filter 5: AU列　TEL携帯 (Keep only valid mobile phone numbers)
         # AU列は列番号46（0ベース）
@@ -131,14 +152,20 @@ def process_mirail_sms_guarantor_data(file_content: bytes, payment_deadline_date
                 return False
             return bool(re.match(mobile_phone_regex, phone_number))
         
-        # 除外データの詳細を記録
+        # フィルター適用
+        before_count = len(df)
         excluded_phones_mask = ~mobile_phone_column.apply(is_mobile_phone)
-        if excluded_phones_mask.sum() > 0:
-            invalid_phone_samples = mobile_phone_column[excluded_phones_mask].value_counts().head(5).to_dict()
-            logs.append(f"フィルター5除外 - AU列TEL携帯形式例: {invalid_phone_samples}")
-        
+        excluded_phones_df = df[excluded_phones_mask]
         df = df[mobile_phone_column.apply(is_mobile_phone)]
-        logs.append(f"フィルター5 - AU列TEL携帯(090/080/070のみ): {len(df)}件")
+        logs.append(DetailedLogger.log_filter_result(before_count, len(df), 'AU列TEL携帯'))
+        
+        # 除外データの詳細を記録
+        if len(excluded_phones_df) > 0:
+            detail = DetailedLogger.log_exclusion_details(
+                excluded_phones_df, 46, 'AU列TEL携帯', 'phone', top_n=3
+            )
+            if detail:
+                logs.append(detail)
         
         # Data mapping to output format - load from external template
         output_column_order = SMS_TEMPLATE_HEADERS
@@ -207,6 +234,9 @@ def process_mirail_sms_guarantor_data(file_content: bytes, payment_deadline_date
         # Restore original column names from template (convert _empty_X back to blank)
         df_copy = output_df.copy()
         df_copy.columns = output_column_order
+        
+        # 最終結果のログ
+        logs.append(DetailedLogger.log_final_result(len(output_df)))
         
         # 統計情報を辞書形式で作成
         stats = {
