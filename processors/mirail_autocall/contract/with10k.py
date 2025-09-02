@@ -15,6 +15,8 @@ processors_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath
 if processors_dir not in sys.path:
     sys.path.append(processors_dir)
 from autocall_common import AUTOCALL_OUTPUT_COLUMNS
+from common.contract_list_columns import ContractListColumns as COL
+from common.detailed_logger import DetailedLogger
 
 
 def read_csv_auto_encoding(file_content: bytes) -> pd.DataFrame:
@@ -48,51 +50,59 @@ def apply_mirail_with10k_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[s
     """
     logs = []
     original_count = len(df)
-    logs.append(f"元データ件数: {original_count}件")
+    logs.append(DetailedLogger.log_initial_load(original_count))
     
     # 📊 フィルタリング条件の適用
     # 1. 委託先法人IDが空白と5（直接管理・特定委託案件のみ対象）
     before_filter = len(df)
-    # 除外されるデータの詳細を記録
-    excluded_data = df[~(df["委託先法人ID"].isna() | 
-                        (df["委託先法人ID"].astype(str).str.strip() == "") | 
-                        (df["委託先法人ID"].astype(str).str.strip() == "5"))]
-    if len(excluded_data) > 0:
-        excluded_counts = excluded_data['委託先法人ID'].value_counts().to_dict()
-        excluded_counts_str = {str(k): v for k, v in excluded_counts.items()}
-        logs.append(f"委託先法人ID除外詳細: {excluded_counts_str}")
     
-    df = df[df["委託先法人ID"].isna() | 
-           (df["委託先法人ID"].astype(str).str.strip() == "") | 
-           (df["委託先法人ID"].astype(str).str.strip() == "5")]
-    logs.append(f"委託先法人ID（空白と5）フィルタ後: {len(df)}件 (除外: {before_filter - len(df)}件)")
+    # 新実装（列番号ベース）
+    trustee_id_col = df.iloc[:, COL.TRUSTEE_ID].astype(str).str.strip()
+    excluded_data = df[~(trustee_id_col.isin(["", "nan", "NaN", "5"]))]
+    
+    # 詳細ログ
+    detail_log = DetailedLogger.log_exclusion_details(excluded_data, COL.TRUSTEE_ID, '委託先法人ID', 'id')
+    if detail_log:
+        logs.append(detail_log)
+    
+    # フィルタ適用
+    df = df[trustee_id_col.isin(["", "nan", "NaN", "5"])]
+    logs.append(DetailedLogger.log_filter_result(before_filter, len(df), '委託先法人ID（空白と5）'))
     
     # 2. 入金予定日のフィルタリング（前日以前またはNaN：当日は除外）
     today = pd.Timestamp.now().normalize()
-    df["入金予定日"] = pd.to_datetime(df["入金予定日"], errors='coerce')
     before_filter = len(df)
-    # 除外されるデータの詳細を記録
-    excluded_data = df[~(df["入金予定日"].isna() | (df["入金予定日"] < today))]
-    if len(excluded_data) > 0:
-        excluded_dates = excluded_data['入金予定日'].dt.strftime('%Y/%m/%d').value_counts().head(10).to_dict()
-        logs.append(f"入金予定日除外詳細（上位10件）: {excluded_dates}")
-        if len(excluded_data) > 10:
-            logs.append(f"  ※他{len(excluded_data) - 10}件の日付も除外")
     
-    df = df[df["入金予定日"].isna() | (df["入金予定日"] < today)]
-    logs.append(f"入金予定日フィルタ後: {len(df)}件 (除外: {before_filter - len(df)}件)")
+    # 新実装（列番号ベース）
+    # 入金予定日列を一時的に変換
+    temp_payment_date = pd.to_datetime(df.iloc[:, COL.PAYMENT_DATE], errors='coerce')
+    excluded_data = df[~(temp_payment_date.isna() | (temp_payment_date < today))]
+    
+    # 詳細ログ（上位3件表示に変更）
+    detail_log = DetailedLogger.log_exclusion_details(excluded_data, COL.PAYMENT_DATE, '入金予定日', 'date', top_n=3)
+    if detail_log:
+        logs.append(detail_log)
+    
+    # フィルタ適用
+    df = df[temp_payment_date.isna() | (temp_payment_date < today)]
+    logs.append(DetailedLogger.log_filter_result(before_filter, len(df), '入金予定日'))
     
     # 3. 回収ランクのフィルタリング（弁護士介入案件は除外）
     exclude_ranks = ["弁護士介入"]
     before_filter = len(df)
-    # 除外されるデータの詳細を記録
-    excluded_data = df[df["回収ランク"].isin(exclude_ranks)]
-    if len(excluded_data) > 0:
-        excluded_ranks_data = excluded_data['回収ランク'].value_counts().to_dict()
-        logs.append(f"回収ランク除外詳細: {excluded_ranks_data}")
     
-    df = df[~df["回収ランク"].isin(exclude_ranks)]
-    logs.append(f"回収ランクフィルタ後: {len(df)}件 (除外: {before_filter - len(df)}件)")
+    # 新実装（列番号ベース）
+    collection_rank_col = df.iloc[:, COL.COLLECTION_RANK]
+    excluded_data = df[collection_rank_col.isin(exclude_ranks)]
+    
+    # 詳細ログ
+    detail_log = DetailedLogger.log_exclusion_details(excluded_data, COL.COLLECTION_RANK, '回収ランク', 'category')
+    if detail_log:
+        logs.append(detail_log)
+    
+    # フィルタ適用
+    df = df[~collection_rank_col.isin(exclude_ranks)]
+    logs.append(DetailedLogger.log_filter_result(before_filter, len(df), '回収ランク'))
     
     # 4. 残債のフィルタリング（with10k版では除外なし - 全件処理）
     # ※ without10k版では残債10,000円・11,000円を除外するが、with10k版は全件処理
@@ -101,34 +111,39 @@ def apply_mirail_with10k_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[s
     
     # 5. TEL携帯のフィルタリング（契約者電話番号が必須）
     before_filter = len(df)
-    # 除外されるデータの詳細を記録
-    excluded_data = df[~(df["TEL携帯"].notna() &
-                        (~df["TEL携帯"].astype(str).str.strip().isin(["", "nan", "NaN"])))]
-    if len(excluded_data) > 0:
-        tel_data = excluded_data['TEL携帯'].astype(str).str.strip()
-        empty_count = tel_data[tel_data.isin(['', 'nan', 'NaN'])].count()
-        fixed_phone_count = len(excluded_data) - empty_count
-        logs.append(f"携帯電話除外詳細: {{空白/NaN: {empty_count}件, 固定電話等: {fixed_phone_count}件}}")
     
-    df = df[
-        df["TEL携帯"].notna() &
-        (~df["TEL携帯"].astype(str).str.strip().isin(["", "nan", "NaN"]))
-    ]
-    logs.append(f"TEL携帯フィルタ後: {len(df)}件 (除外: {before_filter - len(df)}件)")
+    # 新実装（列番号ベース）
+    tel_mobile_col = df.iloc[:, COL.TEL_MOBILE]
+    # 有効な電話番号の判定
+    tel_str = tel_mobile_col.astype(str).str.strip()
+    valid_tel_mask = tel_mobile_col.notna() & (~tel_str.isin(["", "nan", "NaN"]))
+    excluded_data = df[~valid_tel_mask]
+    
+    # 詳細ログ
+    detail_log = DetailedLogger.log_exclusion_details(excluded_data, COL.TEL_MOBILE, '携帯電話', 'phone')
+    if detail_log:
+        logs.append(detail_log)
+    
+    # フィルタ適用
+    df = df[valid_tel_mask]
+    logs.append(DetailedLogger.log_filter_result(before_filter, len(df), 'TEL携帯'))
     
     # 6. 入金予定金額のフィルタリング（手数料関連の2,3,5,12円を除外）
     exclude_amounts = [2, 3, 5, 12]
-    df["入金予定金額"] = pd.to_numeric(df["入金予定金額"], errors='coerce')
     before_filter = len(df)
-    # 除外されるデータの詳細を記録
-    excluded_data = df[df["入金予定金額"].isin(exclude_amounts)]
-    if len(excluded_data) > 0:
-        excluded_amounts_data = excluded_data['入金予定金額'].value_counts().to_dict()
-        excluded_amounts_str = {f"{int(k)}円": v for k, v in excluded_amounts_data.items() if pd.notna(k)}
-        logs.append(f"除外金額詳細: {excluded_amounts_str}")
     
-    df = df[~df["入金予定金額"].isin(exclude_amounts)]
-    logs.append(f"入金予定金額フィルタ後: {len(df)}件 (除外: {before_filter - len(df)}件)")
+    # 新実装（列番号ベース）
+    payment_amount_col = pd.to_numeric(df.iloc[:, COL.PAYMENT_AMOUNT], errors='coerce')
+    excluded_data = df[payment_amount_col.isin(exclude_amounts)]
+    
+    # 詳細ログ
+    detail_log = DetailedLogger.log_exclusion_details(excluded_data, COL.PAYMENT_AMOUNT, '除外金額', 'amount')
+    if detail_log:
+        logs.append(detail_log)
+    
+    # フィルタ適用
+    df = df[~payment_amount_col.isin(exclude_amounts)]
+    logs.append(DetailedLogger.log_filter_result(before_filter, len(df), '入金予定金額'))
     
     return df, logs
 
@@ -141,24 +156,25 @@ def create_mirail_with10k_output(df_filtered: pd.DataFrame) -> Tuple[pd.DataFram
     df_output = pd.DataFrame(index=range(len(df_filtered)), columns=AUTOCALL_OUTPUT_COLUMNS)
     df_output = df_output.fillna("")
     
-    # 出力用のマッピング
+    # 出力用のマッピング（列番号ベース）
     mapping_rules = {
-        "電話番号": "TEL携帯",
-        "架電番号": "TEL携帯", 
-        "入居ステータス": "入居ステータス",
-        "滞納ステータス": "滞納ステータス",
-        "管理番号": "管理番号",
-        "契約者名（カナ）": "契約者カナ",
-        "物件名": "物件名",
-        "クライアント": "クライアント名",
-        "残債": "滞納残債"  # J列「残債」にBT列「滞納残債」を格納
+        "電話番号": COL.TEL_MOBILE,
+        "架電番号": COL.TEL_MOBILE, 
+        "入居ステータス": COL.RESIDENCE_STATUS,
+        "滞納ステータス": COL.DELINQUENT_STATUS,
+        "管理番号": COL.MANAGEMENT_NO,
+        "契約者名（カナ）": COL.CONTRACT_KANA,
+        "物件名": COL.PROPERTY_NAME,
+        "クライアント": COL.CLIENT_NAME,
+        "残債": COL.DEBT_AMOUNT  # J列「残債」にBT列「滞納残債」を格納
     }
     
     # データをマッピング
-    for i, (_, row) in enumerate(df_filtered.iterrows()):
-        for output_col, input_col in mapping_rules.items():
-            if output_col in df_output.columns and input_col in row:
-                df_output.at[i, output_col] = str(row[input_col]) if pd.notna(row[input_col]) else ""
+    for i in range(len(df_filtered)):
+        for output_col, col_index in mapping_rules.items():
+            if output_col in df_output.columns:
+                value = df_filtered.iloc[i, col_index]
+                df_output.at[i, output_col] = str(value) if pd.notna(value) else ""
     
     logs.append(f"出力データ作成完了: {len(df_output)}件")
     
@@ -195,11 +211,16 @@ def process_mirail_with10k_data(file_content: bytes) -> Tuple[pd.DataFrame, pd.D
         df_input = read_csv_auto_encoding(file_content)
         logs.append(f"読み込み完了: {len(df_input)}件")
         
-        # 必須列チェック
-        required_columns = ["委託先法人ID", "TEL携帯", "回収ランク"]
-        missing_columns = [col for col in required_columns if col not in df_input.columns]
-        if missing_columns:
-            raise ValueError(f"必須列が不足しています: {missing_columns}")
+        # 必須列チェック（列番号で確認）
+        required_cols = {
+            COL.TRUSTEE_ID: "委託先法人ID",
+            COL.TEL_MOBILE: "TEL携帯",
+            COL.COLLECTION_RANK: "回収ランク"
+        }
+        
+        # 列数チェック
+        if len(df_input.columns) <= max(required_cols.keys()):
+            raise ValueError(f"CSVファイルの列数が不足しています。必要列数: {max(required_cols.keys()) + 1}列以上")
         
         # 2. フィルタリング処理
         df_filtered, filter_logs = apply_mirail_with10k_filters(df_input)
