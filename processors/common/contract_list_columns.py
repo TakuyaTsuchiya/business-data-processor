@@ -15,13 +15,13 @@ class ContractListColumns:
     """ContractList列定義（0ベースのインデックス）"""
     
     # ========== 基本情報 ==========
-    MANAGEMENT_NO = 3         # D列: 管理番号
-    CONTRACT_NAME = 7         # H列: 契約者氏名
-    CONTRACT_KANA = 8         # I列: 契約者カナ
-    PROPERTY_NAME = 15        # P列: 物件名
+    MANAGEMENT_NO = 0         # A列: 管理番号
+    CONTRACT_NAME = 20        # U列: 契約者氏名
+    CONTRACT_KANA = 21        # V列: 契約者カナ
+    PROPERTY_NAME = 95        # CR列: 物件名
     PROPERTY_NO = 16          # Q列: 物件番号
-    CLIENT_NAME = 115         # DL列: クライアント名
-    CLIENT_CD = 116           # DM列: クライアントCD
+    CLIENT_NAME = 98          # CU列: クライアント名
+    CLIENT_CD = 97            # CT列: クライアントCD
     
     # ========== 電話番号（対象者別） ==========
     # 契約者
@@ -29,8 +29,8 @@ class ContractListColumns:
     TEL_HOME = 26             # AA列: TEL自宅
     
     # 保証人
-    TEL_MOBILE_1 = 40         # AO列: TEL携帯.1
-    TEL_HOME_1 = 39           # AN列: TEL自宅.1
+    TEL_MOBILE_1 = 46         # AU列: TEL携帯.1
+    TEL_HOME_1 = 45           # AT列: TEL自宅.1
     
     # 緊急連絡人
     TEL_MOBILE_2 = 56         # BE列: 緊急連絡人１のTEL（携帯）
@@ -43,8 +43,8 @@ class ContractListColumns:
     
     # ========== ステータス関連 ==========
     COLLECTION_RANK = 86      # CI列: 回収ランク
-    RESIDENCE_STATUS = 108    # DC列: 入居ステータス
-    DELINQUENT_STATUS = 109   # DD列: 滞納ステータス
+    RESIDENCE_STATUS = 14     # O列: 入居ステータス
+    DELINQUENT_STATUS = 15    # P列: 滞納ステータス
     
     # ========== 委託・回収関連 ==========
     TRUSTEE_ID = 118          # DO列: 委託先法人ID
