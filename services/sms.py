@@ -7,12 +7,12 @@ processors/配下のSMS処理を再エクスポートします。
 # ミライル系
 from processors.mirail_sms.contract import process_mirail_sms_contract_data
 from processors.mirail_sms.guarantor import process_mirail_sms_guarantor_data
-from processors.mirail_sms.emergency_contact import process_mirail_sms_emergency_contact_data
+from processors.mirail_sms.emergency_contact import process_mirail_sms_emergencycontact_data
 
 # フェイス系
 from processors.faith_sms.contract import process_faith_sms_contract_data
 from processors.faith_sms.guarantor import process_faith_sms_guarantor_data
-from processors.faith_sms.emergency_contact import process_faith_sms_emergency_contact_data
+from processors.faith_sms.emergency_contact import process_faith_sms_emergencycontact_data
 
 # プラザ系
 from processors.plaza_sms.contract import process_plaza_sms_contract_data
@@ -24,11 +24,11 @@ __all__ = [
     # ミライル系
     'process_mirail_sms_contract_data',
     'process_mirail_sms_guarantor_data',
-    'process_mirail_sms_emergency_contact_data',
+    'process_mirail_sms_emergencycontact_data',
     # フェイス系
     'process_faith_sms_contract_data',
     'process_faith_sms_guarantor_data',
-    'process_faith_sms_emergency_contact_data',
+    'process_faith_sms_emergencycontact_data',
     # プラザ系
     'process_plaza_sms_contract_data',
     'process_plaza_sms_guarantor_data',

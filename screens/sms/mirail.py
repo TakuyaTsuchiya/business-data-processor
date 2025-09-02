@@ -18,7 +18,7 @@ from components.result_display import display_error_result
 from services.sms import (
     process_mirail_sms_contract_data,
     process_mirail_sms_guarantor_data,
-    process_mirail_sms_emergency_contact_data
+    process_mirail_sms_emergencycontact_data
 )
 
 
@@ -161,7 +161,7 @@ def show_mirail_sms_emergencycontact():
             if st.button("処理を実行", type="primary", key="mirail_sms_emergencycontact_process"):
                 with st.spinner("処理中..."):
                     # 戻り値を一時変数で受け取る
-                    result = process_mirail_sms_emergency_contact_data(uploaded_file.read(), payment_deadline_date)
+                    result = process_mirail_sms_emergencycontact_data(uploaded_file.read(), payment_deadline_date)
                     result_df, logs, filename, stats = result
                     
                 if not result_df.empty:
