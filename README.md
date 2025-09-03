@@ -1,16 +1,12 @@
-# Business Data Processor v2.3.0
+# Business Data Processor
 
 [![CI/CD Status](https://github.com/TakuyaTsuchiya/business-data-processor/workflows/Deploy%20to%20Production/badge.svg)](https://github.com/TakuyaTsuchiya/business-data-processor/actions)
 
-**統合データ処理システム** - 革新的UIシステム搭載版
-
-> 本番環境復旧確認中...
-
 ## 🌟 概要
 
-複数の業務用データ処理アプリケーションを統合した、**革新的なプルダウンレスUI**を搭載したStreamlit製のWebアプリケーションです。不動産管理業務における契約データの変換・統合処理を自動化し、**常時表示階層メニュー**による直感的で効率的な操作を実現した業務効率化ツールです。
+複数の業務用データ処理アプリケーションを統合したStreamlit製のWebアプリケーションです。不動産管理業務における契約データの変換・統合処理を自動化し、**常時表示階層メニュー**による直感的で効率的な操作を実現した業務効率化ツールです。
 
-## 📊 対応プロセッサー（17種類完全統合）
+## 📊 プロセッサー
 
 ### 📞 オートコール用CSV加工（12種類）
 
