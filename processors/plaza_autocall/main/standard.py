@@ -16,6 +16,7 @@ processors_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath
 if processors_dir not in sys.path:
     sys.path.append(processors_dir)
 from autocall_common import AUTOCALL_OUTPUT_COLUMNS
+from processors.common.detailed_logger import DetailedLogger
 
 
 def read_csv_auto_encoding(file_content: bytes) -> pd.DataFrame:
@@ -45,7 +46,7 @@ def apply_plaza_main_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]
     """
     logs = []
     original_count = len(df)
-    logs.append(f"元データ件数: {original_count}件")
+    logs.append(DetailedLogger.log_initial_load(original_count))
     
     # 📊 フィルタリング条件の適用
     # 1. 委託先法人IDが6のみ（プラザ固有）
@@ -53,12 +54,18 @@ def apply_plaza_main_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]
     # 除外されるデータの詳細を記録
     excluded_data = df[df["委託先法人ID"].astype(str).str.strip() != "6"]
     if len(excluded_data) > 0:
-        excluded_counts = excluded_data['委託先法人ID'].value_counts().to_dict()
-        excluded_counts_str = {str(k): v for k, v in excluded_counts.items()}
-        logs.append(f"委託先法人ID除外詳細: {excluded_counts_str}")
+        logs.append(DetailedLogger.log_exclusion_details(
+            excluded_data,
+            '委託先法人ID',
+            log_type='id'
+        ))
     
     df = df[df["委託先法人ID"].astype(str).str.strip() == "6"]
-    logs.append(f"委託先法人ID（6のみ）フィルタ後: {len(df)}件 (除外: {before_filter - len(df)}件)")
+    logs.append(DetailedLogger.log_filter_result(
+        "委託先法人ID（6のみ）",
+        before_filter,
+        len(df)
+    ))
     
     # 2. 入金予定日のフィルタリング（当日以前またはNaN：当日も含む）
     today = pd.Timestamp.now().normalize()
@@ -67,13 +74,18 @@ def apply_plaza_main_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]
     # 除外されるデータの詳細を記録
     excluded_data = df[~(df["入金予定日"].isna() | (df["入金予定日"] <= today))]
     if len(excluded_data) > 0:
-        excluded_dates = excluded_data['入金予定日'].dt.strftime('%Y/%m/%d').value_counts().head(10).to_dict()
-        logs.append(f"入金予定日除外詳細（上位10件）: {excluded_dates}")
-        if len(excluded_data) > 10:
-            logs.append(f"  ※他{len(excluded_data) - 10}件の日付も除外")
+        logs.append(DetailedLogger.log_exclusion_details(
+            excluded_data,
+            '入金予定日',
+            log_type='date'
+        ))
     
     df = df[df["入金予定日"].isna() | (df["入金予定日"] <= today)]
-    logs.append(f"入金予定日フィルタ後: {len(df)}件 (除外: {before_filter - len(df)}件)")
+    logs.append(DetailedLogger.log_filter_result(
+        "入金予定日",
+        before_filter,
+        len(df)
+    ))
     
     # 3. 回収ランクのフィルタリング（督促停止・弁護士介入案件は除外）
     exclude_ranks = ["督促停止", "弁護士介入"]
@@ -81,11 +93,18 @@ def apply_plaza_main_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]
     # 除外されるデータの詳細を記録
     excluded_data = df[df["回収ランク"].isin(exclude_ranks)]
     if len(excluded_data) > 0:
-        excluded_ranks_data = excluded_data['回収ランク'].value_counts().to_dict()
-        logs.append(f"回収ランク除外詳細: {excluded_ranks_data}")
+        logs.append(DetailedLogger.log_exclusion_details(
+            excluded_data,
+            '回収ランク',
+            log_type='category'
+        ))
     
     df = df[~df["回収ランク"].isin(exclude_ranks)]
-    logs.append(f"回収ランクフィルタ後: {len(df)}件 (除外: {before_filter - len(df)}件)")
+    logs.append(DetailedLogger.log_filter_result(
+        "回収ランク",
+        before_filter,
+        len(df)
+    ))
     
     # 4. 残債のフィルタリング（with10k版では除外なし - 全件処理）
     logs.append("残債フィルタ: 除外なし（with10k版：10,000円・11,000円も含む全件処理）")
@@ -97,16 +116,21 @@ def apply_plaza_main_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]
     excluded_data = df[~(df["TEL携帯"].notna() &
                         (~df["TEL携帯"].astype(str).str.strip().isin(["", "nan", "NaN"])))]
     if len(excluded_data) > 0:
-        tel_data = excluded_data['TEL携帯'].astype(str).str.strip()
-        empty_count = tel_data[tel_data.isin(['', 'nan', 'NaN'])].count()
-        fixed_phone_count = len(excluded_data) - empty_count
-        logs.append(f"携帯電話除外詳細: {{空白/NaN: {empty_count}件, 固定電話等: {fixed_phone_count}件}}")
+        logs.append(DetailedLogger.log_exclusion_details(
+            excluded_data,
+            'TEL携帯',
+            log_type='phone'
+        ))
     
     df = df[
         df["TEL携帯"].notna() &
         (~df["TEL携帯"].astype(str).str.strip().isin(["", "nan", "NaN"]))
     ]
-    logs.append(f"TEL携帯フィルタ後: {len(df)}件 (除外: {before_filter - len(df)}件)")
+    logs.append(DetailedLogger.log_filter_result(
+        "TEL携帯",
+        before_filter,
+        len(df)
+    ))
     
     # 6. 入金予定金額のフィルタリング（手数料関連の2,3,5,12円を除外）
     exclude_amounts = [2, 3, 5, 12]
@@ -115,12 +139,18 @@ def apply_plaza_main_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]
     # 除外されるデータの詳細を記録
     excluded_data = df[df["入金予定金額"].isin(exclude_amounts)]
     if len(excluded_data) > 0:
-        excluded_amounts_data = excluded_data['入金予定金額'].value_counts().to_dict()
-        excluded_amounts_str = {f"{int(k)}円": v for k, v in excluded_amounts_data.items() if pd.notna(k)}
-        logs.append(f"除外金額詳細: {excluded_amounts_str}")
+        logs.append(DetailedLogger.log_exclusion_details(
+            excluded_data,
+            '入金予定金額',
+            log_type='amount'
+        ))
     
     df = df[~df["入金予定金額"].isin(exclude_amounts)]
-    logs.append(f"入金予定金額フィルタ後: {len(df)}件 (除外: {before_filter - len(df)}件)")
+    logs.append(DetailedLogger.log_filter_result(
+        "入金予定金額",
+        before_filter,
+        len(df)
+    ))
     
     return df, logs
 

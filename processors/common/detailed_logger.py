@@ -70,9 +70,16 @@ class DetailedLogger:
         column_data = excluded_data.iloc[:, column_index]
         
         if log_type == 'id':
-            # ID系の集計（文字列化して表示）
+            # ID系の集計（整数は整数として、それ以外は文字列として表示）
             counts = column_data.value_counts().to_dict()
-            counts_str = {str(k): v for k, v in counts.items()}
+            counts_str = {}
+            for k, v in counts.items():
+                if pd.notna(k) and isinstance(k, (int, float)) and k == int(k):
+                    # 整数として扱える場合
+                    counts_str[str(int(k))] = v
+                else:
+                    # その他の場合
+                    counts_str[str(k)] = v
             return f"{label}除外詳細: {counts_str}"
             
         elif log_type == 'phone':
