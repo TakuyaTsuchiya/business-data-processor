@@ -171,7 +171,7 @@ def process_plaza_sms_guarantor_data(file_content: bytes, payment_deadline_date:
         
         # Map data - AU列（列番号46）の電話番号を使用
         output_df['電話番号'] = df.iloc[:, 46].astype(str)
-        output_df['(info1)契約者名'] = df['保証人１氏名']
+        output_df['(info1)契約者名'] = df['契約者氏名']
         
         # Combine property name and number
         output_df['(info2)物件名'] = df['物件名'].astype(str) + df['物件番号'].fillna('').astype(str).apply(

@@ -17,9 +17,10 @@ import pandas as pd
 import chardet
 from datetime import datetime
 import logging
-from typing import Tuple, Optional, Dict
+from typing import Tuple, Optional, Dict, List
 import io
 import unicodedata
+from processors.common.detailed_logger import DetailedLogger
 
 # ロギング設定
 logging.basicConfig(level=logging.INFO)
@@ -390,7 +391,7 @@ def create_output_dataframe(changed_df: pd.DataFrame) -> pd.DataFrame:
         logger.error(f"出力データ作成エラー: {str(e)}")
         raise
 
-def process_capco_debt_update(arrear_file_content: bytes, contract_file_content: bytes, progress_callback=None) -> Tuple[pd.DataFrame, str, Dict[str, any]]:
+def process_capco_debt_update(arrear_file_content: bytes, contract_file_content: bytes, progress_callback=None) -> Tuple[pd.DataFrame, str, Dict[str, any], List[str]]:
     """
     カプコ残債更新処理のメイン関数
     
@@ -400,11 +401,12 @@ def process_capco_debt_update(arrear_file_content: bytes, contract_file_content:
         progress_callback: 進捗を更新するコールバック関数
     
     Returns:
-        処理結果のDataFrame、出力ファイル名、処理統計情報のタプル
+        処理結果のDataFrame、出力ファイル名、処理統計情報、ログリストのタプル
     """
     try:
         # 統計情報を保存する辞書
         stats = {}
+        logs = []
         
         # Step 1: ファイルを読み込む（メモリ最適化：必要な列のみ）
         logger.info("=== Step 1: ファイル読み込み開始 ===")
@@ -416,6 +418,9 @@ def process_capco_debt_update(arrear_file_content: bytes, contract_file_content:
         contract_df = read_csv_with_encoding(contract_file_content, "ContractList_*.csv", usecols=CONTRACT_USECOLS)
         stats['arrear_total_rows'] = len(arrear_df)
         stats['contract_total_rows'] = len(contract_df)
+        
+        # 初期データ読み込みログ
+        logs.append(DetailedLogger.log_initial_load(stats['contract_total_rows']))
         stats['arrear_columns_optimized'] = len(ARREAR_USECOLS)
         stats['contract_columns_optimized'] = len(CONTRACT_USECOLS)
         
@@ -446,12 +451,27 @@ def process_capco_debt_update(arrear_file_content: bytes, contract_file_content:
         stats['client_cd_after'] = len(contract_filtered)
         stats['client_cd_excluded'] = stats['client_cd_before'] - stats['client_cd_after']
         
+        # クライアントCDフィルタログ
+        logs.append(DetailedLogger.log_filter_result(
+            stats['client_cd_before'], stats['client_cd_after'], 'クライアントCD'
+        ))
+        
+        # 除外されたクライアントCDの詳細
+        excluded_client_cd = contract_data[~contract_data['管理番号'].isin(contract_filtered['管理番号'])]
+        if len(excluded_client_cd) > 0:
+            client_cd_col = contract_data.columns.get_loc('クライアントCD')
+            detail_log = DetailedLogger.log_exclusion_details(
+                excluded_client_cd, client_cd_col, 'クライアントCD', 'category'
+            )
+            if detail_log:
+                logs.append(detail_log)
+        
         if len(contract_filtered) == 0:
             logger.warning("クライアントCD=1,4のデータが存在しません")
             empty_df = pd.DataFrame(columns=OUTPUT_HEADERS)
             timestamp = datetime.now().strftime("%m%d")
             output_filename = f"{timestamp}カプコ残債の更新.csv"
-            return empty_df, output_filename, stats
+            return empty_df, output_filename, stats, logs
         
         # Step 3: データマッチング
         if progress_callback:
@@ -474,6 +494,11 @@ def process_capco_debt_update(arrear_file_content: bytes, contract_file_content:
         stats['diff_changed'] = len(changed_df)
         stats['diff_parse_failed'] = stats['diff_matched'] - stats['diff_valid']
         
+        # 差分データ抽出ログ
+        logs.append(DetailedLogger.log_filter_result(
+            stats['diff_total'], stats['diff_changed'], '差分抽出'
+        ))
+        
         # 完済件数を追加
         unmatched = merged_df[~merged_df['is_matched']]
         completed_count = len(unmatched[(unmatched['滞納残債_num'] > 0) & unmatched['滞納残債_num'].notna()])
@@ -493,7 +518,7 @@ def process_capco_debt_update(arrear_file_content: bytes, contract_file_content:
             empty_df = pd.DataFrame(columns=OUTPUT_HEADERS)
             timestamp = datetime.now().strftime("%m%d")
             output_filename = f"{timestamp}カプコ残債の更新.csv"
-            return empty_df, output_filename, stats
+            return empty_df, output_filename, stats, logs
         
         # Step 5: 最終出力データ作成
         if progress_callback:
@@ -502,6 +527,9 @@ def process_capco_debt_update(arrear_file_content: bytes, contract_file_content:
         result_df = create_output_dataframe(changed_df)
         stats['output_count'] = len(result_df)
         
+        # 最終結果ログ
+        logs.append(DetailedLogger.log_final_result(stats['output_count']))
+        
         # 出力ファイル名の生成
         timestamp = datetime.now().strftime("%m%d")
         output_filename = f"{timestamp}カプコ残債の更新.csv"
@@ -509,7 +537,7 @@ def process_capco_debt_update(arrear_file_content: bytes, contract_file_content:
         logger.info("=== 処理完了 ===")
         logger.info(f"出力ファイル名: {output_filename}")
         
-        return result_df, output_filename, stats
+        return result_df, output_filename, stats, logs
         
     except Exception as e:
         logger.error(f"処理中にエラーが発生しました: {str(e)}")

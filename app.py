@@ -77,10 +77,10 @@ from screens.registration.arktrust import (
 from screens.registration.capco import (
     show_capco_registration
 )
-from screens.others.ark_late_payment import (
+from screens.debt_update.ark_late_payment import (
     show_ark_late_payment
 )
-from screens.others.capco_debt_update import (
+from screens.debt_update.capco_debt_update import (
     show_capco_debt_update
 )
 

@@ -6,8 +6,9 @@
 import pandas as pd
 import io
 from datetime import datetime
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, List
 import chardet
+from processors.common.detailed_logger import DetailedLogger
 
 # Streamlitのインポートを条件付きにする
 try:
@@ -95,7 +96,7 @@ def normalize_key_column(df: pd.DataFrame, column_name: str) -> pd.DataFrame:
     return df_normalized
 
 
-def process_ark_late_payment_data(arc_file, contract_file) -> Optional[Tuple[pd.DataFrame, str]]:
+def process_ark_late_payment_data(arc_file, contract_file) -> Optional[Tuple[pd.DataFrame, str, List[str]]]:
     """
     アーク残債更新データ処理のメイン関数
     
@@ -104,9 +105,11 @@ def process_ark_late_payment_data(arc_file, contract_file) -> Optional[Tuple[pd.
         contract_file: ContractListファイル（ファイルパス、UploadedFile、またはバイトデータ）
         
     Returns:
-        Tuple[pd.DataFrame, str]: (処理済みデータフレーム, 出力ファイル名)
+        Tuple[pd.DataFrame, str, List[str]]: (処理済みデータフレーム, 出力ファイル名, ログリスト)
         エラー時はNone
     """
+    logs = []
+    
     try:
         # Phase 1: ファイル読み込み
         
@@ -128,6 +131,7 @@ def process_ark_late_payment_data(arc_file, contract_file) -> Optional[Tuple[pd.
             
             if HAS_STREAMLIT:
                 st.success(f"✅ アーク残債CSV読み込み完了: {len(arc_df):,}行")
+            logs.append(DetailedLogger.log_initial_load(len(arc_df)))
         except Exception as e:
             if HAS_STREAMLIT:
                 st.error(f"❌ アーク残債CSVファイルの読み込みに失敗しました: {str(e)}")
@@ -190,8 +194,19 @@ def process_ark_late_payment_data(arc_file, contract_file) -> Optional[Tuple[pd.
         # Phase 3: データ処理・紐付け
         
         # キー項目の正規化
+        original_arc_count = len(arc_df)
         arc_df = normalize_key_column(arc_df, '契約番号')
+        if original_arc_count > len(arc_df):
+            logs.append(DetailedLogger.log_filter_result(
+                original_arc_count, len(arc_df), '契約番号正規化'
+            ))
+        
+        original_contract_count = len(contract_df)
         contract_df = normalize_key_column(contract_df, '引継番号')
+        if original_contract_count > len(contract_df):
+            logs.append(DetailedLogger.log_filter_result(
+                original_contract_count, len(contract_df), '引継番号正規化'
+            ))
         
         # データ結合（契約番号と引継番号で紐付け）
         merged_df = pd.merge(
@@ -201,6 +216,22 @@ def process_ark_late_payment_data(arc_file, contract_file) -> Optional[Tuple[pd.
             right_on='引継番号',
             how='inner'
         )
+        
+        # 紐付け結果のログ
+        unmatched_count = len(arc_df) - len(merged_df)
+        if unmatched_count > 0:
+            logs.append(DetailedLogger.log_filter_result(
+                len(arc_df), len(merged_df), '紐付け処理'
+            ))
+            # 紐付けできなかった契約番号の詳細
+            unmatched_arc = arc_df[~arc_df['契約番号'].isin(merged_df['契約番号'])]
+            if len(unmatched_arc) > 0:
+                contract_no_col = arc_df.columns.get_loc('契約番号')
+                detail_log = DetailedLogger.log_exclusion_details(
+                    unmatched_arc, contract_no_col, '紐付け不可契約番号', 'id'
+                )
+                if detail_log:
+                    logs.append(detail_log)
         
         # 紐付けチェック
         if len(merged_df) == 0:
@@ -230,11 +261,14 @@ def process_ark_late_payment_data(arc_file, contract_file) -> Optional[Tuple[pd.
         current_date = datetime.now()
         output_filename = f"{current_date.strftime('%m%d')}アーク残債.csv"
         
+        # 最終結果ログ
+        logs.append(DetailedLogger.log_final_result(len(output_df)))
+        
         # 処理完了
         if HAS_STREAMLIT:
             st.success("✅ 処理完了")
         
-        return output_df, output_filename
+        return output_df, output_filename, logs
         
     except Exception as e:
         if HAS_STREAMLIT:

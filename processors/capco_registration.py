@@ -21,6 +21,7 @@ import chardet
 from datetime import datetime
 from typing import Tuple, List, Dict, Union
 import logging
+from processors.common.detailed_logger import DetailedLogger
 
 
 class CapcoConfig:
@@ -233,8 +234,12 @@ class DuplicateChecker:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
     
-    def find_new_contracts(self, capco_df: pd.DataFrame, contract_df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, Dict[str, int]]:
+    def find_new_contracts(self, capco_df: pd.DataFrame, contract_df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, Dict[str, int], List[str]]:
         """新規契約の特定（マージキー照合）"""
+        logs = []
+        # 初期件数ログ
+        logs.append(DetailedLogger.log_initial_load(len(capco_df)))
+        
         # キー項目を文字列に変換・正規化
         capco_df = capco_df.copy()
         capco_df["契約No"] = capco_df["契約No"].astype(str).str.strip()
@@ -249,6 +254,20 @@ class DuplicateChecker:
         new_contracts = capco_df[~capco_df["契約No"].isin(existing_contract_numbers)].copy()
         existing_contracts = capco_df[capco_df["契約No"].isin(existing_contract_numbers)].copy()
         
+        # 重複チェックの詳細ログ
+        logs.append(DetailedLogger.log_filter_result(
+            len(capco_df), len(new_contracts), '重複（既存契約）'
+        ))
+        
+        # 既存契約の詳細
+        if len(existing_contracts) > 0:
+            contract_no_col = capco_df.columns.get_loc("契約No")
+            detail_log = DetailedLogger.log_exclusion_details(
+                existing_contracts, contract_no_col, '既存契約番号', 'id'
+            )
+            if detail_log:
+                logs.append(detail_log)
+        
         # 統計情報
         stats = {
             'total_capco': len(capco_df),
@@ -257,7 +276,7 @@ class DuplicateChecker:
             'new_percentage': (len(new_contracts) / len(capco_df) * 100) if len(capco_df) > 0 else 0
         }
         
-        return new_contracts, existing_contracts, stats
+        return new_contracts, existing_contracts, stats, logs
 
 
 class DataConverter:
@@ -579,9 +598,10 @@ def process_capco_data(capco_content: bytes, contract_content: bytes) -> Tuple[p
         
         # 2. 重複チェック（新規案件抽出）
         duplicate_checker = DuplicateChecker()
-        new_contracts, existing_contracts, match_stats = duplicate_checker.find_new_contracts(capco_df, contract_df)
+        new_contracts, existing_contracts, match_stats, detail_logs = duplicate_checker.find_new_contracts(capco_df, contract_df)
         
         logs.append(f"重複チェック結果: 新規{match_stats['new_contracts']}件, 既存{match_stats['existing_contracts']}件")
+        logs.extend(detail_logs)
         
         if len(new_contracts) == 0:
             logs.append("⚠️ 新規案件が見つかりませんでした")
@@ -592,6 +612,7 @@ def process_capco_data(capco_content: bytes, contract_content: bytes) -> Tuple[p
         output_df = data_converter.convert_new_contracts(new_contracts)
         
         logs.append(f"データ変換完了: {len(output_df)}件 → 111列テンプレート形式")
+        logs.append(DetailedLogger.log_final_result(len(output_df)))
         
         # 4. 出力ファイル名生成
         today_str = datetime.now().strftime("%m%d")

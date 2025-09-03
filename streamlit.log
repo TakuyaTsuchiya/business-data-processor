@@ -12,11 +12,4 @@
   $ xcode-select --install
   $ pip install watchdog
             
-/Users/tchytky/Desktop/business-data-processor/processors/sms_common/processor.py:264: DtypeWarning: Columns (1) have mixed types. Specify dtype option on import or set low_memory=False.
-  df = pd.read_csv(io.BytesIO(content), encoding=encoding)
-/Users/tchytky/Desktop/business-data-processor/processors/sms_common/processor.py:267: DtypeWarning: Columns (1) have mixed types. Specify dtype option on import or set low_memory=False.
-  except:
-/Users/tchytky/Desktop/business-data-processor/processors/sms_common/processor.py:267: DtypeWarning: Columns (1) have mixed types. Specify dtype option on import or set low_memory=False.
-  except:
-/Users/tchytky/Desktop/business-data-processor/processors/sms_common/processor.py:267: DtypeWarning: Columns (1) have mixed types. Specify dtype option on import or set low_memory=False.
-  except:
+  Stopping...

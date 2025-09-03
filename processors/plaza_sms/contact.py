@@ -169,7 +169,7 @@ def process_plaza_sms_contact_data(file_content: bytes, payment_deadline_date: d
         
         # Map data - BE列（列番号56）の電話番号を使用
         output_df['電話番号'] = df.iloc[:, 56].astype(str)
-        output_df['(info1)契約者名'] = df['緊急連絡人１氏名']
+        output_df['(info1)契約者名'] = df['契約者氏名']
         
         # Combine property name and number
         output_df['(info2)物件名'] = df['物件名'].astype(str) + df['物件番号'].fillna('').astype(str).apply(
