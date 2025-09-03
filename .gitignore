@@ -22,3 +22,6 @@ debug*.csv
 # Deployment logs
 deploy_*.log
 rollback_*.log
+
+# Streamlit logs
+streamlit.log
