@@ -18,6 +18,7 @@ from components.common_ui import (
     display_filter_conditions
 )
 from components.result_display import display_error_result
+from components.screen_template import ScreenConfig, render_screen, create_payment_deadline_input
 from services.sms import (
     process_plaza_sms_contract_data,
     process_plaza_sms_guarantor_data,
@@ -123,120 +124,38 @@ def show_plaza_sms_contract():
 
 
 def show_plaza_sms_guarantor():
-    st.title("📱 SMS送信用CSV加工")
-    st.subheader("プラザ　保証人")
-    
-    display_filter_conditions([
-        "委託先法人ID → 6のみ",
-        "入金予定日 → 前日以前とNaN（当日除外）",
-        "入金予定金額 → 2,3,5,12円除外",
-        "回収ランク → 「弁護士介入」「死亡決定」「破産決定」除外",
-        "AU列TEL携帯 → 090/080/070のみ（固定電話・IP番号・空白除外）",
-        "支払期限 → 日付選択で指定"
-    ])
-    
-    # 支払期限日付選択
-    st.markdown("### 📅 支払期限の設定")
-    payment_deadline = st.date_input(
-        "支払期限日付を選択してください",
-        value=date.today(),
-        format="YYYY/MM/DD"
+    config = ScreenConfig(
+        title="SMS送信用CSV加工",
+        subtitle="プラザ　保証人",
+        filter_conditions=[
+            "委託先法人ID → 6のみ",
+            "入金予定日 → 前日以前とNaN（当日除外）",
+            "入金予定金額 → 2,3,5,12円除外",
+            "回収ランク → 「弁護士介入」「死亡決定」「破産決定」除外",
+            "AU列TEL携帯 → 090/080/070のみ（固定電話・IP番号・空白除外）",
+            "支払期限 → 日付選択で指定"
+        ],
+        process_function=process_plaza_sms_guarantor_data,
+        payment_deadline_input=create_payment_deadline_input,
+        title_icon="📱"
     )
-    
-    # ファイルアップロード
-    st.markdown("**📄 ファイル: ContractList**")
-    uploaded_file = st.file_uploader("ContractList_*.csvをアップロード", type="csv", key="plaza_sms_guarantor_file")
-    if uploaded_file:
-        st.success(f"✅ {uploaded_file.name}: 読み込み完了")
-    
-    if uploaded_file:
-        try:
-            # ファイル内容を読み取り
-            file_content = uploaded_file.read()
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    result_df, logs, output_filename, stats = process_plaza_sms_guarantor_data(
-                        file_content, payment_deadline
-                    )
-                    
-                # 処理結果表示
-                st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                
-                # ダウンロードボタン
-                st.markdown("### 📥 CSVファイルをダウンロード")
-                safe_csv_download(result_df, output_filename, "📥 プラザSMS保証人CSVをダウンロード")
-                
-                # 処理ログ表示
-                if logs:
-                    display_processing_logs(logs, expanded=True)
-                
-                # 統計情報表示
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.metric("元データ件数", f"{stats.get('initial_rows', 0):,}件")
-                with col2:
-                    st.metric("処理後件数", f"{stats.get('processed_rows', 0):,}件")
-                        
-        except Exception as e:
-            display_error_result(f"エラーが発生しました: {str(e)}")
+    render_screen(config, 'plaza_sms_guarantor')
 
 
 def show_plaza_sms_contact():
-    st.title("📱 SMS送信用CSV加工")
-    st.subheader("プラザ　連絡人")
-    
-    display_filter_conditions([
-        "委託先法人ID → 6のみ",
-        "入金予定日 → 前日以前とNaN（当日除外）",
-        "入金予定金額 → 2,3,5,12円除外",
-        "回収ランク → 「弁護士介入」「死亡決定」「破産決定」除外",
-        "BE列緊急連絡人１TEL → 090/080/070のみ（固定電話・IP番号・空白除外）",
-        "支払期限 → 日付選択で指定"
-    ])
-    
-    # 支払期限日付選択
-    st.markdown("### 📅 支払期限の設定")
-    payment_deadline = st.date_input(
-        "支払期限日付を選択してください",
-        value=date.today(),
-        format="YYYY/MM/DD"
+    config = ScreenConfig(
+        title="SMS送信用CSV加工",
+        subtitle="プラザ　連絡人",
+        filter_conditions=[
+            "委託先法人ID → 6のみ",
+            "入金予定日 → 前日以前とNaN（当日除外）",
+            "入金予定金額 → 2,3,5,12円除外",
+            "回収ランク → 「弁護士介入」「死亡決定」「破産決定」除外",
+            "BE列緊急連絡人１TEL → 090/080/070のみ（固定電話・IP番号・空白除外）",
+            "支払期限 → 日付選択で指定"
+        ],
+        process_function=process_plaza_sms_contact_data,
+        payment_deadline_input=create_payment_deadline_input,
+        title_icon="📱"
     )
-    
-    # ファイルアップロード
-    st.markdown("**📄 ファイル: ContractList**")
-    uploaded_file = st.file_uploader("ContractList_*.csvをアップロード", type="csv", key="plaza_sms_contact_file")
-    if uploaded_file:
-        st.success(f"✅ {uploaded_file.name}: 読み込み完了")
-    
-    if uploaded_file:
-        try:
-            # ファイル内容を読み取り
-            file_content = uploaded_file.read()
-            
-            if st.button("処理を実行", type="primary"):
-                with st.spinner("処理中..."):
-                    result_df, logs, output_filename, stats = process_plaza_sms_contact_data(
-                        file_content, payment_deadline
-                    )
-                    
-                # 処理結果表示
-                st.success(f"処理完了: {len(result_df)}件のデータを出力")
-                
-                # ダウンロードボタン
-                st.markdown("### 📥 CSVファイルをダウンロード")
-                safe_csv_download(result_df, output_filename, "📥 プラザSMS連絡人CSVをダウンロード")
-                
-                # 処理ログ表示
-                if logs:
-                    display_processing_logs(logs, expanded=True)
-                
-                # 統計情報表示
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.metric("元データ件数", f"{stats.get('initial_rows', 0):,}件")
-                with col2:
-                    st.metric("処理後件数", f"{stats.get('processed_rows', 0):,}件")
-                        
-        except Exception as e:
-            display_error_result(f"エラーが発生しました: {str(e)}")
+    render_screen(config, 'plaza_sms_contact')
