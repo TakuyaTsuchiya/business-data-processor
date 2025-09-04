@@ -191,6 +191,10 @@ def process_plaza_debt_update(
         })
         
         # === 出力2: 交渉履歴CSV ===
+        # 入金があった人のみフィルタリング
+        df_with_payment = df_merged[df_merged['入金額'] > 0].copy()
+        logs.append(f"交渉履歴出力対象: {len(df_with_payment)}件（入金額 > 0円）")
+        
         # 交渉備考の生成
         today_str = datetime.now().strftime('%Y/%m/%d')
         
@@ -200,9 +204,9 @@ def process_plaza_debt_update(
             balance = int(row[arrears_today])
             return f"{today_str}　{payment:,}円入金あり（現残債{balance:,}円）"
         
-        # 交渉履歴データの作成
+        # 交渉履歴データの作成（入金があった人のみ）
         output2 = pd.DataFrame({
-            PDC.NEGOTIATES_OUTPUT_HEADERS[0]: df_merged[PDC.PLAZA_LIST['management_no']['name']].fillna(''),
+            PDC.NEGOTIATES_OUTPUT_HEADERS[0]: df_with_payment[PDC.PLAZA_LIST['management_no']['name']].fillna(''),
             PDC.NEGOTIATES_OUTPUT_HEADERS[1]: today_str,
             PDC.NEGOTIATES_OUTPUT_HEADERS[2]: PDC.NEGOTIATES_FIXED_VALUES['担当'],
             PDC.NEGOTIATES_OUTPUT_HEADERS[3]: PDC.NEGOTIATES_FIXED_VALUES['相手'],
@@ -211,7 +215,7 @@ def process_plaza_debt_update(
             PDC.NEGOTIATES_OUTPUT_HEADERS[6]: PDC.NEGOTIATES_FIXED_VALUES['結果'],
             PDC.NEGOTIATES_OUTPUT_HEADERS[7]: PDC.NEGOTIATES_FIXED_VALUES['入金予定'],
             PDC.NEGOTIATES_OUTPUT_HEADERS[8]: PDC.NEGOTIATES_FIXED_VALUES['予定金額'],
-            PDC.NEGOTIATES_OUTPUT_HEADERS[9]: df_merged.apply(create_negotiation_note, axis=1)
+            PDC.NEGOTIATES_OUTPUT_HEADERS[9]: df_with_payment.apply(create_negotiation_note, axis=1)
         })
         
         # === ファイル名生成 ===
