@@ -77,6 +77,12 @@ def process_plaza_debt_update(
         # === データ処理 ===
         logs.append("🔄 データ処理開始...")
         
+        # 会員番号を文字列型に統一（マージエラー対策）
+        member_no_col = PDC.COLLECTION_REPORT['member_no']['name']
+        df_yesterday[member_no_col] = df_yesterday[member_no_col].astype(str).str.strip()
+        df_today[member_no_col] = df_today[member_no_col].astype(str).str.strip()
+        logs.append("✅ 会員番号のデータ型を統一（文字列型）")
+        
         # 前日データとのマージ（VLOOKUPの実装）
         df_merged = df_today.merge(
             df_yesterday[[
@@ -99,9 +105,55 @@ def process_plaza_debt_update(
         # 入金額計算（前日 - 当日）
         df_merged['入金額'] = df_merged[arrears_yesterday] - df_merged[arrears_today]
         
+        # 入金額の分析ログ
+        positive_payments = df_merged[df_merged['入金額'] > 0]
+        zero_payments = df_merged[df_merged['入金額'] == 0]
+        negative_payments = df_merged[df_merged['入金額'] < 0]
+        
+        logs.append(f"💰 入金額分析:")
+        logs.append(f"  - 入金あり: {len(positive_payments)}件 (総額: {positive_payments['入金額'].sum():,}円)")
+        logs.append(f"  - 変動なし: {len(zero_payments)}件")
+        logs.append(f"  - 残債増加: {len(negative_payments)}件 (総額: {negative_payments['入金額'].sum():,}円)")
+        
+        # 異常値の検出（入金額が大きすぎる/小さすぎるケース）
+        large_payments = df_merged[df_merged['入金額'] > 1000000]  # 100万円以上
+        if len(large_payments) > 0:
+            logs.append(f"  - 高額入金（100万円以上）: {len(large_payments)}件")
+        
         # マッチング状況をログ
+        before_match = len(df_merged)
         matched_count = df_merged[arrears_yesterday].notna().sum()
-        logs.append(f"前日データとのマッチング: {matched_count}/{len(df_merged)}件")
+        unmatched_count = before_match - matched_count
+        
+        logs.append(DetailedLogger.log_filter_result(
+            before_match,
+            matched_count,
+            "前日データとのマッチング"
+        ))
+        
+        # マッチしなかった会員番号の詳細
+        if unmatched_count > 0:
+            unmatched_data = df_merged[df_merged[arrears_yesterday].isna()]
+            unmatched_ids = unmatched_data[PDC.COLLECTION_REPORT['member_no']['name']].head(10).tolist()
+            logs.append(f"  - 前日データにない会員番号（最大10件）: {unmatched_ids}")
+            if unmatched_count > 10:
+                logs.append(f"  - 他{unmatched_count - 10}件")
+        
+        # 引継番号も文字列型に統一
+        takeover_no_col = PDC.PLAZA_LIST['takeover_no']['name']
+        df_plaza_list[takeover_no_col] = df_plaza_list[takeover_no_col].astype(str).str.strip()
+        logs.append("✅ 引継番号のデータ型を統一（文字列型）")
+        
+        # デバッグ：マッチング前のデータサンプルを表示
+        logs.append("📊 マッチングデバッグ情報:")
+        logs.append(f"  - 会員番号のサンプル（最初の5件）: {df_merged[member_no_col].head().tolist()}")
+        logs.append(f"  - 引継番号のサンプル（最初の5件）: {df_plaza_list[takeover_no_col].head().tolist()}")
+        
+        # 会員番号と引継番号の共通値を確認
+        common_values = set(df_merged[member_no_col]).intersection(set(df_plaza_list[takeover_no_col]))
+        logs.append(f"  - 共通する値の数: {len(common_values)}件")
+        if len(common_values) > 0:
+            logs.append(f"  - 共通値のサンプル（最大5件）: {list(common_values)[:5]}")
         
         # 管理番号の取得（1241件.csvとのマッチング）
         df_merged = df_merged.merge(
@@ -116,7 +168,21 @@ def process_plaza_debt_update(
         
         # マッチング状況をログ
         management_matched = df_merged[PDC.PLAZA_LIST['management_no']['name']].notna().sum()
-        logs.append(f"管理番号とのマッチング: {management_matched}/{len(df_merged)}件")
+        management_unmatched = len(df_merged) - management_matched
+        
+        logs.append(DetailedLogger.log_filter_result(
+            len(df_merged),
+            management_matched,
+            "管理番号とのマッチング"
+        ))
+        
+        # マッチしなかった引継番号の詳細
+        if management_unmatched > 0:
+            unmatched_data = df_merged[df_merged[PDC.PLAZA_LIST['management_no']['name']].isna()]
+            unmatched_ids = unmatched_data[PDC.COLLECTION_REPORT['member_no']['name']].head(10).tolist()
+            logs.append(f"  - 管理番号が見つからない会員番号（最大10件）: {unmatched_ids}")
+            if management_unmatched > 10:
+                logs.append(f"  - 他{management_unmatched - 10}件")
         
         # === 出力1: 管理前滞納額情報CSV ===
         output1 = pd.DataFrame({
@@ -163,9 +229,8 @@ def process_plaza_debt_update(
             'negative_payments': (df_merged['入金額'] < 0).sum()
         }
         
-        logs.append(f"✅ 処理完了: {len(df_merged)}件")
-        logs.append(f"入金総額: {stats['total_payment']:,}円")
-        logs.append(f"入金あり: {stats['positive_payments']}件、入金なし: {stats['zero_payments']}件、残債増加: {stats['negative_payments']}件")
+        logs.append(f"✅ 処理完了")
+        logs.append(f"📊 最終結果: 当日データ{len(df_today)}件 → 処理済み{len(df_merged)}件 → 管理番号付き{stats['management_matched']}件")
         
         return [output1, output2], [filename1, filename2], logs, stats
         
