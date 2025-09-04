@@ -25,7 +25,7 @@ def process_plaza_sms_contact_data(file_content: bytes, payment_deadline_date: d
     
     データマッピング:
     - 電話番号: BE列「緊急連絡人１のTEL（携帯）」（列番号56）
-    - (info1)契約者名: 緊急連絡人１氏名
+    - (info1)契約者名: 契約者氏名
     - (info2)物件名: 物件名 + 物件番号（全角スペース結合）
     - (info3)金額: 滞納残債（カンマ区切り表示）
     - (info4)銀行口座: 回収口座5項目（全角スペース結合）
