@@ -206,6 +206,9 @@ def process_plaza_debt_update(
             balance = int(row[arrears_today])
             return f"{selected_date_str}　{payment:,}円入金あり（現残債{balance:,}円）"
         
+        # B列交渉日時用（今日の日付）
+        today_str = datetime.now().strftime('%Y/%m/%d')
+        
         # 交渉履歴データの作成（入金があった人のみ）
         output2 = pd.DataFrame({
             PDC.NEGOTIATES_OUTPUT_HEADERS[0]: df_with_payment[PDC.PLAZA_LIST['management_no']['name']].fillna(''),

@@ -24,6 +24,22 @@ def show_plaza_debt_update():
     
     st.info("📂 必要ファイル: 前日・当日のコールセンター回収委託情報（Excel） + 1241件.csv")
     
+    # 前営業日の設定（交渉備考用）- 最初に表示
+    st.subheader("前営業日の設定")
+    # デフォルト値として前営業日を計算（土日を除外）
+    default_date = date.today() - timedelta(days=1)
+    while default_date.weekday() >= 5:  # 土曜(5)または日曜(6)の場合
+        default_date -= timedelta(days=1)
+    
+    selected_date = st.date_input(
+        "クリックして前営業日を選択してください",
+        value=default_date,
+        help="この日付が交渉備考に使用されます（例：2025/09/03　20,000円入金あり）",
+        key="plaza_selected_date",
+        format="YYYY/MM/DD"
+    )
+    st.write(f"交渉備考に使用される日付: **{selected_date.strftime('%Y/%m/%d')}**")
+    
     # 3つのファイルアップロード
     col1, col2, col3 = st.columns(3)
     
@@ -59,22 +75,6 @@ def show_plaza_debt_update():
         st.success(f"✅ {yesterday_file.name}: 読み込み完了")
         st.success(f"✅ {today_file.name}: 読み込み完了")
         st.success(f"✅ {plaza_list_file.name}: 読み込み完了")
-        
-        # 前営業日の設定（交渉備考用）
-        st.subheader("前営業日の設定")
-        # デフォルト値として前営業日を計算（土日を除外）
-        default_date = date.today() - timedelta(days=1)
-        while default_date.weekday() >= 5:  # 土曜(5)または日曜(6)の場合
-            default_date -= timedelta(days=1)
-        
-        selected_date = st.date_input(
-            "クリックして前営業日を選択してください",
-            value=default_date,
-            help="この日付が交渉備考に使用されます（例：2025/09/03　20,000円入金あり）",
-            key="plaza_selected_date",
-            format="YYYY/MM/DD"
-        )
-        st.write(f"交渉備考に使用される日付: **{selected_date.strftime('%Y/%m/%d')}**")
         
         if st.button("🚀 処理を開始", type="primary", use_container_width=True):
             try:
