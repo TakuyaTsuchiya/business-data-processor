@@ -206,8 +206,8 @@ def process_plaza_debt_update(
             balance = int(row[arrears_today])
             return f"{selected_date_str}　{payment:,}円入金あり（現残債{balance:,}円）"
         
-        # B列交渉日時用（今日の日付）
-        today_str = datetime.now().strftime('%Y/%m/%d')
+        # B列交渉日時用（今日の日付と時刻）
+        today_str = datetime.now().strftime('%Y/%m/%d %H:%M:%S')
         
         # 交渉履歴データの作成（入金があった人のみ）
         output2 = pd.DataFrame({
@@ -224,7 +224,7 @@ def process_plaza_debt_update(
         })
         
         # === ファイル名生成 ===
-        date_str = datetime.now().strftime("%m%d")
+        date_str = datetime.now().strftime("%y%m%d")
         filename1 = f"{date_str}プラザ管理前滞納額.csv"
         filename2 = f"{date_str}プラザ交渉履歴.csv"
         
