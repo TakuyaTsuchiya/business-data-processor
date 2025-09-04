@@ -10,7 +10,7 @@
 import streamlit as st
 import io
 import zipfile
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from components.common_ui import display_processing_logs
 from components.result_display import display_processing_result, display_error_result
 from processors.plaza_debt_update import process_plaza_debt_update
@@ -60,14 +60,31 @@ def show_plaza_debt_update():
         st.success(f"✅ {today_file.name}: 読み込み完了")
         st.success(f"✅ {plaza_list_file.name}: 読み込み完了")
         
+        # 前営業日の設定（交渉備考用）
+        st.subheader("前営業日の設定")
+        # デフォルト値として前営業日を計算（土日を除外）
+        default_date = date.today() - timedelta(days=1)
+        while default_date.weekday() >= 5:  # 土曜(5)または日曜(6)の場合
+            default_date -= timedelta(days=1)
+        
+        selected_date = st.date_input(
+            "クリックして前営業日を選択してください",
+            value=default_date,
+            help="この日付が交渉備考に使用されます（例：2025/09/03　20,000円入金あり）",
+            key="plaza_selected_date",
+            format="YYYY/MM/DD"
+        )
+        st.write(f"交渉備考に使用される日付: **{selected_date.strftime('%Y/%m/%d')}**")
+        
         if st.button("🚀 処理を開始", type="primary", use_container_width=True):
             try:
                 with st.spinner("処理中..."):
-                    # プロセッサー実行
+                    # プロセッサー実行（選択した日付を渡す）
                     outputs, filenames, logs, stats = process_plaza_debt_update(
                         yesterday_file.read(),
                         today_file.read(),
-                        plaza_list_file.read()
+                        plaza_list_file.read(),
+                        selected_date
                     )
                     
                     # ログ表示

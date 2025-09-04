@@ -28,7 +28,8 @@ from processors.common.plaza_debt_columns import PlazaDebtUpdateColumns as PDC
 def process_plaza_debt_update(
     yesterday_file: bytes,
     today_file: bytes,
-    plaza_list_file: bytes
+    plaza_list_file: bytes,
+    selected_date: datetime.date
 ) -> Tuple[List[pd.DataFrame], List[str], List[str], Dict[str, Any]]:
     """
     プラザ残債更新処理のメイン関数
@@ -37,6 +38,7 @@ def process_plaza_debt_update(
         yesterday_file: 前日のコールセンター回収委託情報（Excel）
         today_file: 当日のコールセンター回収委託情報（Excel）
         plaza_list_file: 1241件.csv（プラザ依頼分リスト）
+        selected_date: 交渉備考に使用する日付
     
     Returns:
         tuple: (出力DataFrameのリスト, ファイル名のリスト, ログリスト, 統計情報)
@@ -195,14 +197,14 @@ def process_plaza_debt_update(
         df_with_payment = df_merged[df_merged['入金額'] > 0].copy()
         logs.append(f"交渉履歴出力対象: {len(df_with_payment)}件（入金額 > 0円）")
         
-        # 交渉備考の生成
-        today_str = datetime.now().strftime('%Y/%m/%d')
+        # 交渉備考の生成（選択した日付を使用）
+        selected_date_str = selected_date.strftime('%Y/%m/%d')
         
         def create_negotiation_note(row):
             """交渉備考の文字列を生成"""
             payment = int(row['入金額'])
             balance = int(row[arrears_today])
-            return f"{today_str}　{payment:,}円入金あり（現残債{balance:,}円）"
+            return f"{selected_date_str}　{payment:,}円入金あり（現残債{balance:,}円）"
         
         # 交渉履歴データの作成（入金があった人のみ）
         output2 = pd.DataFrame({
