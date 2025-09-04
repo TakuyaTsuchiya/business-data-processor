@@ -4,13 +4,15 @@
 processors/配下のオートコール処理を再エクスポートします。
 """
 
-# ミライル系（リファクタリング版を使用）
-from processors.mirail_autocall.contract.without10k_refactored import process_mirail_contract_without10k_data
-from processors.mirail_autocall.contract.with10k_refactored import process_mirail_contract_with10k_data
-from processors.mirail_autocall.guarantor.without10k_refactored import process_mirail_guarantor_without10k_data
-from processors.mirail_autocall.guarantor.with10k_refactored import process_mirail_guarantor_with10k_data
-from processors.mirail_autocall.emergency_contact.without10k_refactored import process_mirail_emergency_contact_without10k_data
-from processors.mirail_autocall.emergency_contact.with10k_refactored import process_mirail_emergency_contact_with10k_data
+# ミライル系（統合版を使用）
+from processors.mirail_autocall.unified_wrapper import (
+    process_mirail_contract_without10k_data,
+    process_mirail_contract_with10k_data,
+    process_mirail_guarantor_without10k_data,
+    process_mirail_guarantor_with10k_data,
+    process_mirail_emergency_contact_without10k_data,
+    process_mirail_emergency_contact_with10k_data
+)
 
 # 互換性のためのエイリアス（元の関数名を維持）
 process_mirail_emergencycontact_without10k_data = process_mirail_emergency_contact_without10k_data
