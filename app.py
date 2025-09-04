@@ -83,12 +83,16 @@ from screens.debt_update.ark_late_payment import (
 from screens.debt_update.capco_debt_update import (
     show_capco_debt_update
 )
+from screens.debt_update.plaza_debt_update import (
+    show_plaza_debt_update
+)
 
 # プロセッサーをインポート
 
 from processors.ark_registration import process_ark_data, process_arktrust_data
 from processors.ark_late_payment_update import process_ark_late_payment_data
 from processors.capco_registration import process_capco_data
+from processors.plaza_debt_update import process_plaza_debt_update
 
 def main():
     st.set_page_config(
@@ -128,7 +132,8 @@ def main():
         "arktrust_registration_tokyo": show_arktrust_registration_tokyo,
         "capco_registration": show_capco_registration,
         "ark_late_payment": show_ark_late_payment,
-        "capco_debt_update": show_capco_debt_update
+        "capco_debt_update": show_capco_debt_update,
+        "plaza_debt_update": show_plaza_debt_update
     }
     
     # カスタムCSSを適用

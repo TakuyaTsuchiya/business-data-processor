@@ -102,3 +102,5 @@ def build_sidebar_menu():
             st.session_state.selected_processor = "ark_late_payment"
         if st.button("カプコ残債の更新", key="capco_debt_update", use_container_width=True):
             st.session_state.selected_processor = "capco_debt_update"
+        if st.button("プラザ残債の更新", key="plaza_debt_update", use_container_width=True):
+            st.session_state.selected_processor = "plaza_debt_update"
