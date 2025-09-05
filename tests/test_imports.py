@@ -36,11 +36,20 @@ def test_unified_processors_import():
             process_plaza_contact_data
         )
         
+        # SMS統合（新規）
+        from processors.sms_unified import SmsUnifiedProcessor
+        from processors.sms_unified_wrapper import (
+            process_mirail_sms_contract,
+            process_faith_sms_contract,
+            process_plaza_sms_contract
+        )
+        
         # 共通モジュール
         from processors.autocall_constants import AUTOCALL_OUTPUT_COLUMNS  # ファイルから
         from processors.autocall_common.filter_engine import apply_filters  # ディレクトリから
         from processors.common.contract_list_columns import ContractListColumns
         from processors.common.detailed_logger import DetailedLogger
+        from infrastructure.csv_reader import CsvReader
         
         assert True  # インポート成功
     except ImportError as e:
