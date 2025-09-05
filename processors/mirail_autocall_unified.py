@@ -9,6 +9,7 @@ import sys
 import os
 from datetime import datetime
 from typing import Tuple, List, Optional, Dict, Any
+from infrastructure import read_csv_auto_encoding
 
 # 共通定義のインポート
 processors_dir = os.path.dirname(os.path.abspath(__file__))
@@ -113,15 +114,8 @@ class MirailAutocallUnifiedProcessor:
     
     def read_csv_auto_encoding(self, file_content: bytes) -> pd.DataFrame:
         """アップロードされたCSVファイルを自動エンコーディング判定で読み込み"""
-        encodings = ['utf-8', 'utf-8-sig', 'shift_jis', 'cp932']
-        
-        for enc in encodings:
-            try:
-                return pd.read_csv(io.BytesIO(file_content), encoding=enc, dtype=str)
-            except Exception:
-                continue
-        
-        raise ValueError("CSVファイルの読み込みに失敗しました。エンコーディングを確認してください。")
+        # インフラ層の統一エンコーディング処理を使用
+        return read_csv_auto_encoding(file_content, dtype=str)
     
     def get_mapping_rules(self, target: str) -> Dict[str, int]:
         """

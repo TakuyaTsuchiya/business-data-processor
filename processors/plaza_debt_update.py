@@ -21,7 +21,7 @@ import io
 from datetime import datetime
 from typing import Tuple, List, Dict, Any
 from processors.common.detailed_logger import DetailedLogger
-from processors.sms_common.utils import read_csv_auto_encoding
+from infrastructure import read_csv_auto_encoding
 from processors.common.plaza_debt_columns import PlazaDebtUpdateColumns as PDC
 
 

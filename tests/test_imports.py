@@ -11,45 +11,31 @@ def test_unified_processors_import():
     try:
         # ミライル（既存）
         from processors.mirail_autocall_unified import MirailAutocallUnifiedProcessor
-        from processors.mirail_autocall.unified_wrapper import (
-            process_mirail_contract_without10k_data,
-            process_mirail_contract_with10k_data,
-            process_mirail_guarantor_without10k_data,
-            process_mirail_guarantor_with10k_data,
-            process_mirail_emergency_contact_without10k_data,
-            process_mirail_emergency_contact_with10k_data
-        )
         
         # フェイス（新規）
         from processors.faith_autocall_unified import FaithAutocallUnifiedProcessor
-        from processors.faith_autocall.unified_wrapper import (
-            process_faith_contract_data,
-            process_faith_guarantor_data,
-            process_faith_emergencycontact_data
-        )
         
         # プラザ（新規）
         from processors.plaza_autocall_unified import PlazaAutocallUnifiedProcessor
-        from processors.plaza_autocall.unified_wrapper import (
-            process_plaza_main_data,
-            process_plaza_guarantor_data,
-            process_plaza_contact_data
-        )
         
         # SMS統合（新規）
         from processors.sms_unified import SmsUnifiedProcessor
-        from processors.sms_unified_wrapper import (
-            process_mirail_sms_contract,
-            process_faith_sms_contract,
-            process_plaza_sms_contract
-        )
         
         # 共通モジュール
         from processors.autocall_constants import AUTOCALL_OUTPUT_COLUMNS  # ファイルから
         from processors.autocall_common.filter_engine import apply_filters  # ディレクトリから
         from processors.common.contract_list_columns import ContractListColumns
         from processors.common.detailed_logger import DetailedLogger
-        from infrastructure.csv_reader import CsvReader
+        
+        # インフラストラクチャ層
+        from infrastructure import (
+            EncodingHandler, 
+            read_csv_auto_encoding,
+            FileWriter,
+            to_csv_bytes,
+            to_csv_cp932_safe,
+            to_excel_bytes
+        )
         
         assert True  # インポート成功
     except ImportError as e:
@@ -92,6 +78,22 @@ def test_service_layer_imports():
             process_plaza_guarantor_data,
             process_plaza_contact_data
         )
+        
+        from services.sms import (
+            # ミライル SMS
+            process_mirail_sms_contract_data,
+            process_mirail_sms_guarantor_data,
+            process_mirail_sms_emergencycontact_data,
+            # フェイス SMS
+            process_faith_sms_contract_data,
+            process_faith_sms_guarantor_data,
+            process_faith_sms_emergencycontact_data,
+            # プラザ SMS
+            process_plaza_sms_contract_data,
+            process_plaza_sms_guarantor_data,
+            process_plaza_sms_contact_data
+        )
+        
         assert True  # 全てインポート成功
     except ImportError as e:
         pytest.fail(f"サービス層インポートエラー: {e}")

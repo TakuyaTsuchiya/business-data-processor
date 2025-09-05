@@ -9,6 +9,7 @@ import pandas as pd
 import io
 from datetime import date
 from typing import List
+from infrastructure import read_csv_auto_encoding
 
 
 def format_payment_deadline(date_input: date) -> str:
@@ -28,25 +29,5 @@ def format_payment_deadline(date_input: date) -> str:
     return date_input.strftime("%Y年%m月%d日")
 
 
-def read_csv_auto_encoding(file_content: bytes) -> pd.DataFrame:
-    """
-    アップロードされたCSVファイルを自動エンコーディング判定で読み込み
-    
-    Args:
-        file_content: CSVファイルのバイトデータ
-        
-    Returns:
-        pd.DataFrame: 読み込んだDataFrame（すべての列をstr型として）
-        
-    Raises:
-        ValueError: すべてのエンコーディングで読み込みに失敗した場合
-    """
-    encodings = ['utf-8', 'utf-8-sig', 'shift_jis', 'cp932', 'euc_jp']
-    
-    for enc in encodings:
-        try:
-            return pd.read_csv(io.BytesIO(file_content), encoding=enc, dtype=str)
-        except Exception:
-            continue
-    
-    raise ValueError("CSVファイルの読み込みに失敗しました。エンコーディングを確認してください。")
+# read_csv_auto_encoding関数は infrastructure から再エクスポート
+# 互換性のために関数名は残すが、実装はインフラ層を使用

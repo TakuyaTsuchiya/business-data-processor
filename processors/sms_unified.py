@@ -15,7 +15,7 @@ from typing import Tuple, List, Dict, Any, Optional
 
 # インフラ層のインポート
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from infrastructure.csv_reader import CsvReader
+from infrastructure import read_csv_auto_encoding
 
 # 共通定義のインポート
 from processors.sms_common.constants import SMS_TEMPLATE_HEADERS as SMS_OUTPUT_COLUMNS
@@ -88,7 +88,6 @@ class SmsUnifiedProcessor:
     def __init__(self):
         """初期化"""
         self.logs = []
-        self.csv_reader = CsvReader()
     
     def get_column_value(self, df: pd.DataFrame, column_index: int, column_access: str = "index") -> pd.Series:
         """
@@ -309,7 +308,7 @@ class SmsUnifiedProcessor:
             
             # 2. CSVファイル読み込み（インフラ層を使用）
             self.logs = [f"📂 {system.upper()} {config['display_names'][target]}SMS処理開始..."]
-            df_input = self.csv_reader.read_with_auto_encoding(file_content)
+            df_input = read_csv_auto_encoding(file_content, dtype=str)
             self.logs.append(f"ファイル読み込み完了: {len(df_input)}件")
             
             # 3. 共通フィルタリング
