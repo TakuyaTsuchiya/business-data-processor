@@ -127,8 +127,14 @@ class FilterEngine:
         else:
             reference_date = pd.Timestamp(config.get("reference_date", datetime.now())).normalize()
         
+        # include_todayパラメータの処理（デフォルトはTrue = 今日を含む）
+        include_today = config.get("include_today", True)
+        
         # 除外されるデータを記録
-        mask = df.iloc[:, column_idx].isna() | (df.iloc[:, column_idx] < reference_date)
+        if include_today:
+            mask = df.iloc[:, column_idx].isna() | (df.iloc[:, column_idx] <= reference_date)
+        else:
+            mask = df.iloc[:, column_idx].isna() | (df.iloc[:, column_idx] < reference_date)
         excluded_data = df[~mask]
         
         if len(excluded_data) > 0:

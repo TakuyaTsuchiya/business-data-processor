@@ -14,7 +14,7 @@ from typing import Tuple, List
 processors_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if processors_dir not in sys.path:
     sys.path.append(processors_dir)
-from autocall_common import AUTOCALL_OUTPUT_COLUMNS
+from autocall_constants import AUTOCALL_OUTPUT_COLUMNS
 from domain.rules.business_rules import CLIENT_IDS, EXCLUDE_AMOUNTS
 from processors.common.detailed_logger import DetailedLogger
 

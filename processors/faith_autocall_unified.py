@@ -1,6 +1,7 @@
 """
-ミライルオートコール統合プロセッサー
-6つの個別プロセッサーを1つに統合
+フェイスオートコール統合プロセッサー
+3つの個別プロセッサーを1つに統合
+列番号ベース + FilterEngine使用
 """
 
 import pandas as pd
@@ -8,7 +9,7 @@ import io
 import sys
 import os
 from datetime import datetime
-from typing import Tuple, List, Optional, Dict, Any
+from typing import Tuple, List, Dict, Any
 
 # 共通定義のインポート
 processors_dir = os.path.dirname(os.path.abspath(__file__))
@@ -20,94 +21,80 @@ from filter_engine import apply_filters
 from common.contract_list_columns import ContractListColumns as COL
 
 
-class MirailAutocallUnifiedProcessor:
-    """ミライルオートコール統合プロセッサー"""
+class FaithAutocallUnifiedProcessor:
+    """フェイスオートコール統合プロセッサー"""
     
-    # 対象者別の設定
+    # 対象者別の設定（列番号ベース）
     TARGET_CONFIG = {
         "contract": {
-            "phone_column": COL.TEL_MOBILE,        # AB列（27）
+            "phone_column": COL.TEL_MOBILE,        # 27 (AB列)
             "name_suffix": "契約者",
             "display_name": "契約者"
         },
         "guarantor": {
-            "phone_column": COL.TEL_MOBILE_1,      # AU列（46）
+            "phone_column": COL.TEL_MOBILE_1,      # 46 (AU列)
             "name_suffix": "保証人",
             "display_name": "保証人"
         },
         "emergency_contact": {
-            "phone_column": COL.TEL_MOBILE_2,      # BE列（56）
-            "name_suffix": "緊急連絡人",
+            "phone_column": COL.TEL_MOBILE_2,      # 56 (BE列)
+            "name_suffix": "連絡人",               # フェイスは「連絡人」
             "display_name": "緊急連絡人"
         }
     }
     
-    # 残債除外金額の定義
-    MIRAIL_DEBT_EXCLUDE = [10000, 11000]
-    
-    # 共通の除外金額
-    COMMON_EXCLUDE_AMOUNTS = [2, 3, 5, 12]
+    # フェイス固有の設定
+    FAITH_CLIENT_IDS = [1, 2, 3, 4]
+    EXCLUDE_AMOUNTS = [2, 3, 5]  # フェイスは12を含まない
+    EXCLUDE_RANKS = ["死亡決定", "破産決定", "弁護士介入"]
     
     def __init__(self):
         """初期化"""
         self.logs = []
     
-    def get_base_filter_config(self, target: str, with_10k: bool) -> Dict[str, Any]:
+    def get_filter_config(self, target: str) -> Dict[str, Any]:
         """
-        ベースとなるフィルタ設定を取得
+        フェイス用のフィルタ設定を取得
         
         Args:
             target: 対象者タイプ
-            with_10k: 10k含むかどうか
-        
+            
         Returns:
-            フィルタ設定の辞書
+            FilterEngine用の設定辞書
         """
-        # 95%共通の設定
         filter_config = {
             "trustee_id": {
                 "column": COL.TRUSTEE_ID,
-                "values": ["", "5"],
+                "values": self.FAITH_CLIENT_IDS,
                 "log_type": "id",
                 "label": "委託先法人ID"
             },
             "payment_date": {
                 "column": COL.PAYMENT_DATE,
                 "type": "before_today",
+                "include_today": False,  # フェイスは当日を含まない
                 "log_type": "date",
                 "label": "入金予定日",
                 "top_n": 3
             },
+            "payment_amount": {
+                "column": COL.PAYMENT_AMOUNT,
+                "exclude": self.EXCLUDE_AMOUNTS,
+                "log_type": "amount",
+                "label": "除外金額"
+            },
             "collection_rank": {
                 "column": COL.COLLECTION_RANK,
-                "exclude": ["弁護士介入"],
-                "log_type": "category",
+                "exclude": self.EXCLUDE_RANKS,
+                "log_type": "category", 
                 "label": "回収ランク"
             },
             "mobile_phone": {
                 "column": self.TARGET_CONFIG[target]["phone_column"],
                 "log_type": "phone",
                 "label": f"{self.TARGET_CONFIG[target]['display_name']}電話"
-            },
-            "payment_amount": {
-                "column": COL.PAYMENT_AMOUNT,
-                "exclude": self.COMMON_EXCLUDE_AMOUNTS,
-                "log_type": "amount",
-                "label": "除外金額"
             }
         }
-        
-        # without10kの場合、残債フィルタを追加
-        if not with_10k:
-            filter_config["special_debt"] = {
-                "client_cd_column": COL.CLIENT_CD,
-                "debt_column": COL.DEBT_AMOUNT,
-                "conditions": {
-                    "client_cds": [1, 4],
-                    "debt_amounts": self.MIRAIL_DEBT_EXCLUDE
-                },
-                "label": "ミライル特殊残債"
-            }
         
         return filter_config
     
@@ -125,7 +112,7 @@ class MirailAutocallUnifiedProcessor:
     
     def get_mapping_rules(self, target: str) -> Dict[str, int]:
         """
-        対象者別のマッピングルールを取得
+        対象者別のマッピングルールを取得（列番号ベース）
         
         Args:
             target: 対象者タイプ
@@ -140,8 +127,8 @@ class MirailAutocallUnifiedProcessor:
             "管理番号": COL.MANAGEMENT_NO,
             "契約者名（カナ）": COL.CONTRACT_KANA,
             "物件名": COL.PROPERTY_NAME,
-            "クライアント": COL.CLIENT_NAME,
-            "残債": COL.DEBT_AMOUNT
+            "クライアント": COL.CLIENT_NAME
+            # 注: フェイスは残債列なし
         }
         
         # 対象者別の電話番号列を追加
@@ -176,19 +163,17 @@ class MirailAutocallUnifiedProcessor:
         
         return df_output
     
-    def process_mirail_autocall(
+    def process_faith_autocall(
         self,
         file_content: bytes,
-        target: str,
-        with_10k: bool = True
+        target: str
     ) -> Tuple[pd.DataFrame, List[str], str]:
         """
-        ミライルオートコール処理のメイン関数
+        フェイスオートコール処理のメイン関数
         
         Args:
             file_content: ContractListのファイル内容（bytes）
             target: 対象者タイプ ("contract", "guarantor", "emergency_contact")
-            with_10k: 10,000円・11,000円を含むかどうか
             
         Returns:
             tuple: (出力DF, 処理ログ, 出力ファイル名)
@@ -204,7 +189,7 @@ class MirailAutocallUnifiedProcessor:
             self.logs.append(f"ファイル読み込み完了: {len(df_input)}件")
             
             # 2. フィルタ設定を取得
-            filter_config = self.get_base_filter_config(target, with_10k)
+            filter_config = self.get_filter_config(target)
             
             # 3. 共通フィルタリングエンジンを使用
             df_filtered, filter_logs = apply_filters(df_input, filter_config)
@@ -216,8 +201,7 @@ class MirailAutocallUnifiedProcessor:
             # 5. 出力ファイル名生成
             today_str = datetime.now().strftime("%m%d")
             suffix = self.TARGET_CONFIG[target]["name_suffix"]
-            prefix = "with10k" if with_10k else "without10k"
-            output_filename = f"{today_str}ミライル_{prefix}_{suffix}.csv"
+            output_filename = f"{today_str}フェイス_{suffix}.csv"
             
             self.logs.append(f"✅ 処理完了: {len(df_output)}件出力")
             
