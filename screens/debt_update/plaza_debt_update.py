@@ -116,7 +116,7 @@ def show_plaza_debt_update():
                         
                         # ZIPファイルのダウンロードボタン
                         zip_buffer.seek(0)
-                        date_str = datetime.now().strftime("%m%d")
+                        date_str = datetime.now().strftime("%y%m%d")
                         zip_filename = f"{date_str}プラザ残債更新.zip"
                         
                         st.download_button(
