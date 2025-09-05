@@ -13,6 +13,7 @@ from components.common_ui import (
     safe_csv_download,
     display_processing_logs
 )
+from domain.exceptions import BusinessDataProcessorError, create_user_friendly_message
 
 
 def display_processing_result(
@@ -117,5 +118,40 @@ def display_error_result(
     """
     st.error(error_message)
     
+    if logs:
+        display_processing_logs(logs, expanded=True)
+
+
+def display_exception_error(
+    error: Exception,
+    logs: Optional[List[str]] = None,
+    show_technical: bool = False
+) -> None:
+    """
+    例外オブジェクトからエラー表示を行う（カスタム例外対応版）
+    
+    Args:
+        error: 例外オブジェクト（BusinessDataProcessorErrorまたは通常の例外）
+        logs: 処理ログのリスト（オプション）
+        show_technical: 技術的な詳細を表示するか
+    """
+    if isinstance(error, BusinessDataProcessorError):
+        # カスタム例外の場合、ユーザーフレンドリーなメッセージを表示
+        user_message = create_user_friendly_message(error)
+        st.error(user_message)
+        
+        # 詳細情報がある場合はexpanderで表示
+        if error.details or show_technical:
+            with st.expander("エラーの詳細情報"):
+                st.write(f"**エラーコード**: {error.error_code}")
+                if error.details:
+                    st.json(error.details)
+                if show_technical:
+                    st.code(str(error))
+    else:
+        # 通常の例外の場合
+        st.error(f"エラーが発生しました: {str(error)}")
+    
+    # ログがある場合は表示
     if logs:
         display_processing_logs(logs, expanded=True)

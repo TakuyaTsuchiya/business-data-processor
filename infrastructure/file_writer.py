@@ -9,6 +9,7 @@ import pandas as pd
 import io
 import re
 from typing import Optional, Union, Dict, Any
+from domain.exceptions import EncodingError, FileHandlingError
 
 
 class FileWriter:
@@ -88,10 +89,18 @@ class FileWriter:
             return self.to_csv_bytes(df, encoding='cp932', index=index, **kwargs)
         except UnicodeEncodeError as e:
             # エラーの詳細情報を含めて再発生
-            raise ValueError(
-                f"CP932でエンコードできない文字が含まれています: {str(e)}\n"
-                "remove_emoji=Trueを指定しても解決しない場合は、"
-                "データに特殊文字が含まれている可能性があります。"
+            error_char = str(e.object[e.start:e.end]) if hasattr(e, 'object') else '不明'
+            raise EncodingError(
+                message=f"Cannot encode character to CP932: {e}",
+                error_code="ENC003",
+                user_message=(
+                    f"CP932で出力できない文字が含まれています: '{error_char}'\n"
+                    "以下の方法をお試しください：\n"
+                    "1. 特殊文字や絵文字を削除する\n"
+                    "2. 全角文字に変換する\n"
+                    "3. UTF-8形式で出力する"
+                ),
+                file_info={'problematic_character': error_char}
             )
     
     def to_excel_bytes(
@@ -192,7 +201,12 @@ class FileWriter:
             full_filename = f"{filename}.xlsx"
             mime_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         else:
-            raise ValueError(f"サポートされていない形式: {format}")
+            raise FileHandlingError(
+                message=f"Unsupported file format: {format}",
+                error_code="FIL004", 
+                user_message=f"サポートされていないファイル形式です: {format}",
+                operation="create_download_response"
+            )
         
         return {
             'data': data,

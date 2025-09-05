@@ -10,6 +10,7 @@ import os
 from datetime import datetime
 from typing import Tuple, List, Optional, Dict, Any
 from infrastructure import read_csv_auto_encoding
+from domain.exceptions import ConfigurationError, DataValidationError, ProcessingError
 
 # 共通定義のインポート
 processors_dir = os.path.dirname(os.path.abspath(__file__))
@@ -190,7 +191,14 @@ class MirailAutocallUnifiedProcessor:
         try:
             # パラメータ検証
             if target not in self.TARGET_CONFIG:
-                raise ValueError(f"無効な対象者タイプ: {target}")
+                raise ConfigurationError(
+                    message=f"Invalid target type: {target}",
+                    error_code="CFG002",
+                    user_message=f"無効な対象者タイプが指定されました: {target}",
+                    parameter_name="target",
+                    invalid_value=target,
+                    valid_values=list(self.TARGET_CONFIG.keys())
+                )
             
             # 1. CSVファイル読み込み
             self.logs = [f"📂 {self.TARGET_CONFIG[target]['display_name']}データ処理開始..."]

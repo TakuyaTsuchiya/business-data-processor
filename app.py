@@ -1,5 +1,5 @@
 """
-Business Data Processor v2.3.0
+Business Data Processor
 統合データ処理システム - SMS機能削除版
 
 対応システム:
@@ -18,6 +18,7 @@ import pandas as pd
 import io
 import zipfile
 from datetime import datetime, date
+
 
 # 共通UIコンポーネントをインポート
 from components.common_ui import (
