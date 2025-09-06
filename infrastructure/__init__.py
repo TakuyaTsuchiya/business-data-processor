@@ -7,6 +7,8 @@
 
 from .encoding_handler import EncodingHandler, read_csv_auto_encoding
 from .file_writer import FileWriter, to_csv_bytes, to_csv_cp932_safe, to_excel_bytes
+from .csv_processor import CsvProcessor
+from .dataframe_builder import DataFrameBuilder
 
 __all__ = [
     'EncodingHandler',
@@ -15,4 +17,6 @@ __all__ = [
     'to_csv_bytes',
     'to_csv_cp932_safe',
     'to_excel_bytes',
+    'CsvProcessor',
+    'DataFrameBuilder',
 ]
