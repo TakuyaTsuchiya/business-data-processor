@@ -56,15 +56,16 @@ def apply_plaza_main_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]
     if len(excluded_data) > 0:
         logs.append(DetailedLogger.log_exclusion_details(
             excluded_data,
+            df.columns.get_loc('委託先法人ID'),
             '委託先法人ID',
             log_type='id'
         ))
     
     df = df[df["委託先法人ID"].astype(str).str.strip() == "6"]
     logs.append(DetailedLogger.log_filter_result(
-        "委託先法人ID（6のみ）",
         before_filter,
-        len(df)
+        len(df),
+        "委託先法人ID（6のみ）"
     ))
     
     # 2. 入金予定日のフィルタリング（当日以前またはNaN：当日も含む）
@@ -76,15 +77,16 @@ def apply_plaza_main_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]
     if len(excluded_data) > 0:
         logs.append(DetailedLogger.log_exclusion_details(
             excluded_data,
+            df.columns.get_loc('入金予定日'),
             '入金予定日',
             log_type='date'
         ))
     
     df = df[df["入金予定日"].isna() | (df["入金予定日"] <= today)]
     logs.append(DetailedLogger.log_filter_result(
-        "入金予定日",
         before_filter,
-        len(df)
+        len(df),
+        "入金予定日"
     ))
     
     # 3. 回収ランクのフィルタリング（督促停止・弁護士介入案件は除外）
@@ -95,15 +97,16 @@ def apply_plaza_main_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]
     if len(excluded_data) > 0:
         logs.append(DetailedLogger.log_exclusion_details(
             excluded_data,
+            df.columns.get_loc('回収ランク'),
             '回収ランク',
             log_type='category'
         ))
     
     df = df[~df["回収ランク"].isin(exclude_ranks)]
     logs.append(DetailedLogger.log_filter_result(
-        "回収ランク",
         before_filter,
-        len(df)
+        len(df),
+        "回収ランク"
     ))
     
     # 4. 残債のフィルタリング（with10k版では除外なし - 全件処理）
@@ -118,6 +121,7 @@ def apply_plaza_main_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]
     if len(excluded_data) > 0:
         logs.append(DetailedLogger.log_exclusion_details(
             excluded_data,
+            df.columns.get_loc('TEL携帯'),
             'TEL携帯',
             log_type='phone'
         ))
@@ -127,9 +131,9 @@ def apply_plaza_main_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]
         (~df["TEL携帯"].astype(str).str.strip().isin(["", "nan", "NaN"]))
     ]
     logs.append(DetailedLogger.log_filter_result(
-        "TEL携帯",
         before_filter,
-        len(df)
+        len(df),
+        "TEL携帯"
     ))
     
     # 6. 入金予定金額のフィルタリング（手数料関連の2,3,5,12円を除外）
@@ -141,15 +145,16 @@ def apply_plaza_main_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]
     if len(excluded_data) > 0:
         logs.append(DetailedLogger.log_exclusion_details(
             excluded_data,
+            df.columns.get_loc('入金予定金額'),
             '入金予定金額',
             log_type='amount'
         ))
     
     df = df[~df["入金予定金額"].isin(exclude_amounts)]
     logs.append(DetailedLogger.log_filter_result(
-        "入金予定金額",
         before_filter,
-        len(df)
+        len(df),
+        "入金予定金額"
     ))
     
     return df, logs
