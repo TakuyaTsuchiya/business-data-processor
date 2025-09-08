@@ -44,7 +44,7 @@ def show_plaza_registration():
         process_function=process_with_message,
         file_count=2,
         info_message="📂 必要ファイル: プラザCSV + ContractList（2ファイル処理）",
-        file_labels=["ファイル1: 2025年09月コールセンター回収委託_ミライル", "ファイル2: ContractList"],
+        file_labels=["ファイル1: コールセンター回収委託_ミライル.csv", "ファイル2: ContractList"],
         title_icon="📋",
         no_data_message="✅ 処理完了: 全てのデータが既に登録済みです。新規登録対象はありません。"
     )
