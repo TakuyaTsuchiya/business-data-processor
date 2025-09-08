@@ -615,3 +615,7 @@ def process_plaza_data(plaza_file, contract_file) -> Tuple[pd.DataFrame, pd.Data
     """プラザ新規登録処理のエントリポイント"""
     processor = PlazaProcessor()
     return processor.process(plaza_file, contract_file)
+
+
+# 明示的にエクスポート
+__all__ = ['process_plaza_data']
