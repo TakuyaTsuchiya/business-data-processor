@@ -43,7 +43,8 @@ def show_plaza_registration():
         ],
         process_function=process_with_message,
         file_count=2,
-        info_message="⏱️ 処理時間: 処理には1分ほどかかります。お待ちください。\n\n📂 必要ファイル: プラザCSV + ContractList（2ファイル処理）",
+        info_message="📂 必要ファイル: プラザCSV + ContractList（2ファイル処理）",
+        processing_time_message="⏱️ **処理時間**: 処理には1分ほどかかります。お待ちください。",
         file_labels=["ファイル1: コールセンター回収委託_ミライル.csv", "ファイル2: ContractList"],
         title_icon="📋",
         no_data_message="✅ 処理完了: 全てのデータが既に登録済みです。新規登録対象はありません。"

@@ -26,7 +26,8 @@ class ScreenConfig:
         file_labels: Optional[List[str]] = None,
         success_message_template: str = "処理完了: {processed_rows}件のデータを出力",
         no_data_message: str = "条件に合致するデータがありませんでした。",
-        title_icon: str = ""
+        title_icon: str = "",
+        processing_time_message: Optional[str] = None
     ):
         self.title = title
         self.subtitle = subtitle
@@ -39,6 +40,7 @@ class ScreenConfig:
         self.success_message_template = success_message_template
         self.no_data_message = no_data_message
         self.title_icon = title_icon
+        self.processing_time_message = processing_time_message
 
 
 def render_screen(config: ScreenConfig, key_prefix: str):
@@ -64,6 +66,10 @@ def render_screen(config: ScreenConfig, key_prefix: str):
     # 3. 情報メッセージ（オプション）
     if config.info_message:
         st.info(config.info_message)
+    
+    # 3.5. 処理時間の警告（オプション）
+    if config.processing_time_message:
+        st.warning(config.processing_time_message)
     
     # 4. 支払期限入力（SMS画面用、オプション）
     payment_deadline_values = {}
