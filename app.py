@@ -77,6 +77,9 @@ from screens.registration.arktrust import (
 from screens.registration.capco import (
     show_capco_registration
 )
+from screens.registration.plaza import (
+    show_plaza_registration
+)
 from screens.debt_update.ark_late_payment import (
     show_ark_late_payment
 )
@@ -131,6 +134,7 @@ def main():
         "ark_registration_kitakanto": show_ark_registration_kitakanto,
         "arktrust_registration_tokyo": show_arktrust_registration_tokyo,
         "capco_registration": show_capco_registration,
+        "plaza_registration": show_plaza_registration,
         "ark_late_payment": show_ark_late_payment,
         "capco_debt_update": show_capco_debt_update,
         "plaza_debt_update": show_plaza_debt_update
