@@ -458,8 +458,18 @@ class PlazaProcessor:
                 # AP列：入居中正常手数料（固定値）
                 output_row["入居中正常手数料"] = "0"
             
-                # AQ列：管理前滞納額（後で指定）
-                output_row["管理前滞納額"] = ""
+                # AQ列：管理前滞納額（Z列「延滞合計」+ AA列「事務手数料」）
+                late_fee_str = self.converter.safe_str_convert(row[cols[25]])  # Z列
+                admin_fee_str = self.converter.safe_str_convert(row[cols[26]])  # AA列
+                
+                try:
+                    late_fee = float(late_fee_str) if late_fee_str else 0.0
+                    admin_fee = float(admin_fee_str) if admin_fee_str else 0.0
+                    output_row["管理前滞納額"] = str(int(late_fee + admin_fee))
+                except ValueError as e:
+                    error_msg = f"行 {idx+1}: 管理前滞納額の計算エラー - 延滞合計: '{late_fee_str}', 事務手数料: '{admin_fee_str}'"
+                    self.logger.error(error_msg)
+                    raise ValueError(error_msg) from e
             
                 # AR〜AU列：空欄
                 for col in ["更新契約手数料", "退去手続き（実費）", "初回振替月", "保証開始日"]:
