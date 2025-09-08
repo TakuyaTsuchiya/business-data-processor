@@ -95,6 +95,8 @@ def build_sidebar_menu():
             st.session_state.selected_processor = "arktrust_registration_tokyo"
         if st.button("カプコ新規登録", key="capco_registration", use_container_width=True):
             st.session_state.selected_processor = "capco_registration"
+        if st.button("プラザ新規登録", key="plaza_registration", use_container_width=True):
+            st.session_state.selected_processor = "plaza_registration"
         
         # 💰 残債の更新用CSV加工
         st.markdown('<div class="sidebar-category">💰 残債の更新用CSV加工</div>', unsafe_allow_html=True)
