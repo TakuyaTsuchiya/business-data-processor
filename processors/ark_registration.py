@@ -182,11 +182,8 @@ class DataLoader:
         for try_encoding in encodings_to_try:
             try:
                 df = pd.read_csv(io.BytesIO(file_content), encoding=try_encoding, dtype=str)
-                # デバッグ情報をファイルに保存
-                with open('debug_csv_loading.log', 'w', encoding='utf-8') as f:
-                    f.write(f"CSV読み込み成功 (エンコーディング: {try_encoding})\n")
-                    f.write(f"読み込み列数: {len(df.columns)}\n")
-                    f.write(f"読み込み行数: {len(df)}\n")
+                # デバッグ情報をログに出力（ファイル書き込みを削除）
+                self.logger.debug(f"CSV読み込み成功 - エンコーディング: {try_encoding}, 列数: {len(df.columns)}, 行数: {len(df)}")
                 return df
             except UnicodeDecodeError:
                 continue
@@ -222,13 +219,9 @@ class DataLoader:
                 value = first_row.get(col, 'NOT_FOUND')
                 debug_logs.append(f"  '{col}': '{value}'")
         
-        # デバッグログをファイルに保存（外部確認用）
-        with open('debug_ark_columns.log', 'w', encoding='utf-8') as f:
-            f.write('\n'.join(debug_logs))
-        
-        # 一部をprintで出力（開発時確認用）
-        for log in debug_logs[:10]:  # 最初の10行のみ
-            print(log)
+        # デバッグログ出力（ファイル書き込みとprint削除）
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug('\n'.join(debug_logs))
         
         # 必須カラム確認
         required_columns = ["契約番号", "契約元帳: 主契約者"]
