@@ -145,110 +145,57 @@ class DataLoader:
     
     def detect_encoding(self, file_content: bytes) -> str:
         """エンコーディング自動検出（文字化け解消）"""
-        # デバッグ情報: ファイルの先頭バイトを表示
-        debug_info = []
-        debug_info.append(f"ファイルサイズ: {len(file_content)} bytes")
-        debug_info.append(f"先頭20バイト (16進数): {file_content[:20].hex(' ')}")
-        debug_info.append(f"先頭20バイト (文字): {repr(file_content[:20])}")
-        
-        # BOM検出
-        if file_content.startswith(b'\xff\xfe'):
-            debug_info.append("BOM検出: UTF-16-LE")
-            return 'utf-16-le'
-        elif file_content.startswith(b'\xfe\xff'):
-            debug_info.append("BOM検出: UTF-16-BE")
-            return 'utf-16-be'
-        elif file_content.startswith(b'\xef\xbb\xbf'):
-            debug_info.append("BOM検出: UTF-8-SIG")
-            return 'utf-8-sig'
-        
         # chardetで検出
         result = chardet.detect(file_content[:10000])
         detected_encoding = result['encoding']
         confidence = result.get('confidence', 0)
-        debug_info.append(f"chardet検出: {detected_encoding} (信頼度: {confidence:.2f})")
         
-        # エンコーディング候補リスト（優先順位、拡張版）
-        encoding_candidates = ['cp932', 'shift_jis', 'utf-8-sig', 'utf-8', 'utf-16-le', 'utf-16-be', 'iso-2022-jp', 'euc-jp', 'latin-1']
+        # エンコーディング候補リスト（優先順位）
+        encoding_candidates = ['cp932', 'shift_jis', 'utf-8-sig', 'utf-8', 'iso-2022-jp', 'euc-jp']
         
-        # 各エンコーディングを試行
-        encoding_errors = {}
-        for encoding in encoding_candidates:
-            try:
-                # 全体をデコードして確認
-                file_content.decode(encoding)
-                debug_info.append(f"✓ {encoding}: 成功")
-                
-                # デバッグ情報をファイルに保存
-                with open('debug_encoding_detection.log', 'w', encoding='utf-8') as f:
-                    f.write('\n'.join(debug_info))
-                
-                return encoding
-            except UnicodeDecodeError as e:
-                encoding_errors[encoding] = f"位置 {e.start}-{e.end}: {e.reason}"
-                debug_info.append(f"✗ {encoding}: {encoding_errors[encoding]}")
-            except Exception as e:
-                encoding_errors[encoding] = str(e)
-                debug_info.append(f"✗ {encoding}: {str(e)}")
+        # 信頼度が低い場合は代替エンコーディングを試す
+        if confidence < 0.7:
+            for encoding in encoding_candidates:
+                try:
+                    file_content.decode(encoding)
+                    return encoding
+                except UnicodeDecodeError:
+                    continue
         
-        # デバッグ情報をファイルに保存（エラー時）
-        with open('debug_encoding_detection.log', 'w', encoding='utf-8') as f:
-            f.write('\n'.join(debug_info))
-            f.write('\n\n=== エンコーディング試行詳細 ===\n')
-            for enc, err in encoding_errors.items():
-                f.write(f"{enc}: {err}\n")
-        
-        # 全て失敗した場合のエラーメッセージ
-        error_details = '\n'.join([f"- {enc}: {err}" for enc, err in encoding_errors.items()])
-        raise ValueError(f"対応するエンコーディングが見つかりませんでした。\n\n試行したエンコーディング:\n{error_details}\n\n詳細は debug_encoding_detection.log を確認してください。")
+        # よくあるエンコーディングの修正
+        if detected_encoding in ['CP932', 'SHIFT_JIS', 'SHIFT-JIS']:
+            return 'cp932'
+        elif detected_encoding in ['UTF-8-SIG']:
+            return 'utf-8-sig'
+        elif detected_encoding:
+            return detected_encoding
+        else:
+            return 'utf-8-sig'  # UTF-8-sig優先フォールバック
     
     def load_csv_from_bytes(self, file_content: bytes) -> pd.DataFrame:
         """バイト形式CSVファイル読み込み（エンコーディング自動対応）"""
-        try:
-            encoding = self.detect_encoding(file_content)
-        except ValueError as e:
-            # エンコーディング検出に失敗した場合、強制読み込みを試行
-            self.logger.warning(f"エンコーディング検出失敗: {str(e)}")
-            self.logger.warning("errors='replace'での強制読み込みを試行します")
-            
-            # 最終手段: latin-1またはutf-8でerrors='replace'
-            for fallback_encoding in ['latin-1', 'utf-8']:
-                try:
-                    df = pd.read_csv(io.BytesIO(file_content), encoding=fallback_encoding, dtype=str, on_bad_lines='skip')
-                    self.logger.info(f"強制読み込み成功 (エンコーディング: {fallback_encoding}, errors='replace')")
-                    
-                    # デバッグ情報をファイルに保存
-                    with open('debug_csv_loading.log', 'w', encoding='utf-8') as f:
-                        f.write(f"CSV強制読み込み成功 (エンコーディング: {fallback_encoding})\n")
-                        f.write(f"読み込み列数: {len(df.columns)}\n")
-                        f.write(f"読み込み行数: {len(df)}\n")
-                        f.write("\n列名一覧:\n")
-                        for i, col in enumerate(df.columns):
-                            f.write(f"{i+1}: {repr(col)}\n")
-                    
-                    return df
-                except Exception as fe:
-                    self.logger.error(f"{fallback_encoding}での強制読み込み失敗: {str(fe)}")
-            
-            # それでも失敗したら元のエラーを再発生
-            raise e
+        encoding = self.detect_encoding(file_content)
         
-        # 通常の読み込み処理
-        try:
-            df = pd.read_csv(io.BytesIO(file_content), encoding=encoding, dtype=str)
-            # デバッグ情報をファイルに保存
-            with open('debug_csv_loading.log', 'w', encoding='utf-8') as f:
-                f.write(f"CSV読み込み成功 (エンコーディング: {encoding})\n")
-                f.write(f"読み込み列数: {len(df.columns)}\n")
-                f.write(f"読み込み行数: {len(df)}\n")
-                f.write("\n列名一覧:\n")
-                for i, col in enumerate(df.columns):
-                    f.write(f"{i+1}: {repr(col)}\n")
-            return df
-        except Exception as e:
-            error_msg = f"CSVファイルの読み込みに失敗しました。\nエンコーディング: {encoding}\nエラー: {str(e)}"
-            self.logger.error(error_msg)
-            raise ValueError(error_msg)
+        # 複数のエンコーディングで試行
+        encodings_to_try = [encoding, 'cp932', 'shift_jis', 'utf-8-sig', 'utf-8', 'iso-2022-jp', 'euc-jp']
+        
+        for try_encoding in encodings_to_try:
+            try:
+                df = pd.read_csv(io.BytesIO(file_content), encoding=try_encoding, dtype=str)
+                # デバッグ情報をファイルに保存
+                with open('debug_csv_loading.log', 'w', encoding='utf-8') as f:
+                    f.write(f"CSV読み込み成功 (エンコーディング: {try_encoding})\n")
+                    f.write(f"読み込み列数: {len(df.columns)}\n")
+                    f.write(f"読み込み行数: {len(df)}\n")
+                return df
+            except UnicodeDecodeError:
+                continue
+            except Exception as e:
+                if try_encoding == encodings_to_try[-1]:
+                    raise ValueError(f"CSVファイルの読み込みに失敗: {str(e)}")
+                continue
+        
+        raise ValueError("対応するエンコーディングが見つかりませんでした")
     
     def load_ark_report_data(self, file_content: bytes) -> pd.DataFrame:
         """案件取込用レポート読み込み"""
