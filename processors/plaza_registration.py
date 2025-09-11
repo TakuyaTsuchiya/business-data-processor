@@ -379,7 +379,7 @@ class PlazaProcessor:
                 remaining = addr_parts["remaining"]
                 building = self.converter.safe_str_convert(row[cols[11]])  # L列「物件名」
                 room = self.converter.safe_str_convert(row[cols[4]])      # E列「号室」
-                output_row["契約者現住所3"] = f"{remaining}{building}{room}"
+                output_row["契約者現住所3"] = f"{remaining}　{building}　{room}".strip()
             
                 # K列：引継情報（処理日付 + "プラザ一括登録"）
                 today = datetime.now().strftime("%Y/%-m/%-d")
@@ -485,12 +485,12 @@ class PlazaProcessor:
                 work_name = self.converter.safe_str_convert(row[cols[40]])  # AO列「勤務先名」
                 work_tel = self.converter.safe_str_convert(row[cols[42]])   # AQ列「勤務先TEL」
             
-                if "退職済" in work_name or "退職済" in work_tel:
+                if "退職済" in work_name or "退職済" in work_tel or "TEL無効" in work_name:
                     output_row["契約者勤務先名"] = ""
                     output_row["契約者勤務先TEL"] = ""
                 else:
                     output_row["契約者勤務先名"] = work_name
-                    output_row["契約者勤務先TEL"] = work_tel
+                    output_row["契約者勤務先TEL"] = self.converter.normalize_phone_number(work_tel)
             
                 # AY列：契約者勤務先カナ（空欄）
                 output_row["契約者勤務先カナ"] = ""
@@ -511,7 +511,7 @@ class PlazaProcessor:
                 output_row["保証人1カナ"] = self.converter.hankaku_to_zenkaku(guarantor_kana)
             
                 # BH列：保証人１契約者との関係（固定値）
-                output_row["保証人1契約者との関係"] = "他"
+                output_row["保証人1契約者との関係"] = "他" if output_row["保証人1氏名"] else ""
             
                 # BI〜BN列：保証人１その他情報（空欄）
                 for col in ["保証人1生年月日", "保証人1郵便番号", "保証人1住所1", "保証人1住所2", "保証人1住所3", "保証人1TEL自宅"]:
@@ -541,7 +541,7 @@ class PlazaProcessor:
                 output_row["緊急連絡人1カナ"] = self.converter.hankaku_to_zenkaku(emergency_kana)
             
                 # CB列：緊急連絡人１契約者との関係（固定値）
-                output_row["緊急連絡人1契約者との関係"] = "他"
+                output_row["緊急連絡人1契約者との関係"] = "他" if output_row["緊急連絡人1氏名"] else ""
             
                 # CC〜CG列：緊急連絡人１その他情報（空欄）
                 for col in ["緊急連絡人1生年月日", "緊急連絡人1郵便番号", "緊急連絡人1住所1", "緊急連絡人1住所2", "緊急連絡人1住所3", "緊急連絡人1TEL自宅"]:
