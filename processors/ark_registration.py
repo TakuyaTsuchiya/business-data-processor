@@ -23,6 +23,7 @@ from datetime import datetime
 from typing import Tuple, List, Dict, Union
 import logging
 from processors.common.detailed_logger import DetailedLogger
+from .common.address_splitter import AddressSplitter
 
 
 class ArkConfig:
@@ -309,6 +310,7 @@ class DataConverter:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         self.prefectures = ArkConfig.PREFECTURES
+        self.address_splitter = AddressSplitter()
     
     def safe_str_convert(self, value) -> str:
         """安全な文字列変換"""
@@ -378,73 +380,12 @@ class DataConverter:
         return "", addr
     
     def split_address(self, address: str) -> Dict[str, str]:
-        """住所を郵便番号、都道府県、市区町村、残り住所に分割（政令指定都市対応版）"""
+        """住所を郵便番号、都道府県、市区町村、残り住所に分割（辞書方式）"""
         if pd.isna(address) or str(address).strip() == "":
             return {"postal_code": "", "prefecture": "", "city": "", "remaining": ""}
         
-        # 郵便番号を抽出
-        postal_code, addr = self.extract_postal_code(address)
-        
-        # 都道府県を検索
-        prefecture = ""
-        for pref in self.prefectures:
-            if addr.startswith(pref):
-                prefecture = pref
-                addr = addr[len(pref):]
-                break
-        
-        # 市区町村を抽出（改善版）
-        city = ""
-        
-        # 市川市・市原市の特別処理
-        if addr.startswith("市川市"):
-            city = "市川市"
-            addr = addr[3:]
-        elif addr.startswith("市原市"):
-            city = "市原市"
-            addr = addr[3:]
-        
-        # 東京23区の特別処理
-        if prefecture == "東京都" and not city:
-            tokyo_wards = [
-                "千代田区", "中央区", "港区", "新宿区", "文京区", "台東区", "墨田区", "江東区",
-                "品川区", "目黒区", "大田区", "世田谷区", "渋谷区", "中野区", "杉並区", "豊島区",
-                "北区", "荒川区", "板橋区", "練馬区", "足立区", "葛飾区", "江戸川区"
-            ]
-            for ward in tokyo_wards:
-                if addr.startswith(ward):
-                    city = ward
-                    addr = addr[len(ward):]
-                    break
-        
-        # 一般的な市区町村パターン（政令指定都市対応版）
-        if not city:
-            # 政令指定都市パターン（○○市○○区）を優先処理
-            designated_city_pattern = r'^([^市区町村]+?市[^市区町村]+?区)'
-            match = re.match(designated_city_pattern, addr)
-            if match:
-                city = match.group(1)  # 「千葉市美浜区」全体を市区町村とする
-                addr = addr[len(city):]
-            else:
-                # 一般市町村パターン
-                city_patterns = [
-                    r'^([^市区町村]+?[市])',
-                    r'^([^市区町村]+?[町])',  
-                    r'^([^市区町村]+?[村])'
-                ]
-                for pattern in city_patterns:
-                    match = re.match(pattern, addr)
-                    if match:
-                        city = match.group(1)
-                        addr = addr[len(city):]
-                        break
-        
-        return {
-            "postal_code": postal_code,
-            "prefecture": prefecture,
-            "city": city,
-            "remaining": addr
-        }
+        # 新しい辞書ベースの分割処理を使用
+        return self.address_splitter.split_address(str(address))
     
     def extract_room_from_property_name(self, property_name: str) -> Tuple[str, str]:
         """物件名から部屋番号を抽出"""
