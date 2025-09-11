@@ -23,6 +23,7 @@ from datetime import datetime
 from typing import Tuple, List, Dict, Union
 import logging
 from processors.common.detailed_logger import DetailedLogger
+from .common.address_splitter import AddressSplitter
 
 
 class ArkConfig:
@@ -309,12 +310,91 @@ class DataConverter:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         self.prefectures = ArkConfig.PREFECTURES
+        self.address_splitter = AddressSplitter()
     
     def safe_str_convert(self, value) -> str:
         """安全な文字列変換"""
         if pd.isna(value):
             return ""
         return str(value).strip()
+    
+    def is_corporate(self, name: str) -> bool:
+        """法人判定（契約者氏名から判定）"""
+        if not name:
+            return False
+            
+        # 法人を示すキーワード
+        corporate_keywords = [
+            '株式会社', '有限会社', '合同会社', '合資会社', '合名会社',
+            'カブシキガイシャ', 'ユウゲンガイシャ', 'ゴウドウガイシャ',
+            'カブシキガイシヤ', 'ユウゲンガイシヤ',  # 拗音なし表記
+            '(株)', '（株）', '(有)', '（有）',
+            'LLC', 'Corp', 'Inc', 'Ltd'
+        ]
+        
+        # いずれかのキーワードが含まれていれば法人
+        return any(keyword in name for keyword in corporate_keywords)
+    
+    def validate_birth_date(self, date_str: str, contractor_name: str = "") -> str:
+        """生年月日の妥当性チェック
+        
+        Args:
+            date_str: 生年月日文字列
+            contractor_name: 契約者氏名（法人判定用）
+            
+        Returns:
+            妥当な場合は元の値、不正な場合は空文字
+        """
+        if not date_str or pd.isna(date_str):
+            return ""
+            
+        date_str = str(date_str).strip()
+        
+        # 法人の場合は生年月日を空にする
+        if contractor_name and self.is_corporate(contractor_name):
+            self.logger.debug(f"法人契約のため生年月日を除外: {contractor_name}")
+            return ""
+        
+        try:
+            # 様々な日付フォーマットに対応
+            date_formats = [
+                '%Y/%m/%d',      # 1878/11/11
+                '%Y-%m-%d',      # 1947-05-08
+                '%Y年%m月%d日',   # 1878年11月11日
+                '%Y.%m.%d',      # 1878.11.11
+            ]
+            
+            # 時刻付きの場合は除去
+            date_str = date_str.split()[0] if ' ' in date_str else date_str
+            
+            parsed_date = None
+            for fmt in date_formats:
+                try:
+                    parsed_date = datetime.strptime(date_str, fmt)
+                    break
+                except ValueError:
+                    continue
+                    
+            if not parsed_date:
+                self.logger.debug(f"日付パースエラー: {date_str}")
+                return ""
+            
+            # 1900年以前は無効
+            if parsed_date.year < 1900:
+                self.logger.debug(f"1900年以前の生年月日を除外: {date_str}")
+                return ""
+                
+            # 未来の日付は無効
+            if parsed_date > datetime.now():
+                self.logger.debug(f"未来の生年月日を除外: {date_str}")
+                return ""
+                
+            # 妥当な日付なので元の形式で返す
+            return date_str
+            
+        except Exception as e:
+            self.logger.debug(f"生年月日検証エラー: {date_str} - {e}")
+            return ""
     
     def remove_all_spaces(self, text: str) -> str:
         """全てのスペースを除去"""
@@ -378,73 +458,12 @@ class DataConverter:
         return "", addr
     
     def split_address(self, address: str) -> Dict[str, str]:
-        """住所を郵便番号、都道府県、市区町村、残り住所に分割（政令指定都市対応版）"""
+        """住所を郵便番号、都道府県、市区町村、残り住所に分割（辞書方式）"""
         if pd.isna(address) or str(address).strip() == "":
             return {"postal_code": "", "prefecture": "", "city": "", "remaining": ""}
         
-        # 郵便番号を抽出
-        postal_code, addr = self.extract_postal_code(address)
-        
-        # 都道府県を検索
-        prefecture = ""
-        for pref in self.prefectures:
-            if addr.startswith(pref):
-                prefecture = pref
-                addr = addr[len(pref):]
-                break
-        
-        # 市区町村を抽出（改善版）
-        city = ""
-        
-        # 市川市・市原市の特別処理
-        if addr.startswith("市川市"):
-            city = "市川市"
-            addr = addr[3:]
-        elif addr.startswith("市原市"):
-            city = "市原市"
-            addr = addr[3:]
-        
-        # 東京23区の特別処理
-        if prefecture == "東京都" and not city:
-            tokyo_wards = [
-                "千代田区", "中央区", "港区", "新宿区", "文京区", "台東区", "墨田区", "江東区",
-                "品川区", "目黒区", "大田区", "世田谷区", "渋谷区", "中野区", "杉並区", "豊島区",
-                "北区", "荒川区", "板橋区", "練馬区", "足立区", "葛飾区", "江戸川区"
-            ]
-            for ward in tokyo_wards:
-                if addr.startswith(ward):
-                    city = ward
-                    addr = addr[len(ward):]
-                    break
-        
-        # 一般的な市区町村パターン（政令指定都市対応版）
-        if not city:
-            # 政令指定都市パターン（○○市○○区）を優先処理
-            designated_city_pattern = r'^([^市区町村]+?市[^市区町村]+?区)'
-            match = re.match(designated_city_pattern, addr)
-            if match:
-                city = match.group(1)  # 「千葉市美浜区」全体を市区町村とする
-                addr = addr[len(city):]
-            else:
-                # 一般市町村パターン
-                city_patterns = [
-                    r'^([^市区町村]+?[市])',
-                    r'^([^市区町村]+?[町])',  
-                    r'^([^市区町村]+?[村])'
-                ]
-                for pattern in city_patterns:
-                    match = re.match(pattern, addr)
-                    if match:
-                        city = match.group(1)
-                        addr = addr[len(city):]
-                        break
-        
-        return {
-            "postal_code": postal_code,
-            "prefecture": prefecture,
-            "city": city,
-            "remaining": addr
-        }
+        # 新しい辞書ベースの分割処理を使用
+        return self.address_splitter.split_address(str(address))
     
     def extract_room_from_property_name(self, property_name: str) -> Tuple[str, str]:
         """物件名から部屋番号を抽出"""
@@ -553,7 +572,7 @@ class DataConverter:
                 common_data2 = {
                     "氏名": name2,
                     "カナ": name2_kana,
-                    "生年月日": self.safe_str_convert(row.get("生年月日2", "")),
+                    "生年月日": self.validate_birth_date(self.safe_str_convert(row.get("生年月日2", "")), name2),
                     "続柄": "他",  # 固定値
                     "自宅TEL": phone_result2["home"],
                     "携帯TEL": phone_result2["mobile"],
@@ -587,7 +606,10 @@ class DataConverter:
             converted_row["引継番号"] = self.safe_str_convert(row.get("契約番号", ""))
             converted_row["契約者氏名"] = self.remove_all_spaces(self.safe_str_convert(row.get("契約元帳: 主契約者", "")))
             converted_row["契約者カナ"] = self.remove_all_spaces(self.hankaku_to_zenkaku(self.safe_str_convert(row.get("主契約者（カナ）", ""))))
-            converted_row["契約者生年月日"] = self.safe_str_convert(row.get("生年月日1", ""))
+            
+            # 生年月日の妥当性チェック（法人判定付き）
+            birth_date = self.safe_str_convert(row.get("生年月日1", ""))
+            converted_row["契約者生年月日"] = self.validate_birth_date(birth_date, converted_row["契約者氏名"])
             
             # 2. 電話番号処理
             phone_result = self.process_phone_numbers(
@@ -680,7 +702,7 @@ class DataConverter:
                 converted_row["保証人１氏名"] = g1.get("氏名", "")
                 converted_row["保証人１カナ"] = g1.get("カナ", "")
                 converted_row["保証人１契約者との関係"] = g1.get("続柄", "")
-                converted_row["保証人１生年月日"] = g1.get("生年月日", "")
+                converted_row["保証人１生年月日"] = self.validate_birth_date(g1.get("生年月日", ""), g1.get("氏名", ""))
                 converted_row["保証人１TEL自宅"] = g1.get("自宅TEL", "")
                 converted_row["保証人１TEL携帯"] = g1.get("携帯TEL", "")
                 converted_row["保証人１郵便番号"] = g1.get("郵便番号", "")
