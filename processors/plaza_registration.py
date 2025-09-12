@@ -485,7 +485,10 @@ class PlazaProcessor:
                 work_name = self.converter.safe_str_convert(row[cols[40]])  # AO列「勤務先名」
                 work_tel = self.converter.safe_str_convert(row[cols[42]])   # AQ列「勤務先TEL」
             
-                if "退職済" in work_name or "退職済" in work_tel or "TEL無効" in work_name:
+                if ("退職済" in work_name or "退職済" in work_tel or 
+                    "退職済み" in work_name or "退職済み" in work_tel or 
+                    "TEL無効" in work_name or "TEL無効" in work_tel or
+                    "不明" in work_name or "不明" in work_tel):
                     output_row["契約者勤務先名"] = ""
                     output_row["契約者勤務先TEL"] = ""
                 else:
