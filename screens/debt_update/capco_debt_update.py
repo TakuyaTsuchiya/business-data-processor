@@ -7,7 +7,7 @@ Business Data Processor
 
 import streamlit as st
 import time
-from components.common_ui import safe_csv_download
+from components.common_ui import safe_csv_download, display_processing_logs
 from components.result_display import display_error_result
 from services.debt_update import process_capco_debt_update
 
@@ -43,7 +43,7 @@ def show_capco_debt_update():
                     progress_bar.progress(progress)
                     status_text.text(message)
                 
-                result_df, output_filename, stats = process_capco_debt_update(
+                result_df, output_filename, stats, logs = process_capco_debt_update(
                     file_contents[0], 
                     file_contents[1], 
                     progress_callback=update_progress
@@ -57,6 +57,9 @@ def show_capco_debt_update():
                 time.sleep(0.5)
                 progress_bar.empty()
                 status_text.empty()
+                
+                # ログ表示
+                display_processing_logs(logs)
                     
                 if len(result_df) > 0:
                     st.success(f"✅ 処理完了: {len(result_df)}件のデータを出力します")
