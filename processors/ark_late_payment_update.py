@@ -268,7 +268,7 @@ def process_ark_late_payment_data(arc_file, contract_file) -> Optional[Tuple[pd.
         if HAS_STREAMLIT:
             st.success("✅ 処理完了")
         
-        return output_df, output_filename, logs
+        return output_df, logs, output_filename
         
     except Exception as e:
         if HAS_STREAMLIT:
