@@ -26,8 +26,8 @@ def render_single_button_process(target_type: str, occupancy_status: str, filter
     type_name = type_map.get(target_type, '')
     filter_name = filter_map.get(filter_type, '')
     
-    st.title(f"📝 フェイス差込み用リスト（{type_name}【{occupancy_status}】{filter_name}）")
-    st.subheader(f"フェイス向けの{type_name}宛て郵送用リストを作成します")
+    st.title("📝 フェイス差込み用リスト")
+    st.subheader(f"{type_name}【{occupancy_status}】{filter_name}のリストを作成")
     
     # フィルタ条件表示
     with st.expander("📋 フィルタ条件", expanded=True):
