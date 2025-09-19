@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 from typing import Tuple
+from processors.common.detailed_logger import DetailedLogger
 
 
 def process_faith_notification(df: pd.DataFrame, target_type: str, occupancy_status: str = None, filter_type: str = None) -> Tuple[pd.DataFrame, str, str, list]:
@@ -87,35 +88,73 @@ def apply_common_filters(df: pd.DataFrame, skip_rank_filter: bool = False) -> Tu
     """
     logs = []
     initial_count = len(df)
+    original_df = df.copy()  # 除外データ追跡用
     
     # 委託先法人ID（DO列 = 118列目）でフィルタ
     before_count = len(df)
+    before_df = df.copy()
     df = df[df.iloc[:, 118].isin([1, 2, 3, 4])]
-    logs.append(f"委託先法人IDフィルタ（1,2,3,4のみ）: {before_count}件 → {len(df)}件")
+    log = DetailedLogger.log_filter_result(before_count, len(df), "委託先法人ID（1,2,3,4のみ）")
+    logs.append(log)
+    
+    # 除外データの詳細
+    if before_count > len(df):
+        excluded = before_df[~before_df.index.isin(df.index)]
+        detail = DetailedLogger.log_exclusion_details(excluded, 118, "委託先法人ID", 'id')
+        logs.append(detail)
     
     # 入金予定日（BU列 = 72列目）でフィルタ（本日と未来を除外）
     today = pd.Timestamp.now().normalize()
     
     # 入金予定日を日付型に変換（警告回避のためcopyを使用）
+    before_count = len(df)
+    before_df = df.copy()
     df = df.copy()
     df['入金予定日_converted'] = pd.to_datetime(df.iloc[:, 72], errors='coerce')
     
     # 過去の日付または空欄（NaT）のみを残す
-    before_count = len(df)
     df = df[(df['入金予定日_converted'] < today) | (df['入金予定日_converted'].isna())]
     df = df.drop('入金予定日_converted', axis=1)
-    logs.append(f"入金予定日フィルタ（過去のみ）: {before_count}件 → {len(df)}件")
+    
+    log = DetailedLogger.log_filter_result(before_count, len(df), "入金予定日（過去のみ）")
+    logs.append(log)
+    
+    # 除外データの詳細（日付が今日以降のデータ）
+    if before_count > len(df):
+        before_df['入金予定日_converted'] = pd.to_datetime(before_df.iloc[:, 72], errors='coerce')
+        excluded = before_df[(before_df['入金予定日_converted'] >= today) & (before_df['入金予定日_converted'].notna())]
+        if not excluded.empty:
+            detail = DetailedLogger.log_exclusion_details(excluded, 72, "入金予定日", 'date')
+            logs.append(detail)
     
     # 入金予定金額（BV列 = 73列目）でフィルタ（2,3,5を除外）
     before_count = len(df)
+    before_df = df.copy()
     df = df[~df.iloc[:, 73].isin([2, 3, 5])]
-    logs.append(f"入金予定金額フィルタ（2,3,5除外）: {before_count}件 → {len(df)}件")
+    
+    log = DetailedLogger.log_filter_result(before_count, len(df), "入金予定金額（2,3,5除外）")
+    logs.append(log)
+    
+    # 除外データの詳細
+    if before_count > len(df):
+        excluded = before_df[before_df.iloc[:, 73].isin([2, 3, 5])]
+        detail = DetailedLogger.log_exclusion_details(excluded, 73, "入金予定金額", 'category')
+        logs.append(detail)
     
     # 回収ランク（CI列 = 86列目）でフィルタ
     if not skip_rank_filter:
         before_count = len(df)
+        before_df = df.copy()
         df = df[~df.iloc[:, 86].isin(['死亡決定', '弁護士介入'])]
-        logs.append(f"回収ランクフィルタ（死亡決定・弁護士介入除外）: {before_count}件 → {len(df)}件")
+        
+        log = DetailedLogger.log_filter_result(before_count, len(df), "回収ランク（死亡決定・弁護士介入除外）")
+        logs.append(log)
+        
+        # 除外データの詳細
+        if before_count > len(df):
+            excluded = before_df[before_df.iloc[:, 86].isin(['死亡決定', '弁護士介入'])]
+            detail = DetailedLogger.log_exclusion_details(excluded, 86, "回収ランク", 'category')
+            logs.append(detail)
     
     logs.append(f"共通フィルタリング完了: {initial_count}件 → {len(df)}件")
     
@@ -129,24 +168,57 @@ def apply_occupancy_filters(df: pd.DataFrame, occupancy_status: str, filter_type
     
     # 入居ステータス（O列 = 14列目）でフィルタ
     before_count = len(df)
+    before_df = df.copy()
     df = df[df.iloc[:, 14] == occupancy_status]
-    logs.append(f"入居ステータスフィルタ（{occupancy_status}）: {before_count}件 → {len(df)}件")
+    
+    log = DetailedLogger.log_filter_result(before_count, len(df), f"入居ステータス（{occupancy_status}）")
+    logs.append(log)
+    
+    # 除外データの詳細
+    if before_count > len(df):
+        excluded = before_df[before_df.iloc[:, 14] != occupancy_status]
+        detail = DetailedLogger.log_exclusion_details(excluded, 14, "入居ステータス", 'category')
+        logs.append(detail)
     
     # 回収ランク（CI列 = 86列目）の条件別フィルタリング
     before_count = len(df)
+    before_df = df.copy()
     
     if filter_type == 'litigation_only':
         # 訴訟中のみ抽出
         df = df[df.iloc[:, 86] == '訴訟中']
-        logs.append(f"回収ランクフィルタ（訴訟中のみ）: {before_count}件 → {len(df)}件")
+        log = DetailedLogger.log_filter_result(before_count, len(df), "回収ランク（訴訟中のみ）")
+        logs.append(log)
+        
+        # 除外データの詳細
+        if before_count > len(df):
+            excluded = before_df[before_df.iloc[:, 86] != '訴訟中']
+            detail = DetailedLogger.log_exclusion_details(excluded, 86, "回収ランク", 'category')
+            logs.append(detail)
+            
     elif filter_type == 'litigation_excluded':
         # 訴訟対象外：破産決定、死亡決定、弁護士介入、訴訟中を除外
         df = df[~df.iloc[:, 86].isin(['破産決定', '死亡決定', '弁護士介入', '訴訟中'])]
-        logs.append(f"回収ランクフィルタ（訴訟対象外）: {before_count}件 → {len(df)}件")
+        log = DetailedLogger.log_filter_result(before_count, len(df), "回収ランク（訴訟対象外）")
+        logs.append(log)
+        
+        # 除外データの詳細
+        if before_count > len(df):
+            excluded = before_df[before_df.iloc[:, 86].isin(['破産決定', '死亡決定', '弁護士介入', '訴訟中'])]
+            detail = DetailedLogger.log_exclusion_details(excluded, 86, "回収ランク", 'category')
+            logs.append(detail)
+            
     elif filter_type == 'evicted':
         # 退去済み：死亡決定、破産決定、弁護士介入を除外
         df = df[~df.iloc[:, 86].isin(['死亡決定', '破産決定', '弁護士介入'])]
-        logs.append(f"回収ランクフィルタ（退去済み用）: {before_count}件 → {len(df)}件")
+        log = DetailedLogger.log_filter_result(before_count, len(df), "回収ランク（退去済み用）")
+        logs.append(log)
+        
+        # 除外データの詳細
+        if before_count > len(df):
+            excluded = before_df[before_df.iloc[:, 86].isin(['死亡決定', '破産決定', '弁護士介入'])]
+            detail = DetailedLogger.log_exclusion_details(excluded, 86, "回収ランク", 'category')
+            logs.append(detail)
     
     logs.append(f"入居状態・回収ランクフィルタリング完了: {initial_count}件 → {len(df)}件")
     
@@ -157,6 +229,7 @@ def process_contractor(df: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
     """契約者用リストを作成"""
     logs = []
     before_count = len(df)
+    before_df = df.copy()
     
     # 住所フィルタ（W,X,Y,Z列 = 22,23,24,25列目）
     df = df[
@@ -165,7 +238,19 @@ def process_contractor(df: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
         df.iloc[:, 24].notna() & (df.iloc[:, 24] != '') &  # 現住所2
         df.iloc[:, 25].notna() & (df.iloc[:, 25] != '')    # 現住所3
     ]
-    logs.append(f"契約者住所フィルタ（完全な住所のみ）: {before_count}件 → {len(df)}件")
+    
+    log = DetailedLogger.log_filter_result(before_count, len(df), "契約者住所（完全な住所のみ）")
+    logs.append(log)
+    
+    # 除外データの詳細（住所不完全）
+    if before_count > len(df):
+        excluded = before_df[~before_df.index.isin(df.index)]
+        # 住所不完全の理由を詳細に記録
+        logs.append(f"  - 住所不完全で除外: {len(excluded)}件")
+        # 最初の5件の管理番号を表示
+        sample_ids = excluded.iloc[:5, 0].tolist()
+        if sample_ids:
+            logs.append(f"    例: 管理番号 {', '.join(map(str, sample_ids))}{' 他' if len(excluded) > 5 else ''}")
     
     try:
         result_df = pd.DataFrame({
@@ -202,6 +287,8 @@ def process_guarantor(df: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
     logs = []
     results = []
     initial_count = len(df)
+    before_count = len(df)
+    before_df = df.copy()
     
     # 保証人1の処理（AP-AW列 = 41-48列目）
     guarantor1_df = df[
@@ -211,6 +298,18 @@ def process_guarantor(df: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
         df.iloc[:, 45].notna() & (df.iloc[:, 45] != '') &  # 現住所3（AT）
         df.iloc[:, 41].notna() & (df.iloc[:, 41] != '')    # 保証人名（AP）
     ]
+    
+    log = DetailedLogger.log_filter_result(before_count, len(guarantor1_df), "保証人1（住所完全）")
+    logs.append(log)
+    
+    # 保証人1の除外データの詳細
+    if before_count > len(guarantor1_df):
+        excluded = before_df[~before_df.index.isin(guarantor1_df.index)]
+        logs.append(f"  - 保証人1住所不完全で除外: {len(excluded)}件")
+        # 最初の5件の管理番号を表示
+        sample_ids = excluded.iloc[:5, 0].tolist()
+        if sample_ids:
+            logs.append(f"    例: 管理番号 {', '.join(map(str, sample_ids))}{' 他' if len(excluded) > 5 else ''}")
     
     if not guarantor1_df.empty:
         g1_result = pd.DataFrame({
@@ -247,6 +346,18 @@ def process_guarantor(df: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
         df.iloc[:, 49].notna() & (df.iloc[:, 49] != '')    # 保証人名（AX）
     ]
     
+    log = DetailedLogger.log_filter_result(before_count, len(guarantor2_df), "保証人2（住所完全）")
+    logs.append(log)
+    
+    # 保証人2の除外データの詳細
+    if before_count > len(guarantor2_df):
+        excluded = before_df[~before_df.index.isin(guarantor2_df.index)]
+        logs.append(f"  - 保証人2住所不完全で除外: {len(excluded)}件")
+        # 最初の5件の管理番号を表示
+        sample_ids = excluded.iloc[:5, 0].tolist()
+        if sample_ids:
+            logs.append(f"    例: 管理番号 {', '.join(map(str, sample_ids))}{' 他' if len(excluded) > 5 else ''}")
+    
     if not guarantor2_df.empty:
         g2_result = pd.DataFrame({
             '管理番号': guarantor2_df.iloc[:, 0],
@@ -276,9 +387,9 @@ def process_guarantor(df: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
     # 結果を結合
     # 保証人1と2の処理結果をログに記録
     if len(results) > 0:
-        logs.append(f"保証人1: {len(results[0]) if len(results) > 0 else 0}件")
+        logs.append(f"保証人1マッピング完了: {len(results[0]) if len(results) > 0 else 0}件")
     if len(results) > 1:
-        logs.append(f"保証人2: {len(results[1])}件")
+        logs.append(f"保証人2マッピング完了: {len(results[1])}件")
     
     if results:
         result_df = pd.concat(results, ignore_index=True)
@@ -299,6 +410,8 @@ def process_contact(df: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
     """緊急連絡人用リストを作成"""
     logs = []
     results = []
+    before_count = len(df)
+    before_df = df.copy()
     
     # 緊急連絡人1の処理（BD-BI列 = 55-60列目）
     contact1_df = df[
@@ -308,6 +421,18 @@ def process_contact(df: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
         df.iloc[:, 60].notna() & (df.iloc[:, 60] != '') &  # 現住所3（BI列）
         df.iloc[:, 55].notna() & (df.iloc[:, 55] != '')    # 連絡人名（BD列）
     ]
+    
+    log = DetailedLogger.log_filter_result(before_count, len(contact1_df), "緊急連絡人1（住所完全）")
+    logs.append(log)
+    
+    # 緊急連絡人1の除外データの詳細
+    if before_count > len(contact1_df):
+        excluded = before_df[~before_df.index.isin(contact1_df.index)]
+        logs.append(f"  - 緊急連絡人1住所不完全で除外: {len(excluded)}件")
+        # 最初の5件の管理番号を表示
+        sample_ids = excluded.iloc[:5, 0].tolist()
+        if sample_ids:
+            logs.append(f"    例: 管理番号 {', '.join(map(str, sample_ids))}{' 他' if len(excluded) > 5 else ''}")
     
     if not contact1_df.empty:
         c1_result = pd.DataFrame({
@@ -344,6 +469,18 @@ def process_contact(df: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
         df.iloc[:, 62].notna() & (df.iloc[:, 62] != '')    # 連絡人名（BK列）
     ]
     
+    log = DetailedLogger.log_filter_result(before_count, len(contact2_df), "緊急連絡人2（住所完全）")
+    logs.append(log)
+    
+    # 緊急連絡人2の除外データの詳細
+    if before_count > len(contact2_df):
+        excluded = before_df[~before_df.index.isin(contact2_df.index)]
+        logs.append(f"  - 緊急連絡人2住所不完全で除外: {len(excluded)}件")
+        # 最初の5件の管理番号を表示
+        sample_ids = excluded.iloc[:5, 0].tolist()
+        if sample_ids:
+            logs.append(f"    例: 管理番号 {', '.join(map(str, sample_ids))}{' 他' if len(excluded) > 5 else ''}")
+    
     if not contact2_df.empty:
         c2_result = pd.DataFrame({
             '管理番号': contact2_df.iloc[:, 0],
@@ -372,9 +509,9 @@ def process_contact(df: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
     
     # 連絡人1と2の処理結果をログに記録
     if len(results) > 0:
-        logs.append(f"緊急連絡人1: {len(results[0]) if len(results) > 0 else 0}件")
+        logs.append(f"緊急連絡人1マッピング完了: {len(results[0]) if len(results) > 0 else 0}件")
     if len(results) > 1:
-        logs.append(f"緊急連絡人2: {len(results[1])}件")
+        logs.append(f"緊急連絡人2マッピング完了: {len(results[1])}件")
     
     # 結果を結合
     if results:
