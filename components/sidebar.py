@@ -106,3 +106,15 @@ def build_sidebar_menu():
             st.session_state.selected_processor = "capco_debt_update"
         if st.button("プラザ残債の更新", key="plaza_debt_update", use_container_width=True):
             st.session_state.selected_processor = "plaza_debt_update"
+        
+        # 📝 差込み用リスト作成
+        st.markdown('<div class="sidebar-category">📝 差込み用リスト作成</div>', unsafe_allow_html=True)
+        
+        # フェイス差込み用リスト
+        st.markdown('<div class="sidebar-subcategory">フェイス差込み用リスト</div>', unsafe_allow_html=True)
+        if st.button("契約者", key="faith_notification_contractor", use_container_width=True):
+            st.session_state.selected_processor = "faith_notification_contractor"
+        if st.button("連帯保証人", key="faith_notification_guarantor", use_container_width=True):
+            st.session_state.selected_processor = "faith_notification_guarantor"
+        if st.button("連絡人", key="faith_notification_contact", use_container_width=True):
+            st.session_state.selected_processor = "faith_notification_contact"
