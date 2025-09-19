@@ -8,13 +8,15 @@ from datetime import datetime
 from typing import Tuple
 
 
-def process_faith_notification(df: pd.DataFrame, target_type: str) -> Tuple[pd.DataFrame, str, str, list]:
+def process_faith_notification(df: pd.DataFrame, target_type: str, occupancy_status: str = None, filter_type: str = None) -> Tuple[pd.DataFrame, str, str, list]:
     """
     フェイス差込み用リストを生成する
     
     Args:
         df: ContractList_*.csvのデータフレーム
         target_type: 'contractor', 'guarantor', 'contact' のいずれか
+        occupancy_status: '入居中' or '退去済み' (optional)
+        filter_type: 'litigation_only', 'litigation_excluded', 'evicted' (optional)
         
     Returns:
         (result_df, filename, message, logs)
@@ -26,8 +28,14 @@ def process_faith_notification(df: pd.DataFrame, target_type: str) -> Tuple[pd.D
         logs.append(f"入力データ: {len(df)}件, {len(df.columns)}列")
         
         # 共通フィルタリング
-        filtered_df, filter_logs = apply_common_filters(df)
+        skip_rank = bool(occupancy_status and filter_type)
+        filtered_df, filter_logs = apply_common_filters(df, skip_rank_filter=skip_rank)
         logs.extend(filter_logs)
+        
+        # 入居状態・回収ランクフィルタリング
+        if occupancy_status and filter_type:
+            filtered_df, occupancy_logs = apply_occupancy_filters(filtered_df, occupancy_status, filter_type)
+            logs.extend(occupancy_logs)
         
         # タイプ別処理
         if target_type == 'contractor':
@@ -46,7 +54,17 @@ def process_faith_notification(df: pd.DataFrame, target_type: str) -> Tuple[pd.D
         
         # ファイル名生成
         now = datetime.now()
-        filename = f"{now.strftime('%m%d')}フェイス差込み用リスト（{list_name}）.csv"
+        if occupancy_status and filter_type:
+            # フィルタタイプに基づいたファイル名接尾辞
+            suffix_map = {
+                'litigation_only': '訴訟中',
+                'litigation_excluded': '訴訟対象外',
+                'evicted': ''
+            }
+            suffix = suffix_map.get(filter_type, '')
+            filename = f"{now.strftime('%m%d')}フェイス差込み用リスト（{list_name}【{occupancy_status}】{suffix}）.csv"
+        else:
+            filename = f"{now.strftime('%m%d')}フェイス差込み用リスト（{list_name}）.csv"
         
         message = f"フェイス差込み用リスト（{list_name}）を作成しました。出力件数: {len(result_df)}件"
         logs.append(f"処理完了: 出力件数 {len(result_df)}件")
@@ -58,8 +76,13 @@ def process_faith_notification(df: pd.DataFrame, target_type: str) -> Tuple[pd.D
         raise Exception(f"処理中にエラーが発生しました: {str(e)}")
 
 
-def apply_common_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
-    """共通フィルタリング条件を適用"""
+def apply_common_filters(df: pd.DataFrame, skip_rank_filter: bool = False) -> Tuple[pd.DataFrame, list]:
+    """共通フィルタリング条件を適用
+    
+    Args:
+        df: データフレーム
+        skip_rank_filter: Trueの場合、回収ランクフィルタをスキップ
+    """
     logs = []
     initial_count = len(df)
     
@@ -87,11 +110,43 @@ def apply_common_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
     logs.append(f"入金予定金額フィルタ（2,3,5除外）: {before_count}件 → {len(df)}件")
     
     # 回収ランク（CI列 = 86列目）でフィルタ
-    before_count = len(df)
-    df = df[~df.iloc[:, 86].isin(['死亡決定', '弁護士介入'])]
-    logs.append(f"回収ランクフィルタ（死亡決定・弁護士介入除外）: {before_count}件 → {len(df)}件")
+    if not skip_rank_filter:
+        before_count = len(df)
+        df = df[~df.iloc[:, 86].isin(['死亡決定', '弁護士介入'])]
+        logs.append(f"回収ランクフィルタ（死亡決定・弁護士介入除外）: {before_count}件 → {len(df)}件")
     
     logs.append(f"共通フィルタリング完了: {initial_count}件 → {len(df)}件")
+    
+    return df, logs
+
+
+def apply_occupancy_filters(df: pd.DataFrame, occupancy_status: str, filter_type: str) -> Tuple[pd.DataFrame, list]:
+    """入居状態と回収ランクによるフィルタリングを適用"""
+    logs = []
+    initial_count = len(df)
+    
+    # 入居ステータス（O列 = 14列目）でフィルタ
+    before_count = len(df)
+    df = df[df.iloc[:, 14] == occupancy_status]
+    logs.append(f"入居ステータスフィルタ（{occupancy_status}）: {before_count}件 → {len(df)}件")
+    
+    # 回収ランク（CI列 = 86列目）の条件別フィルタリング
+    before_count = len(df)
+    
+    if filter_type == 'litigation_only':
+        # 訴訟中のみ抽出
+        df = df[df.iloc[:, 86] == '訴訟中']
+        logs.append(f"回収ランクフィルタ（訴訟中のみ）: {before_count}件 → {len(df)}件")
+    elif filter_type == 'litigation_excluded':
+        # 訴訟対象外：破産決定、死亡決定、弁護士介入、訴訟中を除外
+        df = df[~df.iloc[:, 86].isin(['破産決定', '死亡決定', '弁護士介入', '訴訟中'])]
+        logs.append(f"回収ランクフィルタ（訴訟対象外）: {before_count}件 → {len(df)}件")
+    elif filter_type == 'evicted':
+        # 退去済み：死亡決定、破産決定、弁護士介入を除外
+        df = df[~df.iloc[:, 86].isin(['死亡決定', '破産決定', '弁護士介入'])]
+        logs.append(f"回収ランクフィルタ（退去済み用）: {before_count}件 → {len(df)}件")
+    
+    logs.append(f"入居状態・回収ランクフィルタリング完了: {initial_count}件 → {len(df)}件")
     
     return df, logs
 
