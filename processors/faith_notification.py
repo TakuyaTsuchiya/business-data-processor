@@ -243,24 +243,24 @@ def process_contact(df: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
     logs = []
     results = []
     
-    # 緊急連絡人1の処理（BF-BL列 = 57-63列目）
+    # 緊急連絡人1の処理（BD-BI列 = 55-60列目）
     contact1_df = df[
-        df.iloc[:, 58].notna() & (df.iloc[:, 58] != '') &  # 郵便番号（BG）→BC
-        df.iloc[:, 59].notna() & (df.iloc[:, 59] != '') &  # 現住所1（BH）→BD
-        df.iloc[:, 60].notna() & (df.iloc[:, 60] != '') &  # 現住所2（BI）→BE
-        df.iloc[:, 61].notna() & (df.iloc[:, 61] != '') &  # 現住所3（BJ）→BF
-        df.iloc[:, 57].notna() & (df.iloc[:, 57] != '')    # 連絡人名（BF）→BA
+        df.iloc[:, 57].notna() & (df.iloc[:, 57] != '') &  # 郵便番号（BF列）
+        df.iloc[:, 58].notna() & (df.iloc[:, 58] != '') &  # 現住所1（BG列）
+        df.iloc[:, 59].notna() & (df.iloc[:, 59] != '') &  # 現住所2（BH列）
+        df.iloc[:, 60].notna() & (df.iloc[:, 60] != '') &  # 現住所3（BI列）
+        df.iloc[:, 55].notna() & (df.iloc[:, 55] != '')    # 連絡人名（BD列）
     ]
     
     if not contact1_df.empty:
         c1_result = pd.DataFrame({
             '管理番号': contact1_df.iloc[:, 0],
             '契約者氏名': contact1_df.iloc[:, 20],
-            '緊急連絡人１氏名': contact1_df.iloc[:, 57],  # BF列→BA列
-            '郵便番号': contact1_df.iloc[:, 58],          # BG列→BC列
-            '現住所1': contact1_df.iloc[:, 59],           # BH列→BD列
-            '現住所2': contact1_df.iloc[:, 60],           # BI列→BE列
-            '現住所3': contact1_df.iloc[:, 61],           # BJ列→BF列
+            '緊急連絡人１氏名': contact1_df.iloc[:, 55],  # BD列
+            '郵便番号': contact1_df.iloc[:, 57],          # BF列
+            '現住所1': contact1_df.iloc[:, 58],           # BG列
+            '現住所2': contact1_df.iloc[:, 59],           # BH列
+            '現住所3': contact1_df.iloc[:, 60],           # BI列
             '滞納残債': contact1_df.iloc[:, 71],
             '物件住所1': contact1_df.iloc[:, 92],
             '物件住所2': contact1_df.iloc[:, 93],
@@ -278,24 +278,24 @@ def process_contact(df: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
         })
         results.append(c1_result)
     
-    # 緊急連絡人2の処理（BM-BS列 = 64-70列目）
+    # 緊急連絡人2の処理（BK-BO列 = 62-66列目）
     contact2_df = df[
-        df.iloc[:, 65].notna() & (df.iloc[:, 65] != '') &  # 郵便番号（BN）
-        df.iloc[:, 66].notna() & (df.iloc[:, 66] != '') &  # 現住所1（BO）
-        df.iloc[:, 67].notna() & (df.iloc[:, 67] != '') &  # 現住所2（BP）
-        df.iloc[:, 68].notna() & (df.iloc[:, 68] != '') &  # 現住所3（BQ）
-        df.iloc[:, 64].notna() & (df.iloc[:, 64] != '')    # 連絡人名（BM）
+        df.iloc[:, 63].notna() & (df.iloc[:, 63] != '') &  # 郵便番号（BL列）
+        df.iloc[:, 64].notna() & (df.iloc[:, 64] != '') &  # 現住所1（BM列）
+        df.iloc[:, 65].notna() & (df.iloc[:, 65] != '') &  # 現住所2（BN列）
+        df.iloc[:, 66].notna() & (df.iloc[:, 66] != '') &  # 現住所3（BO列）
+        df.iloc[:, 62].notna() & (df.iloc[:, 62] != '')    # 連絡人名（BK列）
     ]
     
     if not contact2_df.empty:
         c2_result = pd.DataFrame({
             '管理番号': contact2_df.iloc[:, 0],
             '契約者氏名': contact2_df.iloc[:, 20],
-            '緊急連絡人１氏名': contact2_df.iloc[:, 64],  # BM列（緊急連絡人2氏名）
-            '郵便番号': contact2_df.iloc[:, 65],          # BN列
-            '現住所1': contact2_df.iloc[:, 66],           # BO列
-            '現住所2': contact2_df.iloc[:, 67],           # BP列
-            '現住所3': contact2_df.iloc[:, 68],           # BQ列
+            '緊急連絡人１氏名': contact2_df.iloc[:, 62],  # BK列（緊急連絡人2氏名）
+            '郵便番号': contact2_df.iloc[:, 63],          # BL列
+            '現住所1': contact2_df.iloc[:, 64],           # BM列
+            '現住所2': contact2_df.iloc[:, 65],           # BN列
+            '現住所3': contact2_df.iloc[:, 66],           # BO列
             '滞納残債': contact2_df.iloc[:, 71],
             '物件住所1': contact2_df.iloc[:, 92],
             '物件住所2': contact2_df.iloc[:, 93],
