@@ -112,9 +112,21 @@ def build_sidebar_menu():
         
         # フェイス差込み用リスト
         st.markdown('<div class="sidebar-subcategory">フェイス差込み用リスト</div>', unsafe_allow_html=True)
-        if st.button("契約者", key="faith_notification_contractor", use_container_width=True):
-            st.session_state.selected_processor = "faith_notification_contractor"
-        if st.button("連帯保証人", key="faith_notification_guarantor", use_container_width=True):
-            st.session_state.selected_processor = "faith_notification_guarantor"
-        if st.button("連絡人", key="faith_notification_contact", use_container_width=True):
-            st.session_state.selected_processor = "faith_notification_contact"
+        if st.button("契約者「入居中」「訴訟中」", key="faith_c_litigation", use_container_width=True):
+            st.session_state.selected_processor = "faith_c_litigation"
+        if st.button("契約者「入居中」「訴訟対象外」", key="faith_c_excluded", use_container_width=True):
+            st.session_state.selected_processor = "faith_c_excluded"
+        if st.button("契約者「退去済み」", key="faith_c_evicted", use_container_width=True):
+            st.session_state.selected_processor = "faith_c_evicted"
+        if st.button("連帯保証人「入居中」「訴訟中」", key="faith_g_litigation", use_container_width=True):
+            st.session_state.selected_processor = "faith_g_litigation"
+        if st.button("連帯保証人「入居中」「訴訟対象外」", key="faith_g_excluded", use_container_width=True):
+            st.session_state.selected_processor = "faith_g_excluded"
+        if st.button("連帯保証人「退去済み」", key="faith_g_evicted", use_container_width=True):
+            st.session_state.selected_processor = "faith_g_evicted"
+        if st.button("連絡人「入居中」「訴訟中」", key="faith_e_litigation", use_container_width=True):
+            st.session_state.selected_processor = "faith_e_litigation"
+        if st.button("連絡人「入居中」「訴訟対象外」", key="faith_e_excluded", use_container_width=True):
+            st.session_state.selected_processor = "faith_e_excluded"
+        if st.button("連絡人「退去済み」", key="faith_e_evicted", use_container_width=True):
+            st.session_state.selected_processor = "faith_e_evicted"

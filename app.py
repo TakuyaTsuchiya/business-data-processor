@@ -92,7 +92,16 @@ from screens.debt_update.plaza_debt_update import (
 from screens.notification.faith import (
     render_faith_notification_contractor,
     render_faith_notification_guarantor,
-    render_faith_notification_contact
+    render_faith_notification_contact,
+    render_faith_c_litigation,
+    render_faith_c_excluded,
+    render_faith_c_evicted,
+    render_faith_g_litigation,
+    render_faith_g_excluded,
+    render_faith_g_evicted,
+    render_faith_e_litigation,
+    render_faith_e_excluded,
+    render_faith_e_evicted
 )
 
 # プロセッサーをインポート
@@ -146,7 +155,16 @@ def main():
         "plaza_debt_update": show_plaza_debt_update,
         "faith_notification_contractor": render_faith_notification_contractor,
         "faith_notification_guarantor": render_faith_notification_guarantor,
-        "faith_notification_contact": render_faith_notification_contact
+        "faith_notification_contact": render_faith_notification_contact,
+        "faith_c_litigation": render_faith_c_litigation,
+        "faith_c_excluded": render_faith_c_excluded,
+        "faith_c_evicted": render_faith_c_evicted,
+        "faith_g_litigation": render_faith_g_litigation,
+        "faith_g_excluded": render_faith_g_excluded,
+        "faith_g_evicted": render_faith_g_evicted,
+        "faith_e_litigation": render_faith_e_litigation,
+        "faith_e_excluded": render_faith_e_excluded,
+        "faith_e_evicted": render_faith_e_evicted
     }
     
     # カスタムCSSを適用

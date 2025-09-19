@@ -9,10 +9,107 @@ from components.common_ui import display_filter_conditions, safe_csv_download
 from processors.faith_notification import process_faith_notification
 
 
+def render_single_button_process(target_type: str, occupancy_status: str, filter_type: str):
+    """単一ボタン処理用の画面"""
+    # タイトル設定
+    type_map = {
+        'contractor': '契約者',
+        'guarantor': '連帯保証人',
+        'contact': '緊急連絡人'
+    }
+    filter_map = {
+        'litigation_only': '訴訟中',
+        'litigation_excluded': '訴訟対象外',
+        'evicted': ''
+    }
+    
+    type_name = type_map.get(target_type, '')
+    filter_name = filter_map.get(filter_type, '')
+    
+    st.title(f"📝 フェイス差込み用リスト（{type_name}【{occupancy_status}】{filter_name}）")
+    st.subheader(f"フェイス向けの{type_name}宛て郵送用リストを作成します")
+    
+    # フィルタ条件表示
+    with st.expander("📋 フィルタ条件", expanded=True):
+        base_conditions = [
+            "委託先法人id = 1, 2, 3, 4",
+            "入金予定日 < 本日",
+            "入金予定金額 ≠ 2, 3, 5",
+            f"入居ステータス = {occupancy_status}"
+        ]
+        
+        # フィルタタイプ別条件
+        if filter_type == 'litigation_only':
+            base_conditions.append("回収ランク = 訴訟中のみ")
+        elif filter_type == 'litigation_excluded':
+            base_conditions.append("回収ランク ≠ 破産決定, 死亡決定, 弁護士介入, 訴訟中")
+        elif filter_type == 'evicted':
+            base_conditions.append("回収ランク ≠ 死亡決定, 破産決定, 弁護士介入")
+        
+        # 対象別追加条件
+        if target_type == 'contractor':
+            base_conditions.append("契約者住所情報が完全（郵便番号・住所1-3すべて存在）")
+        elif target_type == 'guarantor':
+            base_conditions.append("保証人住所情報が完全（保証人1・2を分離して出力）")
+        elif target_type == 'contact':
+            base_conditions.append("連絡人住所情報が完全（連絡人1・2を分離して出力）")
+        
+        display_filter_conditions(base_conditions)
+    
+    # ファイルアップローダー
+    uploaded_file = st.file_uploader(
+        "ContractList_*.csv をアップロードしてください", 
+        type="csv", 
+        key=f"faith_{target_type}_{occupancy_status}_{filter_type}_file"
+    )
+    
+    if uploaded_file:
+        st.success(f"✅ {uploaded_file.name}: 読み込み完了")
+        
+        # 処理実行ボタン
+        if st.button("処理を実行", type="primary", key=f"faith_{target_type}_{occupancy_status}_{filter_type}_process"):
+            with st.spinner("処理中..."):
+                try:
+                    # CSVデータを読み込み
+                    file_data = uploaded_file.read()
+                    try:
+                        df = pd.read_csv(io.BytesIO(file_data), encoding='cp932')
+                    except UnicodeDecodeError:
+                        try:
+                            df = pd.read_csv(io.BytesIO(file_data), encoding='shift_jis')
+                        except UnicodeDecodeError:
+                            df = pd.read_csv(io.BytesIO(file_data), encoding='utf-8-sig')
+                    
+                    # プロセッサー呼び出し
+                    result_df, filename, message, logs = process_faith_notification(
+                        df, target_type, occupancy_status, filter_type
+                    )
+                    
+                    # 成功メッセージ
+                    st.success(message)
+                    
+                    # CSVダウンロードボタン
+                    safe_csv_download(result_df, filename)
+                    
+                    # 処理ログ表示
+                    if logs:
+                        with st.expander("📊 処理ログ", expanded=False):
+                            for log in logs:
+                                st.write(f"• {log}")
+                    
+                    # 結果プレビュー表示
+                    if not result_df.empty:
+                        st.subheader("処理結果プレビュー")
+                        st.dataframe(result_df.head(10))
+                    
+                except Exception as e:
+                    st.error(f"エラーが発生しました: {str(e)}")
+
+
 def render_faith_notification():
     """フェイス差込み用リスト統合画面（9ボタン）"""
     
-    st.title("📝 フェイス差込み用リスト作成")
+    st.title("📝 フェイス差込み用リスト作成（9ボタン版）")
     st.subheader("フェイス向けの郵送用リストを作成します")
     
     # 共通フィルタ条件表示
@@ -140,7 +237,7 @@ def render_faith_notification():
             """)
 
 
-# 旧関数との互換性のため残す（将来的に削除予定）
+# 旧関数との互換性のため残す
 def render_faith_notification_contractor():
     """旧: フェイス差込み用リスト（契約者）画面"""
     render_faith_notification()
@@ -154,3 +251,49 @@ def render_faith_notification_guarantor():
 def render_faith_notification_contact():
     """旧: フェイス差込み用リスト（連絡人）画面"""
     render_faith_notification()
+
+
+# 新で9ボタン対応関数
+def render_faith_c_litigation():
+    """契約者「入居中」「訴訟中」"""
+    render_single_button_process('contractor', '入居中', 'litigation_only')
+
+
+def render_faith_c_excluded():
+    """契約者「入居中」「訴訟対象外」"""
+    render_single_button_process('contractor', '入居中', 'litigation_excluded')
+
+
+def render_faith_c_evicted():
+    """契約者「退去済み」"""
+    render_single_button_process('contractor', '退去済み', 'evicted')
+
+
+def render_faith_g_litigation():
+    """連帯保証人「入居中」「訴訟中」"""
+    render_single_button_process('guarantor', '入居中', 'litigation_only')
+
+
+def render_faith_g_excluded():
+    """連帯保証人「入居中」「訴訟対象外」"""
+    render_single_button_process('guarantor', '入居中', 'litigation_excluded')
+
+
+def render_faith_g_evicted():
+    """連帯保証人「退去済み」"""
+    render_single_button_process('guarantor', '退去済み', 'evicted')
+
+
+def render_faith_e_litigation():
+    """緊急連絡人「入居中」「訴訟中」"""
+    render_single_button_process('contact', '入居中', 'litigation_only')
+
+
+def render_faith_e_excluded():
+    """緊急連絡人「入居中」「訴訟対象外」"""
+    render_single_button_process('contact', '入居中', 'litigation_excluded')
+
+
+def render_faith_e_evicted():
+    """緊急連絡人「退去済み」"""
+    render_single_button_process('contact', '退去済み', 'evicted')
