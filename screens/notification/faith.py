@@ -46,13 +46,6 @@ def render_single_button_process(target_type: str, occupancy_status: str, filter
         elif filter_type == 'evicted':
             base_conditions.append("回収ランク ≠ 死亡決定, 破産決定, 弁護士介入")
         
-        # 対象別追加条件
-        if target_type == 'contractor':
-            base_conditions.append("契約者住所情報が完全（郵便番号・住所1-3すべて存在）")
-        elif target_type == 'guarantor':
-            base_conditions.append("保証人住所情報が完全（保証人1・2を分離して出力）")
-        elif target_type == 'contact':
-            base_conditions.append("連絡人住所情報が完全（連絡人1・2を分離して出力）")
         
         display_filter_conditions(base_conditions)
     
@@ -230,10 +223,6 @@ def render_faith_notification():
             - 入居ステータス = "退去済"
             - 回収ランク ≠ "死亡決定", "破産決定", "弁護士介入"
             
-            **対象別の追加条件:**
-            - 契約者: 契約者住所情報が完全（郵便番号・住所1-3すべて存在）
-            - 連帯保証人: 保証人住所情報が完全、保証人1・2を分離して出力
-            - 緊急連絡人: 連絡人住所情報が完全、連絡人1・2を分離して出力
             """)
 
 
