@@ -62,7 +62,9 @@ def process_faith_notification(df: pd.DataFrame, target_type: str, occupancy_sta
                 'evicted': ''
             }
             suffix = suffix_map.get(filter_type, '')
-            filename = f"{now.strftime('%m%d')}フェイス差込み用リスト（{list_name}【{occupancy_status}】{suffix}）.csv"
+            # 入居ステータスの表示名調整
+            display_occupancy = occupancy_status + 'み' if occupancy_status == '退去済' else occupancy_status
+            filename = f"{now.strftime('%m%d')}フェイス差込み用リスト（{list_name}【{display_occupancy}】{suffix}）.csv"
         else:
             filename = f"{now.strftime('%m%d')}フェイス差込み用リスト（{list_name}）.csv"
         

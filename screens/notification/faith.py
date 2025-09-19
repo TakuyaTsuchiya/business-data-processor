@@ -187,7 +187,7 @@ def render_faith_notification():
                 process_with_params('contractor', '入居中', 'litigation_excluded')
         with col1_3:
             if st.button("契約者「退去済み」", key="btn_c_3", use_container_width=True):
-                process_with_params('contractor', '退去済み', 'evicted')
+                process_with_params('contractor', '退去済', 'evicted')
         
         # 連帯保証人グループ
         st.markdown("#### 👥 連帯保証人")
@@ -200,7 +200,7 @@ def render_faith_notification():
                 process_with_params('guarantor', '入居中', 'litigation_excluded')
         with col2_3:
             if st.button("連帯保証人「退去済み」", key="btn_g_3", use_container_width=True):
-                process_with_params('guarantor', '退去済み', 'evicted')
+                process_with_params('guarantor', '退去済', 'evicted')
         
         # 緊急連絡人グループ
         st.markdown("#### 📞 緊急連絡人")
@@ -213,7 +213,7 @@ def render_faith_notification():
                 process_with_params('contact', '入居中', 'litigation_excluded')
         with col3_3:
             if st.button("緊急連絡人「退去済み」", key="btn_e_3", use_container_width=True):
-                process_with_params('contact', '退去済み', 'evicted')
+                process_with_params('contact', '退去済', 'evicted')
         
         # 追加のフィルタ条件説明
         with st.expander("📋 各ボタンのフィルタ条件詳細", expanded=False):
@@ -227,7 +227,7 @@ def render_faith_notification():
             - 回収ランク ≠ "破産決定", "死亡決定", "弁護士介入", "訴訟中"
             
             **「退去済み」**
-            - 入居ステータス = "退去済み"
+            - 入居ステータス = "退去済"
             - 回収ランク ≠ "死亡決定", "破産決定", "弁護士介入"
             
             **対象別の追加条件:**
@@ -266,7 +266,7 @@ def render_faith_c_excluded():
 
 def render_faith_c_evicted():
     """契約者「退去済み」"""
-    render_single_button_process('contractor', '退去済み', 'evicted')
+    render_single_button_process('contractor', '退去済', 'evicted')
 
 
 def render_faith_g_litigation():
@@ -281,7 +281,7 @@ def render_faith_g_excluded():
 
 def render_faith_g_evicted():
     """連帯保証人「退去済み」"""
-    render_single_button_process('guarantor', '退去済み', 'evicted')
+    render_single_button_process('guarantor', '退去済', 'evicted')
 
 
 def render_faith_e_litigation():
@@ -296,4 +296,4 @@ def render_faith_e_excluded():
 
 def render_faith_e_evicted():
     """緊急連絡人「退去済み」"""
-    render_single_button_process('contact', '退去済み', 'evicted')
+    render_single_button_process('contact', '退去済', 'evicted')
