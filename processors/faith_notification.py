@@ -1,0 +1,531 @@
+"""
+フェイス差込み用リスト作成プロセッサー
+契約者、連帯保証人、緊急連絡人の3種類のリストを生成する
+"""
+import pandas as pd
+import numpy as np
+from datetime import datetime
+from typing import Tuple
+from processors.common.detailed_logger import DetailedLogger
+
+
+def process_faith_notification(df: pd.DataFrame, target_type: str, occupancy_status: str = None, filter_type: str = None) -> Tuple[pd.DataFrame, str, str, list]:
+    """
+    フェイス差込み用リストを生成する
+    
+    Args:
+        df: ContractList_*.csvのデータフレーム
+        target_type: 'contractor', 'guarantor', 'contact' のいずれか
+        occupancy_status: '入居中' or '退去済み' (optional)
+        filter_type: 'litigation_only', 'litigation_excluded', 'evicted' (optional)
+        
+    Returns:
+        (result_df, filename, message, logs)
+    """
+    logs = []
+    
+    try:
+        logs.append(f"処理開始: {target_type}用リスト作成")
+        logs.append(f"入力データ: {len(df)}件, {len(df.columns)}列")
+        
+        # 共通フィルタリング
+        skip_rank = bool(occupancy_status and filter_type)
+        filtered_df, filter_logs = apply_common_filters(df, skip_rank_filter=skip_rank)
+        logs.extend(filter_logs)
+        
+        # 入居状態・回収ランクフィルタリング
+        if occupancy_status and filter_type:
+            filtered_df, occupancy_logs = apply_occupancy_filters(filtered_df, occupancy_status, filter_type)
+            logs.extend(occupancy_logs)
+        
+        # タイプ別処理
+        if target_type == 'contractor':
+            result_df, process_logs = process_contractor(filtered_df)
+            list_name = "契約者"
+        elif target_type == 'guarantor':
+            result_df, process_logs = process_guarantor(filtered_df)
+            list_name = "連帯保証人"
+        elif target_type == 'contact':
+            result_df, process_logs = process_contact(filtered_df)
+            list_name = "連絡人"
+        else:
+            raise ValueError(f"不明なターゲットタイプ: {target_type}")
+        
+        logs.extend(process_logs)
+        
+        # ファイル名生成
+        now = datetime.now()
+        if occupancy_status and filter_type:
+            # フィルタタイプに基づいたファイル名接尾辞
+            suffix_map = {
+                'litigation_only': '訴訟中',
+                'litigation_excluded': '訴訟対象外',
+                'evicted': ''
+            }
+            suffix = suffix_map.get(filter_type, '')
+            # 入居ステータスの表示名調整
+            display_occupancy = occupancy_status + 'み' if occupancy_status == '退去済' else occupancy_status
+            filename = f"{now.strftime('%m%d')}フェイス差込み用リスト（{list_name}【{display_occupancy}】{suffix}）.csv"
+        else:
+            filename = f"{now.strftime('%m%d')}フェイス差込み用リスト（{list_name}）.csv"
+        
+        message = f"フェイス差込み用リスト（{list_name}）を作成しました。出力件数: {len(result_df)}件"
+        logs.append(f"処理完了: 出力件数 {len(result_df)}件")
+        
+        return result_df, filename, message, logs
+        
+    except Exception as e:
+        logs.append(f"エラー発生: {str(e)}")
+        raise Exception(f"処理中にエラーが発生しました: {str(e)}")
+
+
+def apply_common_filters(df: pd.DataFrame, skip_rank_filter: bool = False) -> Tuple[pd.DataFrame, list]:
+    """共通フィルタリング条件を適用
+    
+    Args:
+        df: データフレーム
+        skip_rank_filter: Trueの場合、回収ランクフィルタをスキップ
+    """
+    logs = []
+    initial_count = len(df)
+    original_df = df.copy()  # 除外データ追跡用
+    
+    # 委託先法人ID（DO列 = 118列目）でフィルタ
+    before_count = len(df)
+    before_df = df.copy()
+    df = df[df.iloc[:, 118].isin([1, 2, 3, 4])]
+    log = DetailedLogger.log_filter_result(before_count, len(df), "委託先法人ID（1,2,3,4のみ）")
+    logs.append(log)
+    
+    # 除外データの詳細
+    if before_count > len(df):
+        excluded = before_df[~before_df.index.isin(df.index)]
+        detail = DetailedLogger.log_exclusion_details(excluded, 118, "委託先法人ID", 'id')
+        logs.append(detail)
+    
+    # 入金予定日（BU列 = 72列目）でフィルタ（本日と未来を除外）
+    today = pd.Timestamp.now().normalize()
+    
+    # 入金予定日を日付型に変換（警告回避のためcopyを使用）
+    before_count = len(df)
+    before_df = df.copy()
+    df = df.copy()
+    df['入金予定日_converted'] = pd.to_datetime(df.iloc[:, 72], errors='coerce')
+    
+    # 過去の日付または空欄（NaT）のみを残す
+    df = df[(df['入金予定日_converted'] < today) | (df['入金予定日_converted'].isna())]
+    df = df.drop('入金予定日_converted', axis=1)
+    
+    log = DetailedLogger.log_filter_result(before_count, len(df), "入金予定日（過去のみ）")
+    logs.append(log)
+    
+    # 除外データの詳細（日付が今日以降のデータ）
+    if before_count > len(df):
+        before_df['入金予定日_converted'] = pd.to_datetime(before_df.iloc[:, 72], errors='coerce')
+        excluded = before_df[(before_df['入金予定日_converted'] >= today) & (before_df['入金予定日_converted'].notna())]
+        if not excluded.empty:
+            detail = DetailedLogger.log_exclusion_details(excluded, 72, "入金予定日", 'date')
+            logs.append(detail)
+    
+    # 入金予定金額（BV列 = 73列目）でフィルタ（2,3,5を除外）
+    before_count = len(df)
+    before_df = df.copy()
+    df = df[~df.iloc[:, 73].isin([2, 3, 5])]
+    
+    log = DetailedLogger.log_filter_result(before_count, len(df), "入金予定金額（2,3,5除外）")
+    logs.append(log)
+    
+    # 除外データの詳細
+    if before_count > len(df):
+        excluded = before_df[before_df.iloc[:, 73].isin([2, 3, 5])]
+        detail = DetailedLogger.log_exclusion_details(excluded, 73, "入金予定金額", 'category')
+        logs.append(detail)
+    
+    # 回収ランク（CI列 = 86列目）でフィルタ
+    if not skip_rank_filter:
+        before_count = len(df)
+        before_df = df.copy()
+        df = df[~df.iloc[:, 86].isin(['死亡決定', '弁護士介入'])]
+        
+        log = DetailedLogger.log_filter_result(before_count, len(df), "回収ランク（死亡決定・弁護士介入除外）")
+        logs.append(log)
+        
+        # 除外データの詳細
+        if before_count > len(df):
+            excluded = before_df[before_df.iloc[:, 86].isin(['死亡決定', '弁護士介入'])]
+            detail = DetailedLogger.log_exclusion_details(excluded, 86, "回収ランク", 'category')
+            logs.append(detail)
+    
+    logs.append(f"共通フィルタリング完了: {initial_count}件 → {len(df)}件")
+    
+    return df, logs
+
+
+def apply_occupancy_filters(df: pd.DataFrame, occupancy_status: str, filter_type: str) -> Tuple[pd.DataFrame, list]:
+    """入居状態と回収ランクによるフィルタリングを適用"""
+    logs = []
+    initial_count = len(df)
+    
+    # 入居ステータス（O列 = 14列目）でフィルタ
+    before_count = len(df)
+    before_df = df.copy()
+    df = df[df.iloc[:, 14] == occupancy_status]
+    
+    log = DetailedLogger.log_filter_result(before_count, len(df), f"入居ステータス（{occupancy_status}）")
+    logs.append(log)
+    
+    # 除外データの詳細
+    if before_count > len(df):
+        excluded = before_df[before_df.iloc[:, 14] != occupancy_status]
+        detail = DetailedLogger.log_exclusion_details(excluded, 14, "入居ステータス", 'category')
+        logs.append(detail)
+    
+    # 回収ランク（CI列 = 86列目）の条件別フィルタリング
+    before_count = len(df)
+    before_df = df.copy()
+    
+    if filter_type == 'litigation_only':
+        # 訴訟中のみ抽出
+        df = df[df.iloc[:, 86] == '訴訟中']
+        log = DetailedLogger.log_filter_result(before_count, len(df), "回収ランク（訴訟中のみ）")
+        logs.append(log)
+        
+        # 除外データの詳細
+        if before_count > len(df):
+            excluded = before_df[before_df.iloc[:, 86] != '訴訟中']
+            detail = DetailedLogger.log_exclusion_details(excluded, 86, "回収ランク", 'category')
+            logs.append(detail)
+            
+    elif filter_type == 'litigation_excluded':
+        # 訴訟対象外：破産決定、死亡決定、弁護士介入、訴訟中を除外
+        df = df[~df.iloc[:, 86].isin(['破産決定', '死亡決定', '弁護士介入', '訴訟中'])]
+        log = DetailedLogger.log_filter_result(before_count, len(df), "回収ランク（訴訟対象外）")
+        logs.append(log)
+        
+        # 除外データの詳細
+        if before_count > len(df):
+            excluded = before_df[before_df.iloc[:, 86].isin(['破産決定', '死亡決定', '弁護士介入', '訴訟中'])]
+            detail = DetailedLogger.log_exclusion_details(excluded, 86, "回収ランク", 'category')
+            logs.append(detail)
+            
+    elif filter_type == 'evicted':
+        # 退去済み：死亡決定、破産決定、弁護士介入を除外
+        df = df[~df.iloc[:, 86].isin(['死亡決定', '破産決定', '弁護士介入'])]
+        log = DetailedLogger.log_filter_result(before_count, len(df), "回収ランク（退去済み用）")
+        logs.append(log)
+        
+        # 除外データの詳細
+        if before_count > len(df):
+            excluded = before_df[before_df.iloc[:, 86].isin(['死亡決定', '破産決定', '弁護士介入'])]
+            detail = DetailedLogger.log_exclusion_details(excluded, 86, "回収ランク", 'category')
+            logs.append(detail)
+    
+    logs.append(f"入居状態・回収ランクフィルタリング完了: {initial_count}件 → {len(df)}件")
+    
+    return df, logs
+
+
+def process_contractor(df: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
+    """契約者用リストを作成"""
+    logs = []
+    before_count = len(df)
+    before_df = df.copy()
+    
+    # 住所フィルタ（W,X,Y,Z列 = 22,23,24,25列目）
+    df = df[
+        df.iloc[:, 22].notna() & (df.iloc[:, 22] != '') &  # 郵便番号
+        df.iloc[:, 23].notna() & (df.iloc[:, 23] != '') &  # 現住所1
+        df.iloc[:, 24].notna() & (df.iloc[:, 24] != '') &  # 現住所2
+        df.iloc[:, 25].notna() & (df.iloc[:, 25] != '')    # 現住所3
+    ]
+    
+    log = DetailedLogger.log_filter_result(before_count, len(df), "契約者住所（完全な住所のみ）")
+    logs.append(log)
+    
+    # 除外データの詳細（住所不完全）
+    if before_count > len(df):
+        excluded = before_df[~before_df.index.isin(df.index)]
+        # 住所不完全の理由を詳細に記録
+        logs.append(f"  - 住所不完全で除外: {len(excluded)}件")
+        # 最初の5件の管理番号を表示
+        sample_ids = excluded.iloc[:5, 0].tolist()
+        if sample_ids:
+            logs.append(f"    例: 管理番号 {', '.join(map(str, sample_ids))}{' 他' if len(excluded) > 5 else ''}")
+    
+    try:
+        result_df = pd.DataFrame({
+            '管理番号': df.iloc[:, 0],          # A列
+            '契約者氏名': df.iloc[:, 20],       # U列
+            '郵便番号': df.iloc[:, 22],         # W列
+            '現住所1': df.iloc[:, 23],          # X列
+            '現住所2': df.iloc[:, 24],          # Y列
+            '現住所3': df.iloc[:, 25],          # Z列
+            '滞納残債': df.iloc[:, 71],         # BT列
+            '物件住所1': df.iloc[:, 92],        # CO列
+            '物件住所2': df.iloc[:, 93],        # CP列
+            '物件住所3': df.iloc[:, 94],        # CQ列
+            '物件名': df.iloc[:, 95],           # CR列
+            '物件番号': df.iloc[:, 96],         # CS列
+            '回収口座銀行CD': df.iloc[:, 34],   # AI列
+            '回収口座銀行名': df.iloc[:, 35],   # AJ列
+            '回収口座支店CD': df.iloc[:, 36],   # AK列
+            '回収口座支店名': df.iloc[:, 37],   # AL列
+            '回収口座種類': df.iloc[:, 38],     # AM列
+            '回収口座番号': df.iloc[:, 39],     # AN列
+            '回収口座名義人': df.iloc[:, 40],   # AO列
+        })
+        logs.append(f"マッピング完了: {len(result_df)}列の出力データを生成")
+    except Exception as e:
+        logs.append(f"マッピングエラー: {str(e)}")
+        raise
+    
+    return result_df, logs
+
+
+def process_guarantor(df: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
+    """連帯保証人用リストを作成"""
+    logs = []
+    results = []
+    initial_count = len(df)
+    before_count = len(df)
+    before_df = df.copy()
+    
+    # 保証人1の処理（AP-AW列 = 41-48列目）
+    guarantor1_df = df[
+        df.iloc[:, 42].notna() & (df.iloc[:, 42] != '') &  # 郵便番号（AQ）
+        df.iloc[:, 43].notna() & (df.iloc[:, 43] != '') &  # 現住所1（AR）
+        df.iloc[:, 44].notna() & (df.iloc[:, 44] != '') &  # 現住所2（AS）
+        df.iloc[:, 45].notna() & (df.iloc[:, 45] != '') &  # 現住所3（AT）
+        df.iloc[:, 41].notna() & (df.iloc[:, 41] != '')    # 保証人名（AP）
+    ]
+    
+    log = DetailedLogger.log_filter_result(before_count, len(guarantor1_df), "保証人1（住所完全）")
+    logs.append(log)
+    
+    # 保証人1の除外データの詳細
+    if before_count > len(guarantor1_df):
+        excluded = before_df[~before_df.index.isin(guarantor1_df.index)]
+        logs.append(f"  - 保証人1住所不完全で除外: {len(excluded)}件")
+        # 最初の5件の管理番号を表示
+        sample_ids = excluded.iloc[:5, 0].tolist()
+        if sample_ids:
+            logs.append(f"    例: 管理番号 {', '.join(map(str, sample_ids))}{' 他' if len(excluded) > 5 else ''}")
+    
+    if not guarantor1_df.empty:
+        g1_result = pd.DataFrame({
+            '管理番号': guarantor1_df.iloc[:, 0],
+            '契約者氏名': guarantor1_df.iloc[:, 20],
+            '連帯保証人名': guarantor1_df.iloc[:, 41],    # AP列
+            '郵便番号': guarantor1_df.iloc[:, 42],        # AQ列
+            '現住所1': guarantor1_df.iloc[:, 43],         # AR列
+            '現住所2': guarantor1_df.iloc[:, 44],         # AS列
+            '現住所3': guarantor1_df.iloc[:, 45],         # AT列
+            '滞納残債': guarantor1_df.iloc[:, 71],
+            '物件住所1': guarantor1_df.iloc[:, 92],
+            '物件住所2': guarantor1_df.iloc[:, 93],
+            '物件住所3': guarantor1_df.iloc[:, 94],
+            '物件名': guarantor1_df.iloc[:, 95],
+            '物件番号': guarantor1_df.iloc[:, 96],
+            '回収口座銀行CD': guarantor1_df.iloc[:, 34],
+            '回収口座銀行名': guarantor1_df.iloc[:, 35],
+            '回収口座支店CD': guarantor1_df.iloc[:, 36],
+            '回収口座支店名': guarantor1_df.iloc[:, 37],
+            '回収口座種類': guarantor1_df.iloc[:, 38],
+            '回収口座番号': guarantor1_df.iloc[:, 39],
+            '回収口座名義人': guarantor1_df.iloc[:, 40],
+            '番号': '①'
+        })
+        results.append(g1_result)
+    
+    # 保証人2の処理（AX-BE列 = 49-56列目）
+    guarantor2_df = df[
+        df.iloc[:, 50].notna() & (df.iloc[:, 50] != '') &  # 郵便番号（AY）
+        df.iloc[:, 51].notna() & (df.iloc[:, 51] != '') &  # 現住所1（AZ）
+        df.iloc[:, 52].notna() & (df.iloc[:, 52] != '') &  # 現住所2（BA）
+        df.iloc[:, 53].notna() & (df.iloc[:, 53] != '') &  # 現住所3（BB）
+        df.iloc[:, 49].notna() & (df.iloc[:, 49] != '')    # 保証人名（AX）
+    ]
+    
+    log = DetailedLogger.log_filter_result(before_count, len(guarantor2_df), "保証人2（住所完全）")
+    logs.append(log)
+    
+    # 保証人2の除外データの詳細
+    if before_count > len(guarantor2_df):
+        excluded = before_df[~before_df.index.isin(guarantor2_df.index)]
+        logs.append(f"  - 保証人2住所不完全で除外: {len(excluded)}件")
+        # 最初の5件の管理番号を表示
+        sample_ids = excluded.iloc[:5, 0].tolist()
+        if sample_ids:
+            logs.append(f"    例: 管理番号 {', '.join(map(str, sample_ids))}{' 他' if len(excluded) > 5 else ''}")
+    
+    if not guarantor2_df.empty:
+        g2_result = pd.DataFrame({
+            '管理番号': guarantor2_df.iloc[:, 0],
+            '契約者氏名': guarantor2_df.iloc[:, 20],
+            '連帯保証人名': guarantor2_df.iloc[:, 49],    # AX列
+            '郵便番号': guarantor2_df.iloc[:, 50],        # AY列
+            '現住所1': guarantor2_df.iloc[:, 51],         # AZ列
+            '現住所2': guarantor2_df.iloc[:, 52],         # BA列
+            '現住所3': guarantor2_df.iloc[:, 53],         # BB列
+            '滞納残債': guarantor2_df.iloc[:, 71],
+            '物件住所1': guarantor2_df.iloc[:, 92],
+            '物件住所2': guarantor2_df.iloc[:, 93],
+            '物件住所3': guarantor2_df.iloc[:, 94],
+            '物件名': guarantor2_df.iloc[:, 95],
+            '物件番号': guarantor2_df.iloc[:, 96],
+            '回収口座銀行CD': guarantor2_df.iloc[:, 34],
+            '回収口座銀行名': guarantor2_df.iloc[:, 35],
+            '回収口座支店CD': guarantor2_df.iloc[:, 36],
+            '回収口座支店名': guarantor2_df.iloc[:, 37],
+            '回収口座種類': guarantor2_df.iloc[:, 38],
+            '回収口座番号': guarantor2_df.iloc[:, 39],
+            '回収口座名義人': guarantor2_df.iloc[:, 40],
+            '番号': '②'
+        })
+        results.append(g2_result)
+    
+    # 結果を結合
+    # 保証人1と2の処理結果をログに記録
+    if len(results) > 0:
+        logs.append(f"保証人1マッピング完了: {len(results[0]) if len(results) > 0 else 0}件")
+    if len(results) > 1:
+        logs.append(f"保証人2マッピング完了: {len(results[1])}件")
+    
+    if results:
+        result_df = pd.concat(results, ignore_index=True)
+        logs.append(f"保証人リスト生成完了: 合計{len(result_df)}件")
+        return result_df, logs
+    else:
+        # 空のデータフレームを返す（ヘッダーだけ）
+        logs.append("該当する保証人データがありません")
+        return pd.DataFrame(columns=['管理番号', '契約者氏名', '連帯保証人名', '郵便番号', 
+                                    '現住所1', '現住所2', '現住所3', '滞納残債',
+                                    '物件住所1', '物件住所2', '物件住所3', '物件名', '物件番号',
+                                    '回収口座銀行CD', '回収口座銀行名', '回収口座支店CD', 
+                                    '回収口座支店名', '回収口座種類', '回収口座番号', 
+                                    '回収口座名義人', '番号']), logs
+
+
+def process_contact(df: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
+    """緊急連絡人用リストを作成"""
+    logs = []
+    results = []
+    before_count = len(df)
+    before_df = df.copy()
+    
+    # 緊急連絡人1の処理（BD-BI列 = 55-60列目）
+    contact1_df = df[
+        df.iloc[:, 57].notna() & (df.iloc[:, 57] != '') &  # 郵便番号（BF列）
+        df.iloc[:, 58].notna() & (df.iloc[:, 58] != '') &  # 現住所1（BG列）
+        df.iloc[:, 59].notna() & (df.iloc[:, 59] != '') &  # 現住所2（BH列）
+        df.iloc[:, 60].notna() & (df.iloc[:, 60] != '') &  # 現住所3（BI列）
+        df.iloc[:, 55].notna() & (df.iloc[:, 55] != '')    # 連絡人名（BD列）
+    ]
+    
+    log = DetailedLogger.log_filter_result(before_count, len(contact1_df), "緊急連絡人1（住所完全）")
+    logs.append(log)
+    
+    # 緊急連絡人1の除外データの詳細
+    if before_count > len(contact1_df):
+        excluded = before_df[~before_df.index.isin(contact1_df.index)]
+        logs.append(f"  - 緊急連絡人1住所不完全で除外: {len(excluded)}件")
+        # 最初の5件の管理番号を表示
+        sample_ids = excluded.iloc[:5, 0].tolist()
+        if sample_ids:
+            logs.append(f"    例: 管理番号 {', '.join(map(str, sample_ids))}{' 他' if len(excluded) > 5 else ''}")
+    
+    if not contact1_df.empty:
+        c1_result = pd.DataFrame({
+            '管理番号': contact1_df.iloc[:, 0],
+            '契約者氏名': contact1_df.iloc[:, 20],
+            '緊急連絡人１氏名': contact1_df.iloc[:, 55],  # BD列
+            '郵便番号': contact1_df.iloc[:, 57],          # BF列
+            '現住所1': contact1_df.iloc[:, 58],           # BG列
+            '現住所2': contact1_df.iloc[:, 59],           # BH列
+            '現住所3': contact1_df.iloc[:, 60],           # BI列
+            '滞納残債': contact1_df.iloc[:, 71],
+            '物件住所1': contact1_df.iloc[:, 92],
+            '物件住所2': contact1_df.iloc[:, 93],
+            '物件住所3': contact1_df.iloc[:, 94],
+            '物件名': contact1_df.iloc[:, 95],
+            '物件番号': contact1_df.iloc[:, 96],
+            '回収口座銀行CD': contact1_df.iloc[:, 34],
+            '回収口座銀行名': contact1_df.iloc[:, 35],
+            '回収口座支店CD': contact1_df.iloc[:, 36],
+            '回収口座支店名': contact1_df.iloc[:, 37],
+            '回収口座種類': contact1_df.iloc[:, 38],
+            '回収口座番号': contact1_df.iloc[:, 39],
+            '回収口座名義人': contact1_df.iloc[:, 40],
+            '番号': '①'
+        })
+        results.append(c1_result)
+    
+    # 緊急連絡人2の処理（BK-BO列 = 62-66列目）
+    contact2_df = df[
+        df.iloc[:, 63].notna() & (df.iloc[:, 63] != '') &  # 郵便番号（BL列）
+        df.iloc[:, 64].notna() & (df.iloc[:, 64] != '') &  # 現住所1（BM列）
+        df.iloc[:, 65].notna() & (df.iloc[:, 65] != '') &  # 現住所2（BN列）
+        df.iloc[:, 66].notna() & (df.iloc[:, 66] != '') &  # 現住所3（BO列）
+        df.iloc[:, 62].notna() & (df.iloc[:, 62] != '')    # 連絡人名（BK列）
+    ]
+    
+    log = DetailedLogger.log_filter_result(before_count, len(contact2_df), "緊急連絡人2（住所完全）")
+    logs.append(log)
+    
+    # 緊急連絡人2の除外データの詳細
+    if before_count > len(contact2_df):
+        excluded = before_df[~before_df.index.isin(contact2_df.index)]
+        logs.append(f"  - 緊急連絡人2住所不完全で除外: {len(excluded)}件")
+        # 最初の5件の管理番号を表示
+        sample_ids = excluded.iloc[:5, 0].tolist()
+        if sample_ids:
+            logs.append(f"    例: 管理番号 {', '.join(map(str, sample_ids))}{' 他' if len(excluded) > 5 else ''}")
+    
+    if not contact2_df.empty:
+        c2_result = pd.DataFrame({
+            '管理番号': contact2_df.iloc[:, 0],
+            '契約者氏名': contact2_df.iloc[:, 20],
+            '緊急連絡人１氏名': contact2_df.iloc[:, 62],  # BK列（緊急連絡人2氏名）
+            '郵便番号': contact2_df.iloc[:, 63],          # BL列
+            '現住所1': contact2_df.iloc[:, 64],           # BM列
+            '現住所2': contact2_df.iloc[:, 65],           # BN列
+            '現住所3': contact2_df.iloc[:, 66],           # BO列
+            '滞納残債': contact2_df.iloc[:, 71],
+            '物件住所1': contact2_df.iloc[:, 92],
+            '物件住所2': contact2_df.iloc[:, 93],
+            '物件住所3': contact2_df.iloc[:, 94],
+            '物件名': contact2_df.iloc[:, 95],
+            '物件番号': contact2_df.iloc[:, 96],
+            '回収口座銀行CD': contact2_df.iloc[:, 34],
+            '回収口座銀行名': contact2_df.iloc[:, 35],
+            '回収口座支店CD': contact2_df.iloc[:, 36],
+            '回収口座支店名': contact2_df.iloc[:, 37],
+            '回収口座種類': contact2_df.iloc[:, 38],
+            '回収口座番号': contact2_df.iloc[:, 39],
+            '回収口座名義人': contact2_df.iloc[:, 40],
+            '番号': '②'
+        })
+        results.append(c2_result)
+    
+    # 連絡人1と2の処理結果をログに記録
+    if len(results) > 0:
+        logs.append(f"緊急連絡人1マッピング完了: {len(results[0]) if len(results) > 0 else 0}件")
+    if len(results) > 1:
+        logs.append(f"緊急連絡人2マッピング完了: {len(results[1])}件")
+    
+    # 結果を結合
+    if results:
+        result_df = pd.concat(results, ignore_index=True)
+        logs.append(f"連絡人リスト生成完了: 合計{len(result_df)}件")
+        return result_df, logs
+    else:
+        # 空のデータフレームを返す（ヘッダーだけ）
+        logs.append("該当する連絡人データがありません")
+        return pd.DataFrame(columns=['管理番号', '契約者氏名', '緊急連絡人１氏名', '郵便番号', 
+                                    '現住所1', '現住所2', '現住所3', '滞納残債',
+                                    '物件住所1', '物件住所2', '物件住所3', '物件名', '物件番号',
+                                    '回収口座銀行CD', '回収口座銀行名', '回収口座支店CD', 
+                                    '回収口座支店名', '回収口座種類', '回収口座番号', 
+                                    '回収口座名義人', '番号']), logs
+
+
