@@ -130,14 +130,17 @@ def apply_common_filters(df: pd.DataFrame, skip_rank_filter: bool = False) -> Tu
     # 入金予定金額（BV列 = 73列目）でフィルタ（2,3,5を除外）
     before_count = len(df)
     before_df = df.copy()
-    df = df[~df.iloc[:, 73].isin([2, 3, 5])]
-    
+    # 数値に変換してから比較（文字列の場合も考慮）
+    payment_amounts = pd.to_numeric(df.iloc[:, 73], errors='coerce')
+    df = df[~payment_amounts.isin([2, 3, 5])]
+
     log = DetailedLogger.log_filter_result(before_count, len(df), "入金予定金額（2,3,5除外）")
     logs.append(log)
-    
+
     # 除外データの詳細
     if before_count > len(df):
-        excluded = before_df[before_df.iloc[:, 73].isin([2, 3, 5])]
+        payment_amounts_before = pd.to_numeric(before_df.iloc[:, 73], errors='coerce')
+        excluded = before_df[payment_amounts_before.isin([2, 3, 5])]
         detail = DetailedLogger.log_exclusion_details(excluded, 73, "入金予定金額", 'category')
         logs.append(detail)
     

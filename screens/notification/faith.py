@@ -34,7 +34,7 @@ def render_single_button_process(target_type: str, occupancy_status: str, filter
         base_conditions = [
             "委託先法人id = 1, 2, 3, 4",
             "入金予定日 < 本日",
-            "入金予定金額 ≠ 2, 3, 5",
+            "入金予定金額 = 2, 3, 5を除外",
             f"入居ステータス = {occupancy_status}"
         ]
         
@@ -110,7 +110,7 @@ def render_faith_notification():
         display_filter_conditions([
             "委託先法人ID = 1, 2, 3, 4",
             "入金予定日 < 本日",
-            "入金予定金額 ≠ 2, 3, 5"
+            "入金予定金額 = 2, 3, 5を除外"
         ])
     
     # ファイルアップローダー
