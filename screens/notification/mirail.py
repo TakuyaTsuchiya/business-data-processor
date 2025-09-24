@@ -5,6 +5,7 @@
 import streamlit as st
 import pandas as pd
 import io
+import openpyxl.styles
 from components.common_ui import display_filter_conditions, display_processing_logs
 from processors.mirail_notification import process_mirail_notification
 
@@ -82,10 +83,19 @@ def render_mirail_notification(target_type: str, client_pattern: str):
                         with st.expander(f"📊 データプレビュー（先頭10件）", expanded=True):
                             st.dataframe(result_df.head(10))
 
-                        # Excel形式でダウンロード
+                        # Excel形式でダウンロード（スタイルなし）
                         output = io.BytesIO()
                         with pd.ExcelWriter(output, engine='openpyxl') as writer:
                             result_df.to_excel(writer, index=False, sheet_name='Sheet1')
+
+                            # スタイルを削除してシンプルな出力に
+                            worksheet = writer.sheets['Sheet1']
+                            # すべてのセルのスタイルをリセット
+                            for row in worksheet.iter_rows():
+                                for cell in row:
+                                    cell.font = openpyxl.styles.Font(bold=False)
+                                    cell.border = openpyxl.styles.Border()
+
                         output.seek(0)
 
                         st.download_button(
