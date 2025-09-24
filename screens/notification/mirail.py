@@ -5,7 +5,7 @@
 import streamlit as st
 import pandas as pd
 import io
-import openpyxl.styles
+from openpyxl import Workbook
 from components.common_ui import display_filter_conditions, display_processing_logs
 from processors.mirail_notification import process_mirail_notification
 
@@ -83,23 +83,28 @@ def render_mirail_notification(target_type: str, client_pattern: str):
                         with st.expander(f"📊 データプレビュー（先頭10件）", expanded=True):
                             st.dataframe(result_df.head(10))
 
-                        # Excel形式でダウンロード（スタイルなし）
+                        # Excel形式でダウンロード（入力CSVと同じ形式、スタイルなし）
                         output = io.BytesIO()
-                        with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                            result_df.to_excel(writer, index=False, sheet_name='Sheet1')
 
-                            # フォント設定（游ゴシック Regular 12pt）
-                            worksheet = writer.sheets['Sheet1']
-                            # すべてのセルのスタイルを設定
-                            for row in worksheet.iter_rows():
-                                for cell in row:
-                                    cell.font = openpyxl.styles.Font(
-                                        name='游ゴシック',  # Yu Gothic / 游ゴシック体 / YuGothic
-                                        size=12,
-                                        bold=False
-                                    )
-                                    cell.border = openpyxl.styles.Border()
+                        # openpyxlで直接ワークブックを作成（スタイル適用を避ける）
+                        wb = Workbook()
+                        ws = wb.active
+                        ws.title = 'Sheet1'
 
+                        # ヘッダーを書き込み
+                        for col_num, column_title in enumerate(result_df.columns, 1):
+                            ws.cell(row=1, column=col_num, value=column_title)
+
+                        # データを書き込み
+                        for row_num, row_data in enumerate(result_df.values, 2):
+                            for col_num, cell_value in enumerate(row_data, 1):
+                                # NaNやNoneの処理
+                                if pd.isna(cell_value):
+                                    cell_value = ''
+                                ws.cell(row=row_num, column=col_num, value=cell_value)
+
+                        # 保存
+                        wb.save(output)
                         output.seek(0)
 
                         st.download_button(
