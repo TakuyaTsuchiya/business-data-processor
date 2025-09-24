@@ -93,6 +93,7 @@ def render_mirail_notification(target_type: str, client_pattern: str):
                             data=output.getvalue(),
                             file_name=filename,
                             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            type="primary",
                             key=f"download_mirail_{target_type}_{client_pattern}"
                         )
                     else:
