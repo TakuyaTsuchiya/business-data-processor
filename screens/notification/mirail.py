@@ -88,12 +88,16 @@ def render_mirail_notification(target_type: str, client_pattern: str):
                         with pd.ExcelWriter(output, engine='openpyxl') as writer:
                             result_df.to_excel(writer, index=False, sheet_name='Sheet1')
 
-                            # スタイルを削除してシンプルな出力に
+                            # フォント設定（游ゴシック Regular 12pt）
                             worksheet = writer.sheets['Sheet1']
-                            # すべてのセルのスタイルをリセット
+                            # すべてのセルのスタイルを設定
                             for row in worksheet.iter_rows():
                                 for cell in row:
-                                    cell.font = openpyxl.styles.Font(bold=False)
+                                    cell.font = openpyxl.styles.Font(
+                                        name='游ゴシック',  # Yu Gothic / 游ゴシック体 / YuGothic
+                                        size=12,
+                                        bold=False
+                                    )
                                     cell.border = openpyxl.styles.Border()
 
                         output.seek(0)
