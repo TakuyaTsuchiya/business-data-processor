@@ -30,7 +30,7 @@ def render_mirail_notification(target_type: str, client_pattern: str):
             "委託先法人ID = 5と空白のみ選択",
             "入金予定日 < 本日（本日を除く）",
             "入金予定金額 = 2, 3, 5, 12を除外",
-            "回収ランク = 弁護士介入のみ選択"
+            "回収ランク ≠ 弁護士介入（除外）"
         ]
 
         # クライアントCDフィルタ

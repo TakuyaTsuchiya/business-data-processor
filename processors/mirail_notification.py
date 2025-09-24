@@ -56,7 +56,7 @@ def process_mirail_notification(
         df = read_csv_auto_encoding(file_content)
         logs.append(DetailedLogger.log_initial_load(len(df)))
 
-        # データ型変換
+        # データ型変換（列名でアクセス - より安全）
         df['委託先法人ID'] = pd.to_numeric(df['委託先法人ID'], errors='coerce')
         df['クライアントCD'] = pd.to_numeric(df['クライアントCD'], errors='coerce')
         df['入金予定金額'] = pd.to_numeric(df['入金予定金額'], errors='coerce')
@@ -82,10 +82,10 @@ def process_mirail_notification(
         df_filtered = df_filtered[~df_filtered['入金予定金額'].isin([2, 3, 5, 12])]
         logs.append(DetailedLogger.log_filter_result(before_count, len(df_filtered), "入金予定金額（2,3,5,12除外）"))
 
-        # 4. 回収ランクフィルタ（弁護士介入のみ）
+        # 4. 回収ランクフィルタ（弁護士介入を除外）
         before_count = len(df_filtered)
-        df_filtered = df_filtered[df_filtered['回収ランク'] == '弁護士介入']
-        logs.append(DetailedLogger.log_filter_result(before_count, len(df_filtered), "回収ランク（弁護士介入のみ）"))
+        df_filtered = df_filtered[df_filtered['回収ランク'] != '弁護士介入']
+        logs.append(DetailedLogger.log_filter_result(before_count, len(df_filtered), "回収ランク（弁護士介入除外）"))
 
         # 5. クライアントCDフィルタ
         before_count = len(df_filtered)
