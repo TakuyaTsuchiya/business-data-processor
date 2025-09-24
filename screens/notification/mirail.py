@@ -6,6 +6,7 @@ import streamlit as st
 import pandas as pd
 import io
 from openpyxl import Workbook
+from openpyxl.styles import Font
 from components.common_ui import display_filter_conditions, display_processing_logs
 from processors.mirail_notification import process_mirail_notification
 
@@ -83,25 +84,34 @@ def render_mirail_notification(target_type: str, client_pattern: str):
                         with st.expander(f"📊 データプレビュー（先頭10件）", expanded=True):
                             st.dataframe(result_df.head(10))
 
-                        # Excel形式でダウンロード（入力CSVと同じ形式、スタイルなし）
+                        # Excel形式でダウンロード（游ゴシック 12pt）
                         output = io.BytesIO()
 
-                        # openpyxlで直接ワークブックを作成（スタイル適用を避ける）
+                        # openpyxlで直接ワークブックを作成
                         wb = Workbook()
                         ws = wb.active
                         ws.title = 'Sheet1'
 
-                        # ヘッダーを書き込み
-                        for col_num, column_title in enumerate(result_df.columns, 1):
-                            ws.cell(row=1, column=col_num, value=column_title)
+                        # フォント設定（游ゴシック Regular 12pt、罫線なし）
+                        custom_font = Font(
+                            name='游ゴシック',  # Yu Gothic / 游ゴシック体 / YuGothic
+                            size=12,
+                            bold=False
+                        )
 
-                        # データを書き込み
+                        # ヘッダーを書き込み（フォント適用）
+                        for col_num, column_title in enumerate(result_df.columns, 1):
+                            cell = ws.cell(row=1, column=col_num, value=column_title)
+                            cell.font = custom_font
+
+                        # データを書き込み（フォント適用）
                         for row_num, row_data in enumerate(result_df.values, 2):
                             for col_num, cell_value in enumerate(row_data, 1):
                                 # NaNやNoneの処理
                                 if pd.isna(cell_value):
                                     cell_value = ''
-                                ws.cell(row=row_num, column=col_num, value=cell_value)
+                                cell = ws.cell(row=row_num, column=col_num, value=cell_value)
+                                cell.font = custom_font
 
                         # 保存
                         wb.save(output)
