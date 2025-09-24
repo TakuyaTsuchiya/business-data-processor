@@ -101,8 +101,6 @@ def render_mirail_notification(target_type: str, client_pattern: str):
 
                 except Exception as e:
                     st.error(f"処理中にエラーが発生しました: {str(e)}")
-    else:
-        st.info("👆 CSVファイルをアップロードしてください")
 
 
 # app.pyから呼ばれる6つの関数
