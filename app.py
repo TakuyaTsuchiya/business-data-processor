@@ -103,6 +103,14 @@ from screens.notification.faith import (
     render_faith_e_excluded,
     render_faith_e_evicted
 )
+from screens.notification.mirail import (
+    show_mirail_contractor_145,
+    show_mirail_contractor_not145,
+    show_mirail_guarantor_145,
+    show_mirail_guarantor_not145,
+    show_mirail_contact_145,
+    show_mirail_contact_not145
+)
 
 # プロセッサーをインポート
 
@@ -164,7 +172,13 @@ def main():
         "faith_g_evicted": render_faith_g_evicted,
         "faith_e_litigation": render_faith_e_litigation,
         "faith_e_excluded": render_faith_e_excluded,
-        "faith_e_evicted": render_faith_e_evicted
+        "faith_e_evicted": render_faith_e_evicted,
+        "mirail_c_145": show_mirail_contractor_145,
+        "mirail_c_not145": show_mirail_contractor_not145,
+        "mirail_g_145": show_mirail_guarantor_145,
+        "mirail_g_not145": show_mirail_guarantor_not145,
+        "mirail_e_145": show_mirail_contact_145,
+        "mirail_e_not145": show_mirail_contact_not145
     }
     
     # カスタムCSSを適用
