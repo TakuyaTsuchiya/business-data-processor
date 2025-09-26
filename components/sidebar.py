@@ -107,11 +107,11 @@ def build_sidebar_menu():
         if st.button("プラザ残債の更新", key="plaza_debt_update", use_container_width=True):
             st.session_state.selected_processor = "plaza_debt_update"
         
-        # 📝 差込み用リスト作成
-        st.markdown('<div class="sidebar-category">📝 差込み用リスト作成</div>', unsafe_allow_html=True)
+        # 📝 催告書 差し込みリスト作成
+        st.markdown('<div class="sidebar-category">📝 催告書 差し込みリスト作成</div>', unsafe_allow_html=True)
 
-        # フェイス差込み用リスト
-        st.markdown('<div class="sidebar-subcategory">フェイス差込み用リスト</div>', unsafe_allow_html=True)
+        # フェイス 催告書 差し込み用リスト
+        st.markdown('<div class="sidebar-subcategory">フェイス 催告書 差し込み用リスト</div>', unsafe_allow_html=True)
         if st.button("契約者「入居中」「訴訟中」", key="faith_c_litigation", use_container_width=True):
             st.session_state.selected_processor = "faith_c_litigation"
         if st.button("契約者「入居中」「訴訟対象外」", key="faith_c_excluded", use_container_width=True):
@@ -131,17 +131,17 @@ def build_sidebar_menu():
         if st.button("連絡人「退去済み」", key="faith_e_evicted", use_container_width=True):
             st.session_state.selected_processor = "faith_e_evicted"
 
-        # ミライル（フェイス封筒）
-        st.markdown('<div class="sidebar-subcategory">ミライル（フェイス封筒）</div>', unsafe_allow_html=True)
+        # ミライル 催告書 差し込みリスト
+        st.markdown('<div class="sidebar-subcategory">ミライル 催告書 差し込みリスト</div>', unsafe_allow_html=True)
         if st.button("契約者（1,4,5）", key="mirail_c_145", use_container_width=True):
             st.session_state.selected_processor = "mirail_c_145"
-        if st.button("契約者（1,4,5以外）", key="mirail_c_not145", use_container_width=True):
+        if st.button("契約者（1,4,5,10,40以外）", key="mirail_c_not145", use_container_width=True):
             st.session_state.selected_processor = "mirail_c_not145"
         if st.button("保証人（1,4,5）", key="mirail_g_145", use_container_width=True):
             st.session_state.selected_processor = "mirail_g_145"
-        if st.button("保証人（1,4,5以外）", key="mirail_g_not145", use_container_width=True):
+        if st.button("保証人（1,4,5,10,40以外）", key="mirail_g_not145", use_container_width=True):
             st.session_state.selected_processor = "mirail_g_not145"
         if st.button("連絡人（1,4,5）", key="mirail_e_145", use_container_width=True):
             st.session_state.selected_processor = "mirail_e_145"
-        if st.button("連絡人（1,4,5以外）", key="mirail_e_not145", use_container_width=True):
+        if st.button("連絡人（1,4,5,10,40以外）", key="mirail_e_not145", use_container_width=True):
             st.session_state.selected_processor = "mirail_e_not145"
