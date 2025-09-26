@@ -26,7 +26,7 @@ def render_single_button_process(target_type: str, occupancy_status: str, filter
     type_name = type_map.get(target_type, '')
     filter_name = filter_map.get(filter_type, '')
     
-    st.title("📝 フェイス差込み用リスト")
+    st.title("📝 フェイス 催告書 差し込み用リスト")
     st.subheader(f"{type_name}【{occupancy_status}】{filter_name}のリストを作成")
     
     # フィルタ条件表示
@@ -102,7 +102,7 @@ def render_single_button_process(target_type: str, occupancy_status: str, filter
 def render_faith_notification():
     """フェイス差込み用リスト統合画面（9ボタン）"""
     
-    st.title("📝 フェイス差込み用リスト作成（9ボタン版）")
+    st.title("📝 フェイス 催告書 差し込み用リスト作成")
     st.subheader("フェイス向けの郵送用リストを作成します")
     
     # 共通フィルタ条件表示
