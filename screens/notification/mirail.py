@@ -23,7 +23,7 @@ def render_mirail_notification(target_type: str, client_pattern: str):
     target_name = target_name_map.get(target_type, target_type)
     pattern_text = "（1,4,5）" if client_pattern == 'included' else "（1,4,5以外）"
 
-    st.title("📝 ミライル（フェイス封筒）")
+    st.title("📝 ミライル 催告書 差し込みリスト")
     st.subheader(f"{target_name}{pattern_text}のリストを作成")
 
     # フィルタ条件表示
