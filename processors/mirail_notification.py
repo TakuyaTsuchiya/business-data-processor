@@ -235,38 +235,78 @@ def check_contact_address(df: pd.DataFrame, logs: List[str]) -> pd.DataFrame:
 
 
 def split_guarantors(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """保証人1と保証人2を分離"""
-    # 保証人1の列インデックス: 41-47
-    g1_cols = list(range(41, 48))
-    # 保証人2の列インデックス: 48-54
-    g2_cols = list(range(48, 55))
+    """保証人1と保証人2を分離（それぞれ独立して住所完全な行を抽出）"""
+    # 保証人1の住所列
+    g1_postal = df.columns[42]    # AQ列: 郵便番号
+    g1_addr1 = df.columns[43]     # AR列: 現住所1
+    g1_addr2 = df.columns[44]     # AS列: 現住所2
+    g1_addr3 = df.columns[45]     # AT列: 現住所3
 
-    # 保証人2の氏名列
-    g2_name_col = df.columns[48]
+    # 保証人2の氏名・住所列
+    g2_name_col = df.columns[48]  # AW列: 保証人２氏名
+    g2_postal = df.columns[49]    # AX列: 郵便番号
+    g2_addr1 = df.columns[50]     # AY列: 現住所1
+    g2_addr2 = df.columns[51]     # AZ列: 現住所2
+    g2_addr3 = df.columns[52]     # BA列: 現住所3
 
-    # 保証人1のDataFrame（保証人2がいない行）
-    df_g1_only = df[df[g2_name_col].isna() | (df[g2_name_col] == '')].copy()
+    # 保証人1の住所完全性チェック
+    g1_address_cols = [g1_postal, g1_addr1, g1_addr2, g1_addr3]
+    g1_complete = True
+    for col in g1_address_cols:
+        g1_complete = g1_complete & df[col].notna() & (df[col] != '')
 
-    # 保証人2のDataFrame（保証人2がいる行）
-    df_g2 = df[df[g2_name_col].notna() & (df[g2_name_col] != '')].copy()
+    # 保証人2が存在する行
+    g2_exists = df[g2_name_col].notna() & (df[g2_name_col] != '')
 
-    return df_g1_only, df_g2
+    # 保証人2の住所完全性チェック
+    g2_address_cols = [g2_postal, g2_addr1, g2_addr2, g2_addr3]
+    g2_complete = True
+    for col in g2_address_cols:
+        g2_complete = g2_complete & df[col].notna() & (df[col] != '')
+
+    # 保証人1シート: 保証人1の住所が完全な全ての行
+    df_g1 = df[g1_complete].copy()
+
+    # 保証人2シート: 保証人2が存在し、かつ保証人2の住所が完全な行
+    df_g2 = df[g2_exists & g2_complete].copy()
+
+    return df_g1, df_g2
 
 
 def split_contacts(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """連絡人1と連絡人2を分離"""
-    # 連絡人1の列インデックス: 55-61
-    e1_cols = list(range(55, 62))
-    # 連絡人2の列インデックス: 62-68
-    e2_cols = list(range(62, 69))
+    """連絡人1と連絡人2を分離（それぞれ独立して住所完全な行を抽出）"""
+    # 連絡人1の住所列
+    e1_postal = df.columns[57]    # BF列: 郵便番号
+    e1_addr1 = df.columns[58]     # BG列: 現住所1
+    e1_addr2 = df.columns[59]     # BH列: 現住所2
+    e1_addr3 = df.columns[60]     # BI列: 現住所3
 
-    # 連絡人2の氏名列
-    e2_name_col = df.columns[62]
+    # 連絡人2の氏名・住所列
+    e2_name_col = df.columns[62]  # BK列: 連絡人２氏名
+    e2_postal = df.columns[63]    # BL列: 郵便番号
+    e2_addr1 = df.columns[64]     # BM列: 現住所1
+    e2_addr2 = df.columns[65]     # BN列: 現住所2
+    e2_addr3 = df.columns[66]     # BO列: 現住所3
 
-    # 連絡人1のDataFrame（連絡人2がいない行）
-    df_e1_only = df[df[e2_name_col].isna() | (df[e2_name_col] == '')].copy()
+    # 連絡人1の住所完全性チェック
+    e1_address_cols = [e1_postal, e1_addr1, e1_addr2, e1_addr3]
+    e1_complete = True
+    for col in e1_address_cols:
+        e1_complete = e1_complete & df[col].notna() & (df[col] != '')
 
-    # 連絡人2のDataFrame（連絡人2がいる行）
-    df_e2 = df[df[e2_name_col].notna() & (df[e2_name_col] != '')].copy()
+    # 連絡人2が存在する行
+    e2_exists = df[e2_name_col].notna() & (df[e2_name_col] != '')
 
-    return df_e1_only, df_e2
+    # 連絡人2の住所完全性チェック
+    e2_address_cols = [e2_postal, e2_addr1, e2_addr2, e2_addr3]
+    e2_complete = True
+    for col in e2_address_cols:
+        e2_complete = e2_complete & df[col].notna() & (df[col] != '')
+
+    # 連絡人1シート: 連絡人1の住所が完全な全ての行
+    df_e1 = df[e1_complete].copy()
+
+    # 連絡人2シート: 連絡人2が存在し、かつ連絡人2の住所が完全な行
+    df_e2 = df[e2_exists & e2_complete].copy()
+
+    return df_e1, df_e2
