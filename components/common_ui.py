@@ -7,6 +7,9 @@ Business Data Processor
 
 import streamlit as st
 import pandas as pd
+import io
+from openpyxl import Workbook
+from openpyxl.styles import Font
 
 
 def safe_dataframe_display(df: pd.DataFrame):
@@ -81,6 +84,49 @@ def display_processing_logs(logs: list, title: str = "📊 処理ログ", expand
             # 通常のログ
             else:
                 st.markdown(f"• {log}")
+
+
+def safe_excel_download(df: pd.DataFrame, filename: str, label: str = "📥 Excelファイルをダウンロード"):
+    """安全なExcelダウンロード関数（游ゴシック 12ptフォント適用）"""
+    output = io.BytesIO()
+
+    # openpyxlで直接ワークブックを作成
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Sheet1'
+
+    # フォント設定（游ゴシック Regular 12pt、罫線なし）
+    custom_font = Font(
+        name='游ゴシック',
+        size=12,
+        bold=False
+    )
+
+    # ヘッダーを書き込み（フォント適用）
+    for col_num, column_title in enumerate(df.columns, 1):
+        cell = ws.cell(row=1, column=col_num, value=column_title)
+        cell.font = custom_font
+
+    # データを書き込み（フォント適用）
+    for row_num, row_data in enumerate(df.values, 2):
+        for col_num, cell_value in enumerate(row_data, 1):
+            # NaNやNoneの処理
+            if pd.isna(cell_value):
+                cell_value = ''
+            cell = ws.cell(row=row_num, column=col_num, value=cell_value)
+            cell.font = custom_font
+
+    # 保存
+    wb.save(output)
+    output.seek(0)
+
+    return st.download_button(
+        label=label,
+        data=output.getvalue(),
+        file_name=filename,
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        type="primary"
+    )
 
 
 def display_filter_conditions(conditions: list, title: str = "**フィルタ条件:**"):
