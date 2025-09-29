@@ -5,7 +5,7 @@
 import streamlit as st
 import pandas as pd
 import io
-from components.common_ui import display_filter_conditions, safe_csv_download
+from components.common_ui import display_filter_conditions, safe_csv_download, safe_excel_download
 from processors.faith_notification import process_faith_notification
 
 
@@ -81,8 +81,8 @@ def render_single_button_process(target_type: str, occupancy_status: str, filter
                     # 成功メッセージ
                     st.success(message)
                     
-                    # CSVダウンロードボタン
-                    safe_csv_download(result_df, filename)
+                    # Excelダウンロードボタン
+                    safe_excel_download(result_df, filename.replace('.csv', '.xlsx'))
                     
                     # 処理ログ表示
                     if logs:
@@ -148,8 +148,8 @@ def render_faith_notification():
                     # 成功メッセージ
                     st.success(message)
                     
-                    # CSVダウンロードボタン
-                    safe_csv_download(result_df, filename)
+                    # Excelダウンロードボタン
+                    safe_excel_download(result_df, filename.replace('.csv', '.xlsx'))
                     
                     # 処理ログ表示
                     if logs:

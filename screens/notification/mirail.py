@@ -8,7 +8,7 @@ import io
 from openpyxl import Workbook
 from openpyxl.styles import Font
 from components.common_ui import display_filter_conditions, display_processing_logs
-from processors.mirail_notification import process_mirail_notification
+from processors.mirail_notification import process_mirail_notification, split_guarantors, split_contacts
 
 
 def render_mirail_notification(target_type: str, client_pattern: str):
@@ -21,7 +21,7 @@ def render_mirail_notification(target_type: str, client_pattern: str):
         'contact': '連絡人'
     }
     target_name = target_name_map.get(target_type, target_type)
-    pattern_text = "（1,4,5）" if client_pattern == 'included' else "（1,4,5以外）"
+    pattern_text = "（1,4,5）" if client_pattern == 'included' else "（1,4,5,10,40以外）"
 
     st.title("📝 ミライル 催告書 差し込みリスト")
     st.subheader(f"{target_name}{pattern_text}のリストを作成")
@@ -30,7 +30,7 @@ def render_mirail_notification(target_type: str, client_pattern: str):
     with st.expander("📋 フィルタ条件", expanded=True):
         base_conditions = [
             "委託先法人ID = 5と空白のみ選択",
-            "入金予定日 < 本日（本日を除く）",
+            "入金予定日 = 本日以前と空白（本日を除く）",
             "入金予定金額 = 2, 3, 5, 12を除外",
             "回収ランク ≠ 弁護士介入（除外）"
         ]
@@ -72,6 +72,17 @@ def render_mirail_notification(target_type: str, client_pattern: str):
                         file_content, target_type, client_pattern
                     )
 
+                    # 保証人/連絡人の場合、シート分割の件数をログに追加
+                    if result_df is not None and len(result_df) > 0:
+                        if target_type == 'guarantor':
+                            df_g1_temp, df_g2_temp = split_guarantors(result_df)
+                            logs.append(f"保証人1: {len(df_g1_temp)}件")
+                            logs.append(f"保証人2: {len(df_g2_temp)}件")
+                        elif target_type == 'contact':
+                            df_e1_temp, df_e2_temp = split_contacts(result_df)
+                            logs.append(f"連絡人1: {len(df_e1_temp)}件")
+                            logs.append(f"連絡人2: {len(df_e2_temp)}件")
+
                     # ログ表示
                     display_processing_logs(logs)
 
@@ -89,8 +100,6 @@ def render_mirail_notification(target_type: str, client_pattern: str):
 
                         # openpyxlで直接ワークブックを作成
                         wb = Workbook()
-                        ws = wb.active
-                        ws.title = 'Sheet1'
 
                         # フォント設定（游ゴシック Regular 12pt、罫線なし）
                         custom_font = Font(
@@ -99,19 +108,94 @@ def render_mirail_notification(target_type: str, client_pattern: str):
                             bold=False
                         )
 
-                        # ヘッダーを書き込み（フォント適用）
-                        for col_num, column_title in enumerate(result_df.columns, 1):
-                            cell = ws.cell(row=1, column=col_num, value=column_title)
-                            cell.font = custom_font
+                        # 保証人の場合は2シート構成
+                        if target_type == 'guarantor':
+                            df_g1, df_g2 = split_guarantors(result_df)
 
-                        # データを書き込み（フォント適用）
-                        for row_num, row_data in enumerate(result_df.values, 2):
-                            for col_num, cell_value in enumerate(row_data, 1):
-                                # NaNやNoneの処理
-                                if pd.isna(cell_value):
-                                    cell_value = ''
-                                cell = ws.cell(row=row_num, column=col_num, value=cell_value)
+                            # 保証人1シート
+                            ws1 = wb.active
+                            ws1.title = '保証人1'
+
+                            # 保証人1のデータを書き込み
+                            for col_num, column_title in enumerate(df_g1.columns, 1):
+                                cell = ws1.cell(row=1, column=col_num, value=column_title)
                                 cell.font = custom_font
+
+                            for row_num, row_data in enumerate(df_g1.values, 2):
+                                for col_num, cell_value in enumerate(row_data, 1):
+                                    if pd.isna(cell_value):
+                                        cell_value = ''
+                                    cell = ws1.cell(row=row_num, column=col_num, value=cell_value)
+                                    cell.font = custom_font
+
+                            # 保証人2シート（データがある場合のみ）
+                            if len(df_g2) > 0:
+                                ws2 = wb.create_sheet('保証人2')
+
+                                for col_num, column_title in enumerate(df_g2.columns, 1):
+                                    cell = ws2.cell(row=1, column=col_num, value=column_title)
+                                    cell.font = custom_font
+
+                                for row_num, row_data in enumerate(df_g2.values, 2):
+                                    for col_num, cell_value in enumerate(row_data, 1):
+                                        if pd.isna(cell_value):
+                                            cell_value = ''
+                                        cell = ws2.cell(row=row_num, column=col_num, value=cell_value)
+                                        cell.font = custom_font
+
+                        # 連絡人の場合は2シート構成
+                        elif target_type == 'contact':
+                            df_e1, df_e2 = split_contacts(result_df)
+
+                            # 連絡人1シート
+                            ws1 = wb.active
+                            ws1.title = '連絡人1'
+
+                            # 連絡人1のデータを書き込み
+                            for col_num, column_title in enumerate(df_e1.columns, 1):
+                                cell = ws1.cell(row=1, column=col_num, value=column_title)
+                                cell.font = custom_font
+
+                            for row_num, row_data in enumerate(df_e1.values, 2):
+                                for col_num, cell_value in enumerate(row_data, 1):
+                                    if pd.isna(cell_value):
+                                        cell_value = ''
+                                    cell = ws1.cell(row=row_num, column=col_num, value=cell_value)
+                                    cell.font = custom_font
+
+                            # 連絡人2シート（データがある場合のみ）
+                            if len(df_e2) > 0:
+                                ws2 = wb.create_sheet('連絡人2')
+
+                                for col_num, column_title in enumerate(df_e2.columns, 1):
+                                    cell = ws2.cell(row=1, column=col_num, value=column_title)
+                                    cell.font = custom_font
+
+                                for row_num, row_data in enumerate(df_e2.values, 2):
+                                    for col_num, cell_value in enumerate(row_data, 1):
+                                        if pd.isna(cell_value):
+                                            cell_value = ''
+                                        cell = ws2.cell(row=row_num, column=col_num, value=cell_value)
+                                        cell.font = custom_font
+
+                        # 契約者の場合は1シート
+                        else:
+                            ws = wb.active
+                            ws.title = 'Sheet1'
+
+                            # ヘッダーを書き込み（フォント適用）
+                            for col_num, column_title in enumerate(result_df.columns, 1):
+                                cell = ws.cell(row=1, column=col_num, value=column_title)
+                                cell.font = custom_font
+
+                            # データを書き込み（フォント適用）
+                            for row_num, row_data in enumerate(result_df.values, 2):
+                                for col_num, cell_value in enumerate(row_data, 1):
+                                    # NaNやNoneの処理
+                                    if pd.isna(cell_value):
+                                        cell_value = ''
+                                    cell = ws.cell(row=row_num, column=col_num, value=cell_value)
+                                    cell.font = custom_font
 
                         # 保存
                         wb.save(output)

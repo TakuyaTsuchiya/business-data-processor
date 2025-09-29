@@ -67,15 +67,15 @@ def process_mirail_notification(
         df_filtered = df[(df['委託先法人ID'] == 5) | df['委託先法人ID'].isna()]
         logs.append(DetailedLogger.log_filter_result(before_count, len(df_filtered), "委託先法人ID（5と空白のみ）"))
 
-        # 2. 入金予定日フィルタ（本日より前、本日除く）
+        # 2. 入金予定日フィルタ（空白、または本日より前）
         before_count = len(df_filtered)
         today = pd.Timestamp(datetime.now().date())
-        # 入金予定日がNaTでない かつ 本日より前
+        # 入金予定日が空白 または (入金予定日が存在 かつ 本日より前)
         df_filtered = df_filtered[
-            df_filtered['入金予定日'].notna() &
-            (df_filtered['入金予定日'] < today)
+            df_filtered['入金予定日'].isna() |
+            ((df_filtered['入金予定日'].notna()) & (df_filtered['入金予定日'] < today))
         ]
-        logs.append(DetailedLogger.log_filter_result(before_count, len(df_filtered), "入金予定日（本日より前）"))
+        logs.append(DetailedLogger.log_filter_result(before_count, len(df_filtered), "入金予定日（空白または本日より前）"))
 
         # 3. 入金予定金額フィルタ（2,3,5,12を除外）
         before_count = len(df_filtered)
@@ -117,8 +117,10 @@ def process_mirail_notification(
 
         # ファイル名生成
         now = datetime.now()
-        pattern_suffix = "" if client_pattern == 'included' else "以外"
-        filename = f"{now.strftime('%m%d')}{target_name}（1,4,5{pattern_suffix}）.xlsx"
+        if client_pattern == 'included':
+            filename = f"{now.strftime('%m%d')}{target_name}（1,4,5）.xlsx"
+        else:
+            filename = f"{now.strftime('%m%d')}{target_name}（1,4,5,10,40以外）.xlsx"
 
         # 成功メッセージ
         message = f"{target_name}{pattern_text}のリストを作成しました。出力件数: {len(df_filtered)}件"
@@ -232,3 +234,81 @@ def check_contact_address(df: pd.DataFrame, logs: List[str]) -> pd.DataFrame:
         valid_mask = e1_complete
 
     return df[valid_mask]
+
+
+def split_guarantors(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """保証人1と保証人2を分離（それぞれ独立して住所完全な行を抽出）"""
+    # 保証人1の住所列
+    g1_postal = df.columns[42]    # AQ列: 郵便番号
+    g1_addr1 = df.columns[43]     # AR列: 現住所1
+    g1_addr2 = df.columns[44]     # AS列: 現住所2
+    g1_addr3 = df.columns[45]     # AT列: 現住所3
+
+    # 保証人2の氏名・住所列
+    g2_name_col = df.columns[48]  # AW列: 保証人２氏名
+    g2_postal = df.columns[49]    # AX列: 郵便番号
+    g2_addr1 = df.columns[50]     # AY列: 現住所1
+    g2_addr2 = df.columns[51]     # AZ列: 現住所2
+    g2_addr3 = df.columns[52]     # BA列: 現住所3
+
+    # 保証人1の住所完全性チェック
+    g1_address_cols = [g1_postal, g1_addr1, g1_addr2, g1_addr3]
+    g1_complete = True
+    for col in g1_address_cols:
+        g1_complete = g1_complete & df[col].notna() & (df[col] != '')
+
+    # 保証人2が存在する行
+    g2_exists = df[g2_name_col].notna() & (df[g2_name_col] != '')
+
+    # 保証人2の住所完全性チェック
+    g2_address_cols = [g2_postal, g2_addr1, g2_addr2, g2_addr3]
+    g2_complete = True
+    for col in g2_address_cols:
+        g2_complete = g2_complete & df[col].notna() & (df[col] != '')
+
+    # 保証人1シート: 保証人1の住所が完全な全ての行
+    df_g1 = df[g1_complete].copy()
+
+    # 保証人2シート: 保証人2が存在し、かつ保証人2の住所が完全な行
+    df_g2 = df[g2_exists & g2_complete].copy()
+
+    return df_g1, df_g2
+
+
+def split_contacts(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """連絡人1と連絡人2を分離（それぞれ独立して住所完全な行を抽出）"""
+    # 連絡人1の住所列
+    e1_postal = df.columns[57]    # BF列: 郵便番号
+    e1_addr1 = df.columns[58]     # BG列: 現住所1
+    e1_addr2 = df.columns[59]     # BH列: 現住所2
+    e1_addr3 = df.columns[60]     # BI列: 現住所3
+
+    # 連絡人2の氏名・住所列
+    e2_name_col = df.columns[62]  # BK列: 連絡人２氏名
+    e2_postal = df.columns[63]    # BL列: 郵便番号
+    e2_addr1 = df.columns[64]     # BM列: 現住所1
+    e2_addr2 = df.columns[65]     # BN列: 現住所2
+    e2_addr3 = df.columns[66]     # BO列: 現住所3
+
+    # 連絡人1の住所完全性チェック
+    e1_address_cols = [e1_postal, e1_addr1, e1_addr2, e1_addr3]
+    e1_complete = True
+    for col in e1_address_cols:
+        e1_complete = e1_complete & df[col].notna() & (df[col] != '')
+
+    # 連絡人2が存在する行
+    e2_exists = df[e2_name_col].notna() & (df[e2_name_col] != '')
+
+    # 連絡人2の住所完全性チェック
+    e2_address_cols = [e2_postal, e2_addr1, e2_addr2, e2_addr3]
+    e2_complete = True
+    for col in e2_address_cols:
+        e2_complete = e2_complete & df[col].notna() & (df[col] != '')
+
+    # 連絡人1シート: 連絡人1の住所が完全な全ての行
+    df_e1 = df[e1_complete].copy()
+
+    # 連絡人2シート: 連絡人2が存在し、かつ連絡人2の住所が完全な行
+    df_e2 = df[e2_exists & e2_complete].copy()
+
+    return df_e1, df_e2
