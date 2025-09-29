@@ -67,15 +67,15 @@ def process_mirail_notification(
         df_filtered = df[(df['委託先法人ID'] == 5) | df['委託先法人ID'].isna()]
         logs.append(DetailedLogger.log_filter_result(before_count, len(df_filtered), "委託先法人ID（5と空白のみ）"))
 
-        # 2. 入金予定日フィルタ（本日より前、本日除く）
+        # 2. 入金予定日フィルタ（空白、または本日より前）
         before_count = len(df_filtered)
         today = pd.Timestamp(datetime.now().date())
-        # 入金予定日がNaTでない かつ 本日より前
+        # 入金予定日が空白 または (入金予定日が存在 かつ 本日より前)
         df_filtered = df_filtered[
-            df_filtered['入金予定日'].notna() &
-            (df_filtered['入金予定日'] < today)
+            df_filtered['入金予定日'].isna() |
+            ((df_filtered['入金予定日'].notna()) & (df_filtered['入金予定日'] < today))
         ]
-        logs.append(DetailedLogger.log_filter_result(before_count, len(df_filtered), "入金予定日（本日より前）"))
+        logs.append(DetailedLogger.log_filter_result(before_count, len(df_filtered), "入金予定日（空白または本日より前）"))
 
         # 3. 入金予定金額フィルタ（2,3,5,12を除外）
         before_count = len(df_filtered)
