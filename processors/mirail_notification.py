@@ -232,3 +232,41 @@ def check_contact_address(df: pd.DataFrame, logs: List[str]) -> pd.DataFrame:
         valid_mask = e1_complete
 
     return df[valid_mask]
+
+
+def split_guarantors(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """保証人1と保証人2を分離"""
+    # 保証人1の列インデックス: 41-47
+    g1_cols = list(range(41, 48))
+    # 保証人2の列インデックス: 48-54
+    g2_cols = list(range(48, 55))
+
+    # 保証人2の氏名列
+    g2_name_col = df.columns[48]
+
+    # 保証人1のDataFrame（保証人2がいない行）
+    df_g1_only = df[df[g2_name_col].isna() | (df[g2_name_col] == '')].copy()
+
+    # 保証人2のDataFrame（保証人2がいる行）
+    df_g2 = df[df[g2_name_col].notna() & (df[g2_name_col] != '')].copy()
+
+    return df_g1_only, df_g2
+
+
+def split_contacts(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """連絡人1と連絡人2を分離"""
+    # 連絡人1の列インデックス: 55-61
+    e1_cols = list(range(55, 62))
+    # 連絡人2の列インデックス: 62-68
+    e2_cols = list(range(62, 69))
+
+    # 連絡人2の氏名列
+    e2_name_col = df.columns[62]
+
+    # 連絡人1のDataFrame（連絡人2がいない行）
+    df_e1_only = df[df[e2_name_col].isna() | (df[e2_name_col] == '')].copy()
+
+    # 連絡人2のDataFrame（連絡人2がいる行）
+    df_e2 = df[df[e2_name_col].notna() & (df[e2_name_col] != '')].copy()
+
+    return df_e1_only, df_e2
