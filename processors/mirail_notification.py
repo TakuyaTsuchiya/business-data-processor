@@ -117,8 +117,10 @@ def process_mirail_notification(
 
         # ファイル名生成
         now = datetime.now()
-        pattern_suffix = "" if client_pattern == 'included' else "以外"
-        filename = f"{now.strftime('%m%d')}{target_name}（1,4,5{pattern_suffix}）.xlsx"
+        if client_pattern == 'included':
+            filename = f"{now.strftime('%m%d')}{target_name}（1,4,5）.xlsx"
+        else:
+            filename = f"{now.strftime('%m%d')}{target_name}（1,4,5,10,40以外）.xlsx"
 
         # 成功メッセージ
         message = f"{target_name}{pattern_text}のリストを作成しました。出力件数: {len(df_filtered)}件"
