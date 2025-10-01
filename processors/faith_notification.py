@@ -340,13 +340,13 @@ def process_guarantor(df: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
         })
         results.append(g1_result)
     
-    # 保証人2の処理（AX-BE列 = 49-56列目）
+    # 保証人2の処理（AW-BA列 = 48-52列目）
     guarantor2_df = df[
-        df.iloc[:, 50].notna() & (df.iloc[:, 50] != '') &  # 郵便番号（AY）
-        df.iloc[:, 51].notna() & (df.iloc[:, 51] != '') &  # 現住所1（AZ）
-        df.iloc[:, 52].notna() & (df.iloc[:, 52] != '') &  # 現住所2（BA）
-        df.iloc[:, 53].notna() & (df.iloc[:, 53] != '') &  # 現住所3（BB）
-        df.iloc[:, 49].notna() & (df.iloc[:, 49] != '')    # 保証人名（AX）
+        df.iloc[:, 49].notna() & (df.iloc[:, 49] != '') &  # 郵便番号（AX）
+        df.iloc[:, 50].notna() & (df.iloc[:, 50] != '') &  # 現住所1（AY）
+        df.iloc[:, 51].notna() & (df.iloc[:, 51] != '') &  # 現住所2（AZ）
+        df.iloc[:, 52].notna() & (df.iloc[:, 52] != '') &  # 現住所3（BA）
+        df.iloc[:, 48].notna() & (df.iloc[:, 48] != '')    # 保証人名（AW）
     ]
     
     log = DetailedLogger.log_filter_result(before_count, len(guarantor2_df), "保証人2（住所完全）")
@@ -365,11 +365,11 @@ def process_guarantor(df: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
         g2_result = pd.DataFrame({
             '管理番号': guarantor2_df.iloc[:, 0],
             '契約者氏名': guarantor2_df.iloc[:, 20],
-            '連帯保証人名': guarantor2_df.iloc[:, 49],    # AX列
-            '郵便番号': guarantor2_df.iloc[:, 50],        # AY列
-            '現住所1': guarantor2_df.iloc[:, 51],         # AZ列
-            '現住所2': guarantor2_df.iloc[:, 52],         # BA列
-            '現住所3': guarantor2_df.iloc[:, 53],         # BB列
+            '連帯保証人名': guarantor2_df.iloc[:, 48],    # AW列
+            '郵便番号': guarantor2_df.iloc[:, 49],        # AX列
+            '現住所1': guarantor2_df.iloc[:, 50],         # AY列
+            '現住所2': guarantor2_df.iloc[:, 51],         # AZ列
+            '現住所3': guarantor2_df.iloc[:, 52],         # BA列
             '滞納残債': guarantor2_df.iloc[:, 71],
             '物件住所1': guarantor2_df.iloc[:, 92],
             '物件住所2': guarantor2_df.iloc[:, 93],
