@@ -198,7 +198,7 @@ def process_plaza_debt_update(
         logs.append(f"交渉履歴出力対象: {len(df_with_payment)}件（入金額 > 0円）")
         
         # 交渉備考の生成（選択した日付を使用）
-        selected_date_str = selected_date.strftime('%Y/%m/%d')
+        selected_date_str = f"{selected_date.month}/{selected_date.day}"
         
         def create_negotiation_note(row):
             """交渉備考の文字列を生成"""
