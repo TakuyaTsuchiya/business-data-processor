@@ -33,7 +33,7 @@ def render_single_button_process(target_type: str, occupancy_status: str, filter
     with st.expander("📋 フィルタ条件", expanded=True):
         base_conditions = [
             "委託先法人id = 1, 2, 3, 4",
-            "入金予定日 < 本日",
+            "入金予定日 < 本日（空白含む）",
             "入金予定金額 = 2, 3, 5を除外",
             f"入居ステータス = {occupancy_status}"
         ]
