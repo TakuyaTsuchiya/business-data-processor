@@ -28,7 +28,7 @@ class PlazaConfig:
     
     OUTPUT_FILE_PREFIX = "プラザ新規登録"
     
-    # 正確な111列テンプレートヘッダー
+    # 正確な111列テンプレートヘッダー（ContractInfoSampleテンプレートより）
     OUTPUT_COLUMNS = [
         "引継番号", "契約者氏名", "契約者カナ", "契約者生年月日",
         "契約者TEL自宅", "契約者TEL携帯", "契約者現住所郵便番号",
@@ -46,22 +46,23 @@ class PlazaConfig:
         "初回振替月", "保証開始日", "クライアントCD", "パートナーCD",
         "契約者勤務先名", "契約者勤務先カナ", "契約者勤務先TEL", "勤務先業種",
         "契約者勤務先郵便番号", "契約者勤務先住所1", "契約者勤務先住所2", "契約者勤務先住所3",
-        "保証人1氏名", "保証人1カナ", "保証人1契約者との関係", "保証人1生年月日",
-        "保証人1郵便番号", "保証人1住所1", "保証人1住所2", "保証人1住所3",
-        "保証人1TEL自宅", "保証人1TEL携帯",
-        "保証人2氏名", "保証人2カナ", "保証人2契約者との関係", "保証人2生年月日",
-        "保証人2郵便番号", "保証人2住所1", "保証人2住所2", "保証人2住所3",
-        "保証人2TEL自宅", "保証人2TEL携帯",
-        "保証人3氏名", "保証人3カナ", "保証人3契約者との関係", "保証人3生年月日",
-        "保証人3郵便番号", "保証人3住所1", "保証人3住所2", "保証人3住所3",
-        "保証人3TEL自宅", "保証人3TEL携帯",
-        "緊急連絡人1氏名", "緊急連絡人1カナ", "緊急連絡人1契約者との関係", "緊急連絡人1生年月日",
-        "緊急連絡人1郵便番号", "緊急連絡人1住所1", "緊急連絡人1住所2", "緊急連絡人1住所3",
-        "緊急連絡人1TEL自宅", "緊急連絡人1TEL携帯",
-        "緊急連絡人2氏名", "緊急連絡人2カナ", "緊急連絡人2契約者との関係", "緊急連絡人2生年月日",
-        "緊急連絡人2郵便番号", "緊急連絡人2住所1", "緊急連絡人2住所2", "緊急連絡人2住所3",
-        "緊急連絡人2TEL自宅", "緊急連絡人2TEL携帯",
-        "委託先法人ID"
+        "保証人１氏名", "保証人１カナ", "保証人１契約者との関係", "保証人１生年月日",
+        "保証人１郵便番号", "保証人１住所1", "保証人１住所2", "保証人１住所3",
+        "保証人１TEL自宅", "保証人１TEL携帯",
+        "保証人２氏名", "保証人２カナ", "保証人２契約者との関係", "保証人２生年月日",
+        "保証人２郵便番号", "保証人２住所1", "保証人２住所2", "保証人２住所3",
+        "保証人２TEL自宅", "保証人２TEL携帯",
+        "緊急連絡人１氏名", "緊急連絡人１カナ", "緊急連絡人１契約者との関係",
+        "緊急連絡人１郵便番号", "緊急連絡人１現住所1", "緊急連絡人１現住所2", "緊急連絡人１現住所3",
+        "緊急連絡人１TEL自宅", "緊急連絡人１TEL携帯",
+        "緊急連絡人２氏名", "緊急連絡人２カナ", "緊急連絡人２契約者との関係",
+        "緊急連絡人２郵便番号", "緊急連絡人２現住所1", "緊急連絡人２現住所2", "緊急連絡人２現住所3",
+        "緊急連絡人２TEL自宅", "緊急連絡人２TEL携帯",
+        "保証入金日", "保証入金者",
+        "引落銀行CD", "引落銀行名", "引落支店CD", "引落支店名",
+        "引落預金種別", "引落口座番号", "引落口座名義",
+        "解約日", "管理会社", "委託先法人ID",
+        "", "", "", "登録フラグ"
     ]
     
     # プラザCSVヘッダー
@@ -504,65 +505,82 @@ class PlazaProcessor:
             
                 # 保証人１情報
                 # BF列：保証人１氏名 ← AG列「連帯保証人　名（漢字）」（スペース削除）
-                output_row["保証人1氏名"] = self.converter.remove_all_spaces(
+                output_row["保証人１氏名"] = self.converter.remove_all_spaces(
                     self.converter.safe_str_convert(row[cols[32]])
                 )
-            
+
                 # BG列：保証人１カナ ← AH列「連帯保証人　フリガナ」（スペース削除、半角→全角カナ変換）
                 guarantor_kana = self.converter.safe_str_convert(row[cols[33]])
                 guarantor_kana = self.converter.remove_all_spaces(guarantor_kana)
-                output_row["保証人1カナ"] = self.converter.hankaku_to_zenkaku(guarantor_kana)
-            
+                output_row["保証人１カナ"] = self.converter.hankaku_to_zenkaku(guarantor_kana)
+
                 # BH列：保証人１契約者との関係（固定値）
-                output_row["保証人1契約者との関係"] = "他" if output_row["保証人1氏名"] else ""
-            
+                output_row["保証人１契約者との関係"] = "他" if output_row["保証人１氏名"] else ""
+
                 # BI〜BN列：保証人１その他情報（空欄）
-                for col in ["保証人1生年月日", "保証人1郵便番号", "保証人1住所1", "保証人1住所2", "保証人1住所3", "保証人1TEL自宅"]:
+                for col in ["保証人１生年月日", "保証人１郵便番号", "保証人１住所1", "保証人１住所2", "保証人１住所3", "保証人１TEL自宅"]:
                     output_row[col] = ""
             
                 # BO列：保証人１TEL携帯 ← AJ列「連帯保証人　電話番号」（先頭0補完、ハイフン挿入）
-                output_row["保証人1TEL携帯"] = self.converter.normalize_phone_number(
+                output_row["保証人１TEL携帯"] = self.converter.normalize_phone_number(
                     self.converter.safe_str_convert(row[cols[35]])
                 )
-            
-                # BP〜BY列：保証人２・３情報（空欄）
-                for i in ["2", "3"]:
-                    for col in [f"保証人{i}氏名", f"保証人{i}カナ", f"保証人{i}契約者との関係", 
-                               f"保証人{i}生年月日", f"保証人{i}郵便番号", f"保証人{i}住所1", 
-                               f"保証人{i}住所2", f"保証人{i}住所3", f"保証人{i}TEL自宅", f"保証人{i}TEL携帯"]:
-                        output_row[col] = ""
+
+                # BP〜BY列：保証人２情報（空欄）
+                for col in ["保証人２氏名", "保証人２カナ", "保証人２契約者との関係",
+                           "保証人２生年月日", "保証人２郵便番号", "保証人２住所1",
+                           "保証人２住所2", "保証人２住所3", "保証人２TEL自宅", "保証人２TEL携帯"]:
+                    output_row[col] = ""
             
                 # 緊急連絡人１情報
                 # BZ列：緊急連絡人１氏名 ← AK列「緊急連絡人　氏名（漢字）」（スペース削除）
-                output_row["緊急連絡人1氏名"] = self.converter.remove_all_spaces(
+                output_row["緊急連絡人１氏名"] = self.converter.remove_all_spaces(
                     self.converter.safe_str_convert(row[cols[36]])
                 )
-            
+
                 # CA列：緊急連絡人１カナ ← AL列「緊急連絡人　フリガナ」（スペース削除、半角→全角カナ変換）
                 emergency_kana = self.converter.safe_str_convert(row[cols[37]])
                 emergency_kana = self.converter.remove_all_spaces(emergency_kana)
-                output_row["緊急連絡人1カナ"] = self.converter.hankaku_to_zenkaku(emergency_kana)
-            
+                output_row["緊急連絡人１カナ"] = self.converter.hankaku_to_zenkaku(emergency_kana)
+
                 # CB列：緊急連絡人１契約者との関係（固定値）
-                output_row["緊急連絡人1契約者との関係"] = "他" if output_row["緊急連絡人1氏名"] else ""
-            
+                output_row["緊急連絡人１契約者との関係"] = "他" if output_row["緊急連絡人１氏名"] else ""
+
                 # CC〜CG列：緊急連絡人１その他情報（空欄）
-                for col in ["緊急連絡人1生年月日", "緊急連絡人1郵便番号", "緊急連絡人1住所1", "緊急連絡人1住所2", "緊急連絡人1住所3", "緊急連絡人1TEL自宅"]:
+                for col in ["緊急連絡人１郵便番号", "緊急連絡人１現住所1", "緊急連絡人１現住所2", "緊急連絡人１現住所3", "緊急連絡人１TEL自宅"]:
                     output_row[col] = ""
-            
+
                 # CH列：緊急連絡人１TEL携帯 ← AN列「緊急連絡人　電話番号」（先頭0補完、ハイフン挿入）
-                output_row["緊急連絡人1TEL携帯"] = self.converter.normalize_phone_number(
+                output_row["緊急連絡人１TEL携帯"] = self.converter.normalize_phone_number(
                     self.converter.safe_str_convert(row[cols[39]])
                 )
-            
-                # CI〜DB列：緊急連絡人２情報（空欄）
-                for col in ["緊急連絡人2氏名", "緊急連絡人2カナ", "緊急連絡人2契約者との関係",
-                       "緊急連絡人2生年月日", "緊急連絡人2郵便番号", "緊急連絡人2住所1",
-                       "緊急連絡人2住所2", "緊急連絡人2住所3", "緊急連絡人2TEL自宅", "緊急連絡人2TEL携帯"]:
+
+                # CI〜CQ列：緊急連絡人２情報（空欄）
+                for col in ["緊急連絡人２氏名", "緊急連絡人２カナ", "緊急連絡人２契約者との関係",
+                           "緊急連絡人２郵便番号", "緊急連絡人２現住所1", "緊急連絡人２現住所2", "緊急連絡人２現住所3",
+                           "緊急連絡人２TEL自宅", "緊急連絡人２TEL携帯"]:
                     output_row[col] = ""
-            
-                # DC列：委託先法人ID（固定値）
+
+                # CR〜CU列：保証入金情報（空欄）
+                for col in ["保証入金日", "保証入金者"]:
+                    output_row[col] = ""
+
+                # CV〜DA列：引落口座情報（空欄）
+                for col in ["引落銀行CD", "引落銀行名", "引落支店CD", "引落支店名",
+                           "引落預金種別", "引落口座番号", "引落口座名義"]:
+                    output_row[col] = ""
+
+                # DB〜DC列：解約日、管理会社（空欄）
+                for col in ["解約日", "管理会社"]:
+                    output_row[col] = ""
+
+                # DD列：委託先法人ID（固定値）
                 output_row["委託先法人ID"] = "6"
+
+                # DE〜DH列：空欄4列 + 登録フラグ（空欄）
+                # ※pandasでは空文字列のキーは最初の1つのみ保持されるため、
+                # OUTPUT_COLUMNSの定義順で自動的に空列が追加される
+                output_row["登録フラグ"] = ""
             
                 self.logger.debug(f"行 {idx} DataFrame連結開始")
                 output_df = pd.concat([output_df, pd.DataFrame([output_row])], ignore_index=True)
