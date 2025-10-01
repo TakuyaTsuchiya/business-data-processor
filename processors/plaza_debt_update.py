@@ -187,9 +187,13 @@ def process_plaza_debt_update(
                 logs.append(f"  - 他{management_unmatched - 10}件")
         
         # === 出力1: 管理前滞納額情報CSV ===
+        # 変更があったもののみフィルタリング（入金額 ≠ 0）
+        df_with_change = df_merged[df_merged['入金額'] != 0].copy()
+        logs.append(f"管理前滞納額出力対象: {len(df_with_change)}件（入金額 ≠ 0円）")
+
         output1 = pd.DataFrame({
-            PDC.LATE_PAYMENT_OUTPUT_HEADERS[0]: df_merged[PDC.PLAZA_LIST['management_no']['name']].fillna(''),
-            PDC.LATE_PAYMENT_OUTPUT_HEADERS[1]: df_merged[arrears_today].astype(int)
+            PDC.LATE_PAYMENT_OUTPUT_HEADERS[0]: df_with_change[PDC.PLAZA_LIST['management_no']['name']].fillna(''),
+            PDC.LATE_PAYMENT_OUTPUT_HEADERS[1]: df_with_change[arrears_today].astype(int)
         })
         
         # === 出力2: 交渉履歴CSV ===
@@ -198,7 +202,7 @@ def process_plaza_debt_update(
         logs.append(f"交渉履歴出力対象: {len(df_with_payment)}件（入金額 > 0円）")
         
         # 交渉備考の生成（選択した日付を使用）
-        selected_date_str = selected_date.strftime('%Y/%m/%d')
+        selected_date_str = f"{selected_date.month}/{selected_date.day}"
         
         def create_negotiation_note(row):
             """交渉備考の文字列を生成"""
