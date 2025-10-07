@@ -62,7 +62,7 @@ class PlazaConfig:
         "引落銀行CD", "引落銀行名", "引落支店CD", "引落支店名",
         "引落預金種別", "引落口座番号", "引落口座名義",
         "解約日", "管理会社", "委託先法人ID",
-        "", "", "", "登録フラグ"
+        "__EMPTY_COL_1__", "__EMPTY_COL_2__", "__EMPTY_COL_3__", "登録フラグ"
     ]
     
     # プラザCSVヘッダー
@@ -577,9 +577,10 @@ class PlazaProcessor:
                 # DD列：委託先法人ID（固定値）
                 output_row["委託先法人ID"] = "6"
 
-                # DE〜DH列：空欄4列 + 登録フラグ（空欄）
-                # ※pandasでは空文字列のキーは最初の1つのみ保持されるため、
-                # OUTPUT_COLUMNSの定義順で自動的に空列が追加される
+                # DE〜DH列：空欄3列 + 登録フラグ
+                output_row["__EMPTY_COL_1__"] = ""
+                output_row["__EMPTY_COL_2__"] = ""
+                output_row["__EMPTY_COL_3__"] = ""
                 output_row["登録フラグ"] = ""
             
                 self.logger.debug(f"行 {idx} DataFrame連結開始")
@@ -589,8 +590,12 @@ class PlazaProcessor:
             except Exception as e:
                 self.logger.error(f"行 {idx} でエラー発生: {str(e)}", exc_info=True)
                 raise
-        
+
         self.logger.info(f"変換完了: 出力{len(output_df)}行")
+
+        # 仮名前を空文字列に戻す
+        output_df.columns = ['' if col.startswith('__EMPTY_COL_') else col for col in output_df.columns]
+
         return output_df
     
     def process(self, plaza_file, contract_file) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, Dict, List]:
