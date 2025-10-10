@@ -46,6 +46,26 @@ def get_expense_notes(address: str, times: int) -> str:
         return base_text
 
 
+def get_survey_month(survey_date) -> str:
+    """
+    調査日時から月を判定 (YYYYMM形式)
+
+    Args:
+        survey_date: 調査日時（文字列または日付）
+
+    Returns:
+        YYYYMM形式の文字列、調査日がない場合はNone
+    """
+    if pd.isna(survey_date):
+        return None
+
+    try:
+        date = pd.to_datetime(survey_date)
+        return date.strftime('%Y%m')
+    except:
+        return None
+
+
 def get_target_month(row: pd.Series) -> str:
     """
     提出日から対象月を判定 (YYYYMM形式)
@@ -68,40 +88,84 @@ def get_target_month(row: pd.Series) -> str:
     return None
 
 
-def determine_billing_rows(row: pd.Series, is_takahashi: bool) -> List[int]:
+def determine_billing_rows(row: pd.Series, is_takahashi: bool, selected_month: str = None) -> List[int]:
     """
     請求対象の回数リストを決定
 
     Args:
         row: データ行
         is_takahashi: 高橋裕次郎法律事務所かどうか
+        selected_month: 選択された調査月（YYYYMM形式）。Noneの場合は従来の提出日ベース
 
     Returns:
         請求対象の回数リスト [1], [1,2], [3], [1,2,3] など
     """
-    has_1st = pd.notna(row['1回目提出日'])
-    has_2nd = pd.notna(row['2回目提出日'])
-    has_3rd = pd.notna(row['3回目提出日'])
+    # 調査月フィルターが指定されている場合
+    if selected_month:
+        # 各回の調査月を取得
+        survey_months = {
+            1: get_survey_month(row.get('調査日時【１回目】')),
+            2: get_survey_month(row.get('調査日時【２回目】')),
+            3: get_survey_month(row.get('調査日時【３回目】'))
+        }
 
-    # 通常パターン
-    if not is_takahashi:
-        if has_3rd:
-            return [3]  # 3回目のみ
-        elif has_2nd:
-            return [1, 2]  # 1回目+2回目
-        elif has_1st:
-            return [1]  # 1回目のみ
+        # 選択月に該当する調査回のみを抽出
+        matching_times = [times for times, month in survey_months.items() if month == selected_month]
 
-    # 高橋裕次郎の特例
+        # 該当する調査がない場合
+        if not matching_times:
+            return []
+
+        # 高橋裕次郎の特例（該当する調査回の中で適用）
+        if is_takahashi:
+            # 3回目が含まれている場合、該当するすべての回を返す
+            if 3 in matching_times:
+                return matching_times
+            # 2回目が含まれている場合
+            elif 2 in matching_times:
+                return matching_times
+            # 1回目のみ
+            elif 1 in matching_times:
+                return matching_times
+        # 通常パターン
+        else:
+            # 3回目が含まれている場合、3回目のみ
+            if 3 in matching_times:
+                return [3]
+            # 2回目が含まれている場合、1回目+2回目（該当するもののみ）
+            elif 2 in matching_times:
+                return [t for t in [1, 2] if t in matching_times]
+            # 1回目のみ
+            elif 1 in matching_times:
+                return [1]
+
+        return matching_times
+
+    # 従来の提出日ベースの処理
     else:
-        if has_3rd:
-            return [1, 2, 3]  # 全て
-        elif has_2nd:
-            return [1, 2]
-        elif has_1st:
-            return [1]
+        has_1st = pd.notna(row['1回目提出日'])
+        has_2nd = pd.notna(row['2回目提出日'])
+        has_3rd = pd.notna(row['3回目提出日'])
 
-    return []  # 提出日がない場合は請求対象外
+        # 通常パターン
+        if not is_takahashi:
+            if has_3rd:
+                return [3]  # 3回目のみ
+            elif has_2nd:
+                return [1, 2]  # 1回目+2回目
+            elif has_1st:
+                return [1]  # 1回目のみ
+
+        # 高橋裕次郎の特例
+        else:
+            if has_3rd:
+                return [1, 2, 3]  # 全て
+            elif has_2nd:
+                return [1, 2]
+            elif has_1st:
+                return [1]
+
+        return []  # 提出日がない場合は請求対象外
 
 
 def create_billing_row(row: pd.Series, times: int) -> dict:
@@ -130,12 +194,13 @@ def create_billing_row(row: pd.Series, times: int) -> dict:
     }
 
 
-def process_residence_survey_billing(df: pd.DataFrame) -> Tuple[io.BytesIO, str, str, List[str]]:
+def process_residence_survey_billing(df: pd.DataFrame, selected_month: str = None) -> Tuple[io.BytesIO, str, str, List[str]]:
     """
     居住訪問調査報告書から請求書作成用データを生成
 
     Args:
         df: 入力CSV DataFrame
+        selected_month: 選択された調査月（YYYYMM形式）。Noneの場合は従来の提出日ベース
 
     Returns:
         (excel_buffer, filename, message, logs)
@@ -154,23 +219,27 @@ def process_residence_survey_billing(df: pd.DataFrame) -> Tuple[io.BytesIO, str,
         raise ValueError(f"必須列が不足しています: {', '.join(missing_cols)}")
 
     logs.append(f"入力データ: {len(df)}件")
+    if selected_month:
+        logs.append(f"選択された調査月: {selected_month[:4]}年{selected_month[4:]}月")
 
     # 弁護士法人ごとにグループ化して処理
     law_firm_data = {}
-    target_month = None
+    target_month = selected_month  # 選択月を優先使用
     skipped_count = 0
     processed_count = 0
 
     for idx, row in df.iterrows():
-        # 提出日がない行はスキップ
-        month = get_target_month(row)
-        if not month:
-            skipped_count += 1
-            continue
+        # 調査月フィルター使用時は、従来の提出日チェックをスキップ
+        if not selected_month:
+            # 提出日がない行はスキップ
+            month = get_target_month(row)
+            if not month:
+                skipped_count += 1
+                continue
 
-        # 対象月を記録（最初に見つかった月を使用）
-        if target_month is None:
-            target_month = month
+            # 対象月を記録（最初に見つかった月を使用）
+            if target_month is None:
+                target_month = month
 
         # 依頼元の取得
         law_firm = row['依頼元'] if pd.notna(row['依頼元']) else '依頼元不明'
@@ -179,9 +248,10 @@ def process_residence_survey_billing(df: pd.DataFrame) -> Tuple[io.BytesIO, str,
         is_takahashi = law_firm == TAKAHASHI_LAW_FIRM
 
         # 請求対象の回数を決定
-        billing_times = determine_billing_rows(row, is_takahashi)
+        billing_times = determine_billing_rows(row, is_takahashi, selected_month)
 
         if not billing_times:
+            skipped_count += 1
             continue
 
         # 弁護士法人ごとのデータを初期化
@@ -195,12 +265,12 @@ def process_residence_survey_billing(df: pd.DataFrame) -> Tuple[io.BytesIO, str,
             processed_count += 1
 
     logs.append(f"処理済み: {processed_count}行")
-    logs.append(f"スキップ: {skipped_count}件（提出日なし）")
+    logs.append(f"スキップ: {skipped_count}件")
     logs.append(f"弁護士法人数: {len(law_firm_data)}")
 
     # 対象月が見つからない場合
     if target_month is None:
-        raise ValueError("提出日が設定されているデータが見つかりませんでした")
+        raise ValueError("対象データが見つかりませんでした")
 
     # Excelファイル作成
     excel_buffer = io.BytesIO()
