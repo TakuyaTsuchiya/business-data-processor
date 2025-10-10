@@ -66,7 +66,8 @@ def render_residence_survey_billing():
                         data=excel_buffer,
                         file_name=filename,
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                        key="residence_survey_billing_download"
+                        key="residence_survey_billing_download",
+                        type="primary"
                     )
 
                     # 処理ログ表示
