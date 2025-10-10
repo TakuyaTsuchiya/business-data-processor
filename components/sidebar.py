@@ -145,3 +145,8 @@ def build_sidebar_menu():
             st.session_state.selected_processor = "mirail_e_145"
         if st.button("連絡人（1,4,5,10,40以外）", key="mirail_e_not145", use_container_width=True):
             st.session_state.selected_processor = "mirail_e_not145"
+
+        # 居住訪問調査報告書
+        st.markdown('<div class="sidebar-category">居住訪問調査報告書</div>', unsafe_allow_html=True)
+        if st.button("請求書作成用データを生成", key="residence_survey_billing", use_container_width=True):
+            st.session_state.selected_processor = "residence_survey_billing"
