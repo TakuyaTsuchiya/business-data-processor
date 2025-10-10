@@ -9,7 +9,7 @@ from typing import Tuple, List
 from openpyxl.styles import Font, PatternFill
 
 # エリア外都道府県リスト
-AREA_GAI_PREFECTURES = [
+OUT_OF_AREA_PREFECTURES = [
     '鹿児島県', '大分県', '宮崎県', '沖縄県', '石川県',
     '新潟県', '秋田県', '北海道', '青森県', '岩手県', '山形県'
 ]
@@ -18,13 +18,13 @@ AREA_GAI_PREFECTURES = [
 TAKAHASHI_LAW_FIRM = '弁護士法人高橋裕次郎法律事務所'
 
 
-def is_area_gai(address: str) -> bool:
+def is_out_of_area(address: str) -> bool:
     """住所からエリア外判定を行う"""
     if pd.isna(address):
         return False
 
     address_str = str(address)
-    return any(address_str.startswith(pref) for pref in AREA_GAI_PREFECTURES)
+    return any(address_str.startswith(pref) for pref in OUT_OF_AREA_PREFECTURES)
 
 
 def get_hiyo_biko(address: str, times: int) -> str:
@@ -40,7 +40,7 @@ def get_hiyo_biko(address: str, times: int) -> str:
     """
     base_text = f"現地調査({times}回目)"
 
-    if is_area_gai(address):
+    if is_out_of_area(address):
         return f"{base_text}　エリア外"
     else:
         return base_text
