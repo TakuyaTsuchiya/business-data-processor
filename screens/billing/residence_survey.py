@@ -40,22 +40,51 @@ def render_residence_survey_billing():
     if uploaded_file:
         st.success(f"✅ {uploaded_file.name}: 読み込み完了")
 
+        # CSVデータを読み込み（エンコーディング自動判定）
+        file_data = uploaded_file.getvalue()
+        try:
+            df_preview = pd.read_csv(io.BytesIO(file_data), encoding='cp932')
+        except UnicodeDecodeError:
+            try:
+                df_preview = pd.read_csv(io.BytesIO(file_data), encoding='shift_jis')
+            except UnicodeDecodeError:
+                df_preview = pd.read_csv(io.BytesIO(file_data), encoding='utf-8-sig')
+
+        # 調査月の抽出
+        available_months = set()
+        for col in ['調査日時【１回目】', '調査日時【２回目】', '調査日時【３回目】']:
+            if col in df_preview.columns:
+                for date_val in df_preview[col].dropna():
+                    try:
+                        date = pd.to_datetime(date_val)
+                        available_months.add(date.strftime('%Y%m'))
+                    except:
+                        continue
+
+        # 調査月選択UI
+        if available_months:
+            sorted_months = sorted(available_months, reverse=True)
+            month_options = {month: f"{month[:4]}年{month[4:]}月" for month in sorted_months}
+
+            selected_month = st.selectbox(
+                "調査月を選択してください",
+                options=sorted_months,
+                format_func=lambda x: month_options[x],
+                key="residence_survey_month_select"
+            )
+        else:
+            st.warning("⚠️ 調査日時データが見つかりませんでした。従来の提出日ベースで処理します。")
+            selected_month = None
+
         # 処理実行ボタン
         if st.button("処理を実行", type="primary", key="residence_survey_billing_process"):
             with st.spinner("処理中..."):
                 try:
-                    # CSVデータを読み込み（エンコーディング自動判定）
-                    file_data = uploaded_file.read()
-                    try:
-                        df = pd.read_csv(io.BytesIO(file_data), encoding='cp932')
-                    except UnicodeDecodeError:
-                        try:
-                            df = pd.read_csv(io.BytesIO(file_data), encoding='shift_jis')
-                        except UnicodeDecodeError:
-                            df = pd.read_csv(io.BytesIO(file_data), encoding='utf-8-sig')
-
-                    # プロセッサー呼び出し
-                    excel_buffer, filename, message, logs = process_residence_survey_billing(df)
+                    # プロセッサー呼び出し（既に読み込んだdf_previewを使用）
+                    excel_buffer, filename, message, logs = process_residence_survey_billing(
+                        df_preview,
+                        selected_month=selected_month
+                    )
 
                     # 成功メッセージ
                     st.success(message)
