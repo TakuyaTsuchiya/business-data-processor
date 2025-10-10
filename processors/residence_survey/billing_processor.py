@@ -6,6 +6,7 @@ import pandas as pd
 import io
 from datetime import datetime
 from typing import Tuple, List
+from openpyxl.styles import Font
 
 # エリア外都道府県リスト
 AREA_GAI_PREFECTURES = [
@@ -249,6 +250,17 @@ def process_residence_survey_billing(df: pd.DataFrame) -> Tuple[io.BytesIO, str,
             df_output.to_excel(writer, sheet_name=sheet_name, index=False, header=False)
 
             logs.append(f"  - {law_firm}: {len(billing_rows)}行")
+
+        # フォント設定を適用（游ゴシック Regular 11pt）
+        workbook = writer.book
+        font = Font(name='游ゴシック', size=11)
+
+        for sheet_name in workbook.sheetnames:
+            worksheet = workbook[sheet_name]
+            # 全セルにフォントを適用
+            for row in worksheet.iter_rows():
+                for cell in row:
+                    cell.font = font
 
     excel_buffer.seek(0)
 
