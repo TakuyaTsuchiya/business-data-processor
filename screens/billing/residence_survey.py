@@ -41,7 +41,7 @@ def render_residence_survey_billing():
         st.success(f"✅ {uploaded_file.name}: 読み込み完了")
 
         # 処理実行ボタン
-        if st.button("請求書作成", type="primary", key="residence_survey_billing_process"):
+        if st.button("処理を実行", type="primary", key="residence_survey_billing_process"):
             with st.spinner("処理中..."):
                 try:
                     # CSVデータを読み込み（エンコーディング自動判定）
