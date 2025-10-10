@@ -6,7 +6,7 @@ import pandas as pd
 import io
 from datetime import datetime
 from typing import Tuple, List
-from openpyxl.styles import Font
+from openpyxl.styles import Font, PatternFill
 
 # エリア外都道府県リスト
 AREA_GAI_PREFECTURES = [
@@ -251,9 +251,10 @@ def process_residence_survey_billing(df: pd.DataFrame) -> Tuple[io.BytesIO, str,
 
             logs.append(f"  - {law_firm}: {len(billing_rows)}行")
 
-        # フォント設定を適用（游ゴシック Regular 11pt）
+        # フォント設定と背景色を適用
         workbook = writer.book
         font = Font(name='游ゴシック', size=11)
+        yellow_fill = PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
 
         for sheet_name in workbook.sheetnames:
             worksheet = workbook[sheet_name]
@@ -261,6 +262,11 @@ def process_residence_survey_billing(df: pd.DataFrame) -> Tuple[io.BytesIO, str,
             for row in worksheet.iter_rows():
                 for cell in row:
                     cell.font = font
+
+            # ヘッダー行（2行目、A2〜J2）に黄色背景を適用
+            for col_idx in range(1, 11):  # A=1 to J=10
+                cell = worksheet.cell(row=2, column=col_idx)
+                cell.fill = yellow_fill
 
     excel_buffer.seek(0)
 
