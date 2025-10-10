@@ -111,6 +111,9 @@ from screens.notification.mirail import (
     show_mirail_contact_145,
     show_mirail_contact_not145
 )
+from screens.billing.residence_survey import (
+    render_residence_survey_billing
+)
 
 # プロセッサーをインポート
 
@@ -178,7 +181,8 @@ def main():
         "mirail_g_145": show_mirail_guarantor_145,
         "mirail_g_not145": show_mirail_guarantor_not145,
         "mirail_e_145": show_mirail_contact_145,
-        "mirail_e_not145": show_mirail_contact_not145
+        "mirail_e_not145": show_mirail_contact_not145,
+        "residence_survey_billing": render_residence_survey_billing
     }
     
     # カスタムCSSを適用
