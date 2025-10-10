@@ -27,7 +27,7 @@ def is_out_of_area(address: str) -> bool:
     return any(address_str.startswith(pref) for pref in OUT_OF_AREA_PREFECTURES)
 
 
-def get_hiyo_biko(address: str, times: int) -> str:
+def get_expense_notes(address: str, times: int) -> str:
     """
     費用備考を生成
 
@@ -125,7 +125,7 @@ def create_billing_row(row: pd.Series, times: int) -> dict:
         '費用仕分コード名称': '調査費用',
         '費用コード名称': '',
         '金額': '',
-        '費用備考': get_hiyo_biko(row['住所'], times),
+        '費用備考': get_expense_notes(row['住所'], times),
         '業者': 'ミライル'
     }
 
