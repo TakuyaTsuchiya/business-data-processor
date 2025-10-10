@@ -122,7 +122,7 @@ def create_billing_row(row: pd.Series, times: int) -> dict:
         '事件種類名称': '',
         '事件名': '',
         '費用発生日': '',
-        '費用仕分コード名称': '',
+        '費用仕分コード名称': '調査費用',
         '費用コード名称': '',
         '金額': '',
         '費用備考': get_hiyo_biko(row['住所'], times),
