@@ -10,7 +10,7 @@ from processors.residence_survey.billing_processor import process_residence_surv
 def render_residence_survey_billing():
     """居住訪問調査報告書 請求書作成画面"""
 
-    st.title("📊 居住訪問調査報告書")
+    st.title("居住訪問調査報告書")
     st.subheader("弁護士法人ごとの請求書作成用データを生成します")
 
     # 説明
