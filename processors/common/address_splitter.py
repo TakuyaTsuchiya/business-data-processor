@@ -74,19 +74,19 @@ class AddressSplitter:
         return "", address
     
     def extract_municipality(self, prefecture: str, address: str) -> Tuple[str, str]:
-        """市区町村を抽出（辞書ベース）"""
+        """市区町村を抽出（辞書ベース + 郡対応）"""
         if prefecture not in self.municipalities:
             return "", address
-        
+
         normalized_addr = self.normalize(address)
-        
-        # 都道府県の全市区町村でマッチング（長い順）
+
+        # 1. まず辞書の市区町村でマッチング（既存処理）
         municipalities = sorted(
-            self.municipalities[prefecture], 
-            key=len, 
+            self.municipalities[prefecture],
+            key=len,
             reverse=True
         )
-        
+
         for municipality in municipalities:
             normalized_muni = self.normalize(municipality)
             if normalized_addr.startswith(normalized_muni):
@@ -102,7 +102,14 @@ class AddressSplitter:
                     # フォールバック（スペースなしの場合）
                     remaining = address[len(municipality):].lstrip()
                     return municipality, remaining
-        
+
+        # 2. 辞書にマッチしない場合のみ、郡パターンをチェック
+        county_match = re.match(r'^(.+?郡)', address)
+        if county_match:
+            county_name = county_match.group(1)
+            remaining = address[len(county_name):].lstrip()
+            return county_name, remaining
+
         return "", address
     
     def split_address(self, address: str) -> Dict[str, str]:
