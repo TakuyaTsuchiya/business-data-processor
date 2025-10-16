@@ -220,7 +220,7 @@ def process_residence_survey_billing(df: pd.DataFrame, selected_month: str = Non
 
     logs.append(f"入力データ: {len(df)}件")
     if selected_month:
-        logs.append(f"選択された調査月: {selected_month[:4]}年{selected_month[4:]}月")
+        logs.append(f"選択された提出月: {selected_month[:4]}年{selected_month[4:]}月")
 
     # 弁護士法人ごとにグループ化して処理
     law_firm_data = {}
