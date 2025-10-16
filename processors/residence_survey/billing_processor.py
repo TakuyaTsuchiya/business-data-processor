@@ -102,15 +102,15 @@ def determine_billing_rows(row: pd.Series, is_takahashi: bool, selected_month: s
     """
     # 調査月フィルターが指定されている場合
     if selected_month:
-        # 各回の調査月を取得
-        survey_months = {
-            1: get_survey_month(row.get('調査日時【１回目】')),
-            2: get_survey_month(row.get('調査日時【２回目】')),
-            3: get_survey_month(row.get('調査日時【３回目】'))
+        # 各回の提出月を取得（提出日ベースで集計）
+        submission_months = {
+            1: get_survey_month(row.get('1回目提出日')),
+            2: get_survey_month(row.get('2回目提出日')),
+            3: get_survey_month(row.get('3回目提出日'))
         }
 
-        # 選択月に該当する調査回のみを抽出
-        matching_times = [times for times, month in survey_months.items() if month == selected_month]
+        # 選択月に該当する提出回のみを抽出
+        matching_times = [times for times, month in submission_months.items() if month == selected_month]
 
         # 該当する調査がない場合
         if not matching_times:
@@ -220,7 +220,7 @@ def process_residence_survey_billing(df: pd.DataFrame, selected_month: str = Non
 
     logs.append(f"入力データ: {len(df)}件")
     if selected_month:
-        logs.append(f"選択された調査月: {selected_month[:4]}年{selected_month[4:]}月")
+        logs.append(f"選択された提出月: {selected_month[:4]}年{selected_month[4:]}月")
 
     # 弁護士法人ごとにグループ化して処理
     law_firm_data = {}

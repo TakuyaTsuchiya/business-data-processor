@@ -45,10 +45,10 @@ def render_residence_survey_billing():
     last_month = (datetime.now().replace(day=1) - timedelta(days=1)).strftime('%Y%m')
     default_index = default_months.index(last_month) if last_month in default_months else 0
 
-    # 調査月選択UI（ファイルアップロード前から表示）
+    # 提出月選択UI（ファイルアップロード前から表示）
     month_options = {month: f"{month[:4]}年{month[4:]}月" for month in default_months}
     selected_month = st.selectbox(
-        "調査月を選択してください",
+        "提出月を選択してください",
         options=default_months,
         index=default_index,
         format_func=lambda x: month_options[x],
