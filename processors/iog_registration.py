@@ -93,7 +93,6 @@ class IOGConfig:
         "保証開始日": "",
         "パートナーCD": "",
         "引落預金種別": "",
-        "登録フラグ": "",
         "管理会社": "",
 
         # 勤務先情報（全て空白）
@@ -331,7 +330,10 @@ class DataConverter:
                 # 7. 保証人1（譲渡一覧から）
                 converted_row["保証人１氏名"] = self.remove_all_spaces(self.safe_str_convert(row.get("連帯保証人氏名（滞納）", "")))
                 converted_row["保証人１カナ"] = ""  # 譲渡一覧にカナなし
-                converted_row["保証人１契約者との関係"] = self.safe_str_convert(row.get("連帯保証人続柄名（滞納）", ""))
+
+                # 続柄変換（値がある場合「他」に統一）
+                guarantor_relationship = self.safe_str_convert(row.get("連帯保証人続柄名（滞納）", ""))
+                converted_row["保証人１契約者との関係"] = "他" if guarantor_relationship else ""
                 converted_row["保証人１郵便番号"] = self.safe_str_convert(row.get("連帯保証人郵便番号（滞納）", ""))
                 converted_row["保証人１住所1"] = self.safe_str_convert(row.get("連帯保証人都道府県（滞納）", ""))
                 converted_row["保証人１住所2"] = self.safe_str_convert(row.get("連帯保証人市区町村（滞納）", ""))
@@ -357,7 +359,10 @@ class DataConverter:
                 # 8. 緊急連絡先1（譲渡一覧から）
                 converted_row["緊急連絡人１氏名"] = self.remove_all_spaces(self.safe_str_convert(row.get("緊急連絡先氏名（滞納）", "")))
                 converted_row["緊急連絡人１カナ"] = ""  # 譲渡一覧にカナなし
-                converted_row["緊急連絡人１契約者との関係"] = self.safe_str_convert(row.get("緊急連絡先続柄名（滞納）", ""))
+
+                # 続柄変換（値がある場合「他」に統一）
+                emergency_relationship = self.safe_str_convert(row.get("緊急連絡先続柄名（滞納）", ""))
+                converted_row["緊急連絡人１契約者との関係"] = "他" if emergency_relationship else ""
                 converted_row["緊急連絡人１郵便番号"] = self.safe_str_convert(row.get("緊急連絡先郵便番号（滞納）", ""))
                 converted_row["緊急連絡人１現住所1"] = self.safe_str_convert(row.get("緊急連絡先都道府県（滞納）", ""))
                 converted_row["緊急連絡人１現住所2"] = self.safe_str_convert(row.get("緊急連絡先市区町村（滞納）", ""))
@@ -384,6 +389,12 @@ class DataConverter:
             for key, value in IOGConfig.FIXED_VALUES.items():
                 if key not in converted_row or converted_row[key] == "":
                     converted_row[key] = value
+
+            # 10. 登録フラグ設定（譲渡一覧からのソース情報）
+            if has_transfer:
+                converted_row["登録フラグ"] = self.safe_str_convert(row.get("_source_info", ""))
+            else:
+                converted_row["登録フラグ"] = ""
 
             output_data.append(converted_row)
 
@@ -412,34 +423,40 @@ class DataConverter:
         return final_df
 
 
-def load_transfer_files(transfer_files: List[bytes]) -> pd.DataFrame:
+def load_transfer_files(transfer_files: List[Tuple[str, bytes]]) -> pd.DataFrame:
     """
-    譲渡一覧ファイル（複数）を読み込んで結合
+    譲渡一覧ファイル（複数）を読み込んで結合（3シート対応）
 
     Args:
-        transfer_files: 譲渡一覧.xlsファイルのバイトリスト
+        transfer_files: (ファイル名, バイトデータ) のタプルリスト
 
     Returns:
-        pd.DataFrame: 結合された譲渡一覧データ
+        pd.DataFrame: 結合された譲渡一覧データ（_source_info列付き）
     """
     if not transfer_files:
         return pd.DataFrame()
 
     all_transfer_data = []
+    sheet_names = ["譲渡許可", "譲渡－東", "譲渡－西"]
 
-    for file_content in transfer_files:
-        try:
-            # header=1で読み込み（1行目がヘッダー）
-            df = pd.read_excel(io.BytesIO(file_content), dtype=str, header=1)
-            all_transfer_data.append(df)
-        except Exception as e:
-            logging.getLogger(__name__).warning(f"譲渡一覧ファイル読み込みエラー（スキップ）: {e}")
-            continue
+    for file_name, file_content in transfer_files:
+        for sheet_name in sheet_names:
+            try:
+                # header=1で読み込み（1行目がヘッダー）
+                df = pd.read_excel(io.BytesIO(file_content), sheet_name=sheet_name, dtype=str, header=1)
+
+                # ソース情報列を追加
+                df["_source_info"] = f"{file_name} - {sheet_name}"
+
+                all_transfer_data.append(df)
+            except Exception as e:
+                logging.getLogger(__name__).warning(f"譲渡一覧シート読み込みエラー（スキップ）: {file_name} - {sheet_name}: {e}")
+                continue
 
     if not all_transfer_data:
         return pd.DataFrame()
 
-    # 全ファイルを結合
+    # 全ファイル・全シートを結合
     combined_df = pd.concat(all_transfer_data, ignore_index=True)
 
     # 重複削除（同じ人が複数月に出現する場合、最初の1件のみ）
@@ -514,13 +531,13 @@ def merge_transfer_data(jid_df: pd.DataFrame, transfer_df: pd.DataFrame) -> Tupl
     return merged_df, duplicates
 
 
-def process_jid_data(excel_content: bytes, transfer_files: List[bytes] = None) -> Tuple[pd.DataFrame, List[str], str]:
+def process_jid_data(excel_content: bytes, transfer_files: List[Tuple[str, bytes]] = None) -> Tuple[pd.DataFrame, List[str], str]:
     """
     IOG新規登録データ処理メイン関数（譲渡一覧結合対応）
 
     Args:
         excel_content: IOG Excelファイルの内容
-        transfer_files: 譲渡一覧.xlsファイルのバイトリスト（任意）
+        transfer_files: (ファイル名, バイトデータ) のタプルリスト（任意）
 
     Returns:
         tuple: (変換済みDF, 処理ログ, 出力ファイル名)

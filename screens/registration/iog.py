@@ -65,7 +65,7 @@ def show_jid_registration():
 
                     transfer_contents = None
                     if transfer_files:
-                        transfer_contents = [f.read() for f in transfer_files]
+                        transfer_contents = [(f.name, f.read()) for f in transfer_files]
 
                     # 処理実行
                     result_df, logs, filename = process_jid_data(iog_content, transfer_contents)
