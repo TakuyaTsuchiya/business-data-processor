@@ -368,6 +368,10 @@ def process_residence_survey_billing(df: pd.DataFrame, selected_month: str = Non
                 cell = worksheet.cell(row=2, column=col_idx)
                 cell.fill = yellow_fill
 
+            # 列幅を設定
+            worksheet.column_dimensions['C'].width = 25  # 債務者氏名（12文字分）
+            worksheet.column_dimensions['J'].width = 25  # 費用備考（12文字分）
+
     excel_buffer.seek(0)
 
     # ファイル名生成
