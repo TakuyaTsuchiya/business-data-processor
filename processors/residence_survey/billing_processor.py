@@ -17,6 +17,19 @@ OUT_OF_AREA_PREFECTURES = [
 # 高橋裕次郎法律事務所の識別名
 TAKAHASHI_LAW_FIRM = '弁護士法人高橋裕次郎法律事務所'
 
+# 弁護士法人の優先順位（シート作成順序）
+LAW_FIRM_PRIORITY = [
+    'トラスト弁護士法人',
+    'ナップ賃貸保証株式会社',
+    '神田お玉ヶ池法律事務所',
+    '他社（神田お玉ヶ池法律事務所）',
+    '東京新橋法律事務所',
+    '東京新橋法律事務所（他）',
+    '弁護士法人フェイス法律事務所',
+    '弁護士法人フェイス法律事務所（他社）',
+    '弁護士法人高橋裕次郎法律事務所'
+]
+
 
 def is_out_of_area(address: str) -> bool:
     """住所からエリア外判定を行う"""
@@ -118,23 +131,28 @@ def determine_billing_rows(row: pd.Series, is_takahashi: bool, selected_month: s
 
         # 高橋裕次郎の特例（該当する調査回の中で適用）
         if is_takahashi:
-            # 3回目が含まれている場合、該当するすべての回を返す
+            # 3回目が含まれている場合、1〜3回目全てを請求
             if 3 in matching_times:
-                return matching_times
-            # 2回目が含まれている場合
+                return [1, 2, 3]
+            # 2回目が含まれている場合、1〜2回目を請求
             elif 2 in matching_times:
-                return matching_times
+                return [1, 2]
             # 1回目のみ
             elif 1 in matching_times:
-                return matching_times
+                return [1]
         # 通常パターン
         else:
-            # 3回目が含まれている場合、3回目のみ
+            # 3回目が含まれている場合
             if 3 in matching_times:
-                return [3]
-            # 2回目が含まれている場合、1回目+2回目（該当するもののみ）
+                # 2回目も選択月に含まれている → 全て請求
+                if 2 in matching_times:
+                    return [1, 2, 3]
+                else:
+                    # 3回目のみ選択月 → 3回目のみ（1,2は既請求済み）
+                    return [3]
+            # 2回目が含まれている場合、1回目+2回目を請求
             elif 2 in matching_times:
-                return [t for t in [1, 2] if t in matching_times]
+                return [1, 2]
             # 1回目のみ
             elif 1 in matching_times:
                 return [1]
@@ -179,6 +197,10 @@ def create_billing_row(row: pd.Series, times: int) -> dict:
     Returns:
         請求データ行の辞書
     """
+    # 提出日を取得
+    submission_date_col = f'{times}回目提出日'
+    submission_date = row[submission_date_col] if pd.notna(row[submission_date_col]) else ''
+
     return {
         '受託日': '',
         '依頼者債権番号': row['会員番号'] if pd.notna(row['会員番号']) else '',
@@ -190,7 +212,8 @@ def create_billing_row(row: pd.Series, times: int) -> dict:
         '費用コード名称': '',
         '金額': '',
         '費用備考': get_expense_notes(row['住所'], times),
-        '業者': 'ミライル'
+        '業者': 'ミライル',
+        '提出日': submission_date
     }
 
 
@@ -276,7 +299,17 @@ def process_residence_survey_billing(df: pd.DataFrame, selected_month: str = Non
     excel_buffer = io.BytesIO()
 
     with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
-        for law_firm, billing_rows in law_firm_data.items():
+        # 優先順位リストに従ってシート作成順序を決定
+        all_law_firms = list(LAW_FIRM_PRIORITY)
+
+        # リストにない法人を追加（五十音順）
+        unlisted_firms = [firm for firm in law_firm_data.keys() if firm not in all_law_firms]
+        all_law_firms.extend(sorted(unlisted_firms))
+
+        # 各法人のシートを作成
+        for law_firm in all_law_firms:
+            billing_rows = law_firm_data.get(law_firm, [])
+
             # DataFrameに変換
             df_billing = pd.DataFrame(billing_rows)
 
@@ -295,7 +328,8 @@ def process_residence_survey_billing(df: pd.DataFrame, selected_month: str = Non
                 '費用コード名称': '費用コード名称',
                 '金額': '',
                 '費用備考': '費用備考',
-                '業者': '業者'
+                '業者': '業者',
+                '提出日': '提出日'
             }])
 
             # 合計行を作成（金額列のみ0、他は空白）
@@ -310,7 +344,8 @@ def process_residence_survey_billing(df: pd.DataFrame, selected_month: str = Non
                 '費用コード名称': '',
                 '金額': 0,
                 '費用備考': '',
-                '業者': ''
+                '業者': '',
+                '提出日': ''
             }])
 
             # 合計行 + ヘッダー行 + データ行 の順で結合
@@ -337,6 +372,10 @@ def process_residence_survey_billing(df: pd.DataFrame, selected_month: str = Non
             for col_idx in range(1, 11):  # A=1 to J=10
                 cell = worksheet.cell(row=2, column=col_idx)
                 cell.fill = yellow_fill
+
+            # 列幅を設定
+            worksheet.column_dimensions['C'].width = 25  # 債務者氏名（12文字分）
+            worksheet.column_dimensions['J'].width = 25  # 費用備考（12文字分）
 
     excel_buffer.seek(0)
 
