@@ -142,9 +142,14 @@ def determine_billing_rows(row: pd.Series, is_takahashi: bool, selected_month: s
                 return [1]
         # 通常パターン
         else:
-            # 3回目が含まれている場合、3回目のみ
+            # 3回目が含まれている場合
             if 3 in matching_times:
-                return [3]
+                # 2回目も選択月に含まれている → 全て請求
+                if 2 in matching_times:
+                    return [1, 2, 3]
+                else:
+                    # 3回目のみ選択月 → 3回目のみ（1,2は既請求済み）
+                    return [3]
             # 2回目が含まれている場合、1回目+2回目を請求
             elif 2 in matching_times:
                 return [1, 2]
