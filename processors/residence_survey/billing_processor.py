@@ -17,6 +17,19 @@ OUT_OF_AREA_PREFECTURES = [
 # 高橋裕次郎法律事務所の識別名
 TAKAHASHI_LAW_FIRM = '弁護士法人高橋裕次郎法律事務所'
 
+# 弁護士法人の優先順位（シート作成順序）
+LAW_FIRM_PRIORITY = [
+    'トラスト弁護士法人',
+    'ナップ賃貸保証株式会社',
+    '神田お玉ヶ池法律事務所',
+    '他社（神田お玉ヶ池法律事務所）',
+    '東京新橋法律事務所',
+    '東京新橋法律事務所（他）',
+    '弁護士法人フェイス法律事務所',
+    '弁護士法人フェイス法律事務所（他社）',
+    '弁護士法人高橋裕次郎法律事務所'
+]
+
 
 def is_out_of_area(address: str) -> bool:
     """住所からエリア外判定を行う"""
@@ -281,7 +294,17 @@ def process_residence_survey_billing(df: pd.DataFrame, selected_month: str = Non
     excel_buffer = io.BytesIO()
 
     with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
-        for law_firm, billing_rows in law_firm_data.items():
+        # 優先順位リストに従ってシート作成順序を決定
+        all_law_firms = list(LAW_FIRM_PRIORITY)
+
+        # リストにない法人を追加（五十音順）
+        unlisted_firms = [firm for firm in law_firm_data.keys() if firm not in all_law_firms]
+        all_law_firms.extend(sorted(unlisted_firms))
+
+        # 各法人のシートを作成
+        for law_firm in all_law_firms:
+            billing_rows = law_firm_data.get(law_firm, [])
+
             # DataFrameに変換
             df_billing = pd.DataFrame(billing_rows)
 
