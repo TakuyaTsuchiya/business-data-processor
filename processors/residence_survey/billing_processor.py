@@ -131,15 +131,15 @@ def determine_billing_rows(row: pd.Series, is_takahashi: bool, selected_month: s
 
         # 高橋裕次郎の特例（該当する調査回の中で適用）
         if is_takahashi:
-            # 3回目が含まれている場合、該当するすべての回を返す
+            # 3回目が含まれている場合、1〜3回目全てを請求
             if 3 in matching_times:
-                return matching_times
-            # 2回目が含まれている場合
+                return [1, 2, 3]
+            # 2回目が含まれている場合、1〜2回目を請求
             elif 2 in matching_times:
-                return matching_times
+                return [1, 2]
             # 1回目のみ
             elif 1 in matching_times:
-                return matching_times
+                return [1]
         # 通常パターン
         else:
             # 3回目が含まれている場合、3回目のみ
