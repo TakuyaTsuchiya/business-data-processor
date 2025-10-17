@@ -27,7 +27,8 @@ class ScreenConfig:
         success_message_template: str = "処理完了: {processed_rows}件のデータを出力",
         no_data_message: str = "条件に合致するデータがありませんでした。",
         title_icon: str = "",
-        processing_time_message: Optional[str] = None
+        processing_time_message: Optional[str] = None,
+        file_types: Optional[List[str]] = None
     ):
         self.title = title
         self.subtitle = subtitle
@@ -41,6 +42,7 @@ class ScreenConfig:
         self.no_data_message = no_data_message
         self.title_icon = title_icon
         self.processing_time_message = processing_time_message
+        self.file_types = file_types or ["csv"]
 
 
 def render_screen(config: ScreenConfig, key_prefix: str):
@@ -78,12 +80,15 @@ def render_screen(config: ScreenConfig, key_prefix: str):
     
     # 5. ファイルアップローダー
     uploaded_files = []
-    
+
+    # ファイルタイプ名の表示用文字列
+    file_type_display = "/".join([ft.upper() for ft in config.file_types])
+
     if config.file_count == 1:
         # 単一ファイル
         uploaded_file = st.file_uploader(
-            "CSVファイルをアップロードしてください", 
-            type="csv", 
+            f"{file_type_display}ファイルをアップロードしてください",
+            type=config.file_types,
             key=f"{key_prefix}_file"
         )
         if uploaded_file:
@@ -95,8 +100,8 @@ def render_screen(config: ScreenConfig, key_prefix: str):
             with col:
                 st.markdown(f"**📄 {label}**")
                 file = st.file_uploader(
-                    f"{label.split(': ')[1] if ': ' in label else label}をアップロード", 
-                    type="csv", 
+                    f"{label.split(': ')[1] if ': ' in label else label}をアップロード",
+                    type=config.file_types,
                     key=f"{key_prefix}_file{i+1}"
                 )
                 if file:
@@ -129,9 +134,9 @@ def render_screen(config: ScreenConfig, key_prefix: str):
                     
         except Exception as e:
             display_error_result(f"エラーが発生しました: {str(e)}")
-    
+
     elif 0 < len(uploaded_files) < config.file_count:
-        st.warning(f"{config.file_count}つのCSVファイルをアップロードしてください。")
+        st.warning(f"{config.file_count}つのファイルをアップロードしてください。")
 
 
 def _display_result(result: Any, config: ScreenConfig, key_prefix: str):
