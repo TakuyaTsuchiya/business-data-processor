@@ -132,9 +132,9 @@ def determine_billing_rows(row: pd.Series, is_takahashi: bool, selected_month: s
             # 3回目が含まれている場合、3回目のみ
             if 3 in matching_times:
                 return [3]
-            # 2回目が含まれている場合、1回目+2回目（該当するもののみ）
+            # 2回目が含まれている場合、1回目+2回目を請求
             elif 2 in matching_times:
-                return [t for t in [1, 2] if t in matching_times]
+                return [1, 2]
             # 1回目のみ
             elif 1 in matching_times:
                 return [1]
