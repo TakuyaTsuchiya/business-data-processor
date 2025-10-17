@@ -13,6 +13,9 @@ from processors.capco_registration import process_capco_data
 # プラザ系
 from processors.plaza_registration import process_plaza_data
 
+# IOG系
+from processors.iog_registration import process_jid_data
+
 # 公開する関数を明示
 __all__ = [
     # アーク系
@@ -22,4 +25,6 @@ __all__ = [
     'process_capco_data',
     # プラザ系
     'process_plaza_data',
+    # IOG系
+    'process_jid_data',
 ]
