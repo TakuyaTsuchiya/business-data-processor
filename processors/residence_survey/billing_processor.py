@@ -179,6 +179,10 @@ def create_billing_row(row: pd.Series, times: int) -> dict:
     Returns:
         請求データ行の辞書
     """
+    # 提出日を取得
+    submission_date_col = f'{times}回目提出日'
+    submission_date = row[submission_date_col] if pd.notna(row[submission_date_col]) else ''
+
     return {
         '受託日': '',
         '依頼者債権番号': row['会員番号'] if pd.notna(row['会員番号']) else '',
@@ -190,7 +194,8 @@ def create_billing_row(row: pd.Series, times: int) -> dict:
         '費用コード名称': '',
         '金額': '',
         '費用備考': get_expense_notes(row['住所'], times),
-        '業者': 'ミライル'
+        '業者': 'ミライル',
+        '提出日': submission_date
     }
 
 
@@ -295,7 +300,8 @@ def process_residence_survey_billing(df: pd.DataFrame, selected_month: str = Non
                 '費用コード名称': '費用コード名称',
                 '金額': '',
                 '費用備考': '費用備考',
-                '業者': '業者'
+                '業者': '業者',
+                '提出日': '提出日'
             }])
 
             # 合計行を作成（金額列のみ0、他は空白）
@@ -310,7 +316,8 @@ def process_residence_survey_billing(df: pd.DataFrame, selected_month: str = Non
                 '費用コード名称': '',
                 '金額': 0,
                 '費用備考': '',
-                '業者': ''
+                '業者': '',
+                '提出日': ''
             }])
 
             # 合計行 + ヘッダー行 + データ行 の順で結合
