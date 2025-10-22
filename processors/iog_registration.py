@@ -344,7 +344,13 @@ class DataConverter:
 
             # 1. 基本情報（JIDデータから）
             converted_row["引継番号"] = self.safe_str_convert(row.get("契約番号", ""))
-            converted_row["契約者氏名"] = self.remove_all_spaces(self.safe_str_convert(row.get("対象者名", "")))
+
+            # 譲渡一覧データがある場合は譲渡一覧の氏名を優先（旧姓→新姓対応）
+            if has_transfer and row.get("賃借人氏名"):
+                converted_row["契約者氏名"] = self.remove_all_spaces(self.safe_str_convert(row.get("賃借人氏名", "")))
+            else:
+                converted_row["契約者氏名"] = self.remove_all_spaces(self.safe_str_convert(row.get("対象者名", "")))
+
             converted_row["契約者カナ"] = self.remove_all_spaces(self.safe_str_convert(row.get("フリガナ", "")))
 
             # 2. 電話番号処理（JIDデータから）

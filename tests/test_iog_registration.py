@@ -267,3 +267,45 @@ class TestIntegration:
         # 検証
         assert normalized_name == "山田太郎"
         assert normalized_kana == "ヤマダタロウ"
+
+    def test_譲渡一覧の氏名を優先(self):
+        """譲渡一覧データがある場合、賃借人氏名を優先することを確認"""
+        # 譲渡一覧の氏名（新姓）とIOGデータの氏名（旧姓）が異なる場合を想定
+        test_data = pd.DataFrame({
+            "契約番号": ["001"],
+            "対象者名": ["佐藤 花子"],  # 旧姓
+            "賃借人氏名": ["田中 花子"],  # 新姓（譲渡一覧から）
+            "フリガナ": ["サトウ ハナコ"]
+        })
+
+        result_df = self.converter.convert_jid_data_with_transfer(test_data, has_transfer=True)
+
+        # 譲渡一覧の氏名（新姓）が使われることを確認
+        assert result_df.loc[0, "契約者氏名"] == "田中花子"
+
+    def test_譲渡一覧なしの場合はIOG氏名を使用(self):
+        """譲渡一覧データがない場合、対象者名を使用することを確認"""
+        test_data = pd.DataFrame({
+            "契約番号": ["001"],
+            "対象者名": ["佐藤 花子"],
+            "フリガナ": ["サトウ ハナコ"]
+        })
+
+        result_df = self.converter.convert_jid_data_with_transfer(test_data, has_transfer=False)
+
+        # IOGデータの対象者名が使われることを確認
+        assert result_df.loc[0, "契約者氏名"] == "佐藤花子"
+
+    def test_譲渡一覧の氏名が空の場合はIOG氏名を使用(self):
+        """譲渡一覧データがあるが賃借人氏名が空の場合、対象者名を使用することを確認"""
+        test_data = pd.DataFrame({
+            "契約番号": ["001"],
+            "対象者名": ["佐藤 花子"],
+            "賃借人氏名": [""],  # 空
+            "フリガナ": ["サトウ ハナコ"]
+        })
+
+        result_df = self.converter.convert_jid_data_with_transfer(test_data, has_transfer=True)
+
+        # 賃借人氏名が空なのでIOGデータの対象者名が使われることを確認
+        assert result_df.loc[0, "契約者氏名"] == "佐藤花子"
