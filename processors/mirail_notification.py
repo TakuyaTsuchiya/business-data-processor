@@ -87,7 +87,18 @@ def process_mirail_notification(
         df_filtered = df_filtered[df_filtered['回収ランク'] != '弁護士介入']
         logs.append(DetailedLogger.log_filter_result(before_count, len(df_filtered), "回収ランク（弁護士介入除外）"))
 
-        # 5. クライアントCDフィルタ
+        # 5. 滞納残債フィルタ（1円以上のみ対象）
+        before_count = len(df_filtered)
+        # カンマを削除して数値に変換
+        df_filtered['滞納残債_numeric'] = pd.to_numeric(
+            df_filtered['滞納残債'].astype(str).str.replace(',', ''),
+            errors='coerce'
+        )
+        df_filtered = df_filtered[df_filtered['滞納残債_numeric'] >= 1]
+        df_filtered = df_filtered.drop('滞納残債_numeric', axis=1)
+        logs.append(DetailedLogger.log_filter_result(before_count, len(df_filtered), "滞納残債（1円以上）"))
+
+        # 6. クライアントCDフィルタ
         before_count = len(df_filtered)
         if client_pattern == 'included':
             # 1,4,5を選択

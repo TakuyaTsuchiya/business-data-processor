@@ -59,13 +59,15 @@ class FilterEngine:
         # 各フィルタを順番に適用
         for filter_name, config in filter_config.items():
             before_count = len(df)
-            
+
             if filter_name == "trustee_id":
                 df, filter_logs = FilterEngine._filter_trustee_id(df, config)
             elif filter_name == "payment_date":
                 df, filter_logs = FilterEngine._filter_payment_date(df, config)
             elif filter_name == "collection_rank":
                 df, filter_logs = FilterEngine._filter_collection_rank(df, config)
+            elif filter_name == "arrears":
+                df, filter_logs = FilterEngine._filter_arrears(df, config)
             elif filter_name == "special_debt":
                 df, filter_logs = FilterEngine._filter_special_debt(df, config)
             elif filter_name == "mobile_phone":
@@ -74,7 +76,7 @@ class FilterEngine:
                 df, filter_logs = FilterEngine._filter_payment_amount(df, config)
             else:
                 continue
-            
+
             logs.extend(filter_logs)
         
         # 最終結果を記録
@@ -245,27 +247,59 @@ class FilterEngine:
         logs = []
         column_idx = config["column"]
         exclude_amounts = config.get("exclude", [2, 3, 5, 12])
-        
+
         # 数値に変換
         df.iloc[:, column_idx] = pd.to_numeric(df.iloc[:, column_idx], errors='coerce')
-        
+
         # 除外されるデータを記録
         mask = df.iloc[:, column_idx].isna() | ~df.iloc[:, column_idx].isin(exclude_amounts)
         excluded_data = df[~mask]
-        
+
         if len(excluded_data) > 0:
             detail_log = DetailedLogger.log_exclusion_details(
                 excluded_data, column_idx, config.get("label", "除外金額"), "amount"
             )
             if detail_log:
                 logs.append(detail_log)
-        
+
         # フィルタ適用
         df_filtered = df[mask]
         logs.append(DetailedLogger.log_filter_result(
             len(df), len(df_filtered), config.get("label", "入金予定金額")
         ))
-        
+
+        return df_filtered, logs
+
+    @staticmethod
+    def _filter_arrears(df: pd.DataFrame, config: Dict[str, Any]) -> Tuple[pd.DataFrame, List[str]]:
+        """滞納残債フィルタ（1円以上のみ対象）"""
+        logs = []
+        column_idx = config["column"]
+        min_amount = config.get("min_amount", 1)
+
+        # カンマを削除して数値に変換
+        df.iloc[:, column_idx] = pd.to_numeric(
+            df.iloc[:, column_idx].astype(str).str.replace(',', ''),
+            errors='coerce'
+        )
+
+        # 1円以上のデータのみを残す
+        mask = df.iloc[:, column_idx] >= min_amount
+        excluded_data = df[~mask]
+
+        if len(excluded_data) > 0:
+            detail_log = DetailedLogger.log_exclusion_details(
+                excluded_data, column_idx, config.get("label", "滞納残債"), "amount"
+            )
+            if detail_log:
+                logs.append(detail_log)
+
+        # フィルタ適用
+        df_filtered = df[mask]
+        logs.append(DetailedLogger.log_filter_result(
+            len(df), len(df_filtered), config.get("label", "滞納残債") + f"（{min_amount}円以上）"
+        ))
+
         return df_filtered, logs
 
 

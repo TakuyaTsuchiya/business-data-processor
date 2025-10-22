@@ -108,12 +108,35 @@ def apply_plaza_main_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]
         len(df),
         "回収ランク"
     ))
-    
-    # 4. 残債のフィルタリング（with10k版では除外なし - 全件処理）
-    logs.append("残債フィルタ: 除外なし（with10k版：10,000円・11,000円も含む全件処理）")
+
+    # 4. 滞納残債のフィルタリング（1円以上のみ対象）
+    df["滞納残債"] = pd.to_numeric(
+        df["滞納残債"].astype(str).str.replace(',', ''),
+        errors='coerce'
+    )
+    before_filter = len(df)
+    # 除外されるデータの詳細を記録
+    excluded_data = df[~(df["滞納残債"] >= 1)]
+    if len(excluded_data) > 0:
+        logs.append(DetailedLogger.log_exclusion_details(
+            excluded_data,
+            df.columns.get_loc('滞納残債'),
+            '滞納残債',
+            log_type='amount'
+        ))
+
+    df = df[df["滞納残債"] >= 1]
+    logs.append(DetailedLogger.log_filter_result(
+        before_filter,
+        len(df),
+        "滞納残債（1円以上）"
+    ))
+
+    # 5. 特殊残債・クライアントCDフィルタ（with10k版では除外なし - 全件処理）
+    logs.append("特殊残債フィルタ: 除外なし（with10k版：10,000円・11,000円も含む全件処理）")
     logs.append("クライアントCDフィルタ: 除外なし（契約者版は全クライアント対象）")
-    
-    # 5. TEL携帯のフィルタリング（契約者電話番号が必須）
+
+    # 6. TEL携帯のフィルタリング（契約者電話番号が必須）
     before_filter = len(df)
     # 除外されるデータの詳細を記録
     excluded_data = df[~(df["TEL携帯"].notna() &
@@ -125,7 +148,7 @@ def apply_plaza_main_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]
             'TEL携帯',
             log_type='phone'
         ))
-    
+
     df = df[
         df["TEL携帯"].notna() &
         (~df["TEL携帯"].astype(str).str.strip().isin(["", "nan", "NaN"]))
@@ -135,8 +158,8 @@ def apply_plaza_main_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]
         len(df),
         "TEL携帯"
     ))
-    
-    # 6. 入金予定金額のフィルタリング（手数料関連の2,3,5,12円を除外）
+
+    # 7. 入金予定金額のフィルタリング（手数料関連の2,3,5,12円を除外）
     exclude_amounts = [2, 3, 5, 12]
     df["入金予定金額"] = pd.to_numeric(df["入金予定金額"], errors='coerce')
     before_filter = len(df)

@@ -109,8 +109,31 @@ def process_faith_sms_guarantor_data(file_content: bytes, payment_deadline_date:
             )
             if detail:
                 logs.append(detail)
-        
-        # Filter 5: AU列TEL携帯 (Keep only valid mobile phone numbers) - 列番号46を使用
+
+        # Filter 5: BT列　滞納残債 (Keep only >= 1)
+        # BT列は列番号71（0ベース）
+        arrears_column = df.iloc[:, 71]
+        arrears_numeric = pd.to_numeric(
+            arrears_column.astype(str).str.replace(',', ''),
+            errors='coerce'
+        )
+
+        # フィルター適用
+        before_count = len(df)
+        valid_arrears_mask = arrears_numeric >= 1
+        excluded_arrears = df[~valid_arrears_mask]
+        df = df[valid_arrears_mask]
+        logs.append(DetailedLogger.log_filter_result(before_count, len(df), '滞納残債（1円以上）'))
+
+        # 除外データの詳細を記録
+        if len(excluded_arrears) > 0:
+            detail = DetailedLogger.log_exclusion_details(
+                excluded_arrears, 71, '滞納残債', 'amount', top_n=3
+            )
+            if detail:
+                logs.append(detail)
+
+        # Filter 6: AU列TEL携帯 (Keep only valid mobile phone numbers) - 列番号46を使用
         mobile_phone_regex = r'^(090|080|070)-\d{4}-\d{4}$'
         
         # AU列（列番号46）の電話番号を取得

@@ -30,8 +30,9 @@ def show_faith_sms_vacated():
         filter_conditions=[
             "委託先法人ID → 1-4",
             "入金予定日 → 前日以前とNaN",
-            "入金予定金額 → 2,3,5円除外",
             "回収ランク → 「弁護士介入」「破産決定」「死亡決定」除外",
+            "滞納残債 → 1円以上のみ対象",
+            "入金予定金額 → 2,3,5円除外",
             "TEL携帯 → 090/080/070形式のみ"
         ],
         process_function=process_faith_sms_contract_data,
@@ -48,8 +49,9 @@ def show_faith_sms_guarantor():
         filter_conditions=[
             "委託先法人ID → 1-4",
             "入金予定日 → 前日以前とNaN",
-            "入金予定金額 → 2,3,5円除外",
             "回収ランク → 「弁護士介入」「破産決定」「死亡決定」除外",
+            "滞納残債 → 1円以上のみ対象",
+            "入金予定金額 → 2,3,5円除外",
             "AU列TEL携帯 → 090/080/070形式のみ（保証人電話番号）"
         ],
         process_function=process_faith_sms_guarantor_data,
@@ -66,8 +68,9 @@ def show_faith_sms_emergency_contact():
         filter_conditions=[
             "委託先法人ID → 1-4",
             "入金予定日 → 前日以前とNaN",
-            "入金予定金額 → 2,3,5円除外",
             "回収ランク → 「弁護士介入」「破産決定」「死亡決定」除外",
+            "滞納残債 → 1円以上のみ対象",
+            "入金予定金額 → 2,3,5円除外",
             "BE列「緊急連絡人１のTEL（携帯）」 → 090/080/070形式のみ"
         ],
         process_function=process_faith_sms_emergencycontact_data,
