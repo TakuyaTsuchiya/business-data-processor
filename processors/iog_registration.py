@@ -180,6 +180,41 @@ class DataConverter:
             return ""
         return unicodedata.normalize('NFKC', text)
 
+    def normalize_for_client_system(self, text: str) -> str:
+        """
+        クライアントシステム用正規化（英数字=半角、カタカナ=全角）
+
+        Args:
+            text: 正規化する文字列
+
+        Returns:
+            str: 英数字が半角、カタカナが全角に統一された文字列
+        """
+        if not text:
+            return ""
+
+        # Step1: 半角カナを全角カナに変換（NFKC正規化）
+        normalized = unicodedata.normalize('NFKC', text)
+
+        # Step2: 全角英数字を半角に変換
+        # 全角英数字の範囲：Ａ-Ｚ（U+FF21-FF3A）、ａ-ｚ（U+FF41-FF5A）、０-９（U+FF10-FF19）
+        result = []
+        for char in normalized:
+            code = ord(char)
+            # 全角英大文字 A-Z → 半角
+            if 0xFF21 <= code <= 0xFF3A:
+                result.append(chr(code - 0xFEE0))
+            # 全角英小文字 a-z → 半角
+            elif 0xFF41 <= code <= 0xFF5A:
+                result.append(chr(code - 0xFEE0))
+            # 全角数字 0-9 → 半角
+            elif 0xFF10 <= code <= 0xFF19:
+                result.append(chr(code - 0xFEE0))
+            else:
+                result.append(char)
+
+        return ''.join(result)
+
     def normalize_phone_number(self, value: str) -> str:
         """電話番号の正規化"""
         if pd.isna(value) or str(value).strip() == "" or str(value).strip() == "電話無":
@@ -208,12 +243,34 @@ class DataConverter:
         # AddressSplitterを使用
         return self.address_splitter.split_address(str(address))
 
+    def clean_property_name(self, property_name: str) -> str:
+        """
+        物件名から先頭の数字コードを除去
+
+        Args:
+            property_name: 物件名（例: "02180 サン・ガーデン 303"）
+
+        Returns:
+            str: クリーニング済み物件名（例: "サン・ガーデン 303"）
+        """
+        if pd.isna(property_name) or str(property_name).strip() == "":
+            return ""
+
+        import re
+        cleaned = str(property_name).strip()
+
+        # 先頭の「数字（全角半角）+ スペース（全角半角）」パターンを除去
+        cleaned = re.sub(r'^[0-9０-９]+[\s　]+', '', cleaned)
+
+        return cleaned.strip()
+
     def extract_room_from_property_name(self, property_name: str) -> Tuple[str, str]:
-        """物件名から部屋番号を抽出"""
+        """物件名から部屋番号を抽出（先頭コードクリーニング済み）"""
         if pd.isna(property_name) or str(property_name).strip() == "":
             return "", ""
 
-        prop_name = str(property_name).strip()
+        # 先頭の数字コードをクリーニング
+        prop_name = self.clean_property_name(property_name)
 
         # 部屋番号パターンを検索（例：３Ｇ５、２０４、101号室など）
         import re
@@ -288,7 +345,7 @@ class DataConverter:
             # 1. 基本情報（JIDデータから）
             converted_row["引継番号"] = self.safe_str_convert(row.get("契約番号", ""))
             converted_row["契約者氏名"] = self.remove_all_spaces(self.safe_str_convert(row.get("対象者名", "")))
-            converted_row["契約者カナ"] = self.remove_all_spaces(self.hankaku_to_zenkaku(self.safe_str_convert(row.get("フリガナ", ""))))
+            converted_row["契約者カナ"] = self.remove_all_spaces(self.safe_str_convert(row.get("フリガナ", "")))
 
             # 2. 電話番号処理（JIDデータから）
             phone_result = self.process_phone_numbers(
@@ -395,6 +452,10 @@ class DataConverter:
                 converted_row["登録フラグ"] = self.safe_str_convert(row.get("_source_info", ""))
             else:
                 converted_row["登録フラグ"] = ""
+
+            # 11. 全項目を一括正規化（英数字→半角、カタカナ→全角）
+            for key in converted_row:
+                converted_row[key] = self.normalize_for_client_system(converted_row[key])
 
             output_data.append(converted_row)
 
