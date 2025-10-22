@@ -26,9 +26,10 @@ def show_plaza_main():
         filter_conditions=[
             "委託先法人ID → 6",
             "入金予定日 → 当日以前とNaN",
+            "回収ランク → 「督促停止」「弁護士介入」除外",
+            "滞納残債 → 1円以上のみ対象",
             "入金予定金額 → 2,3,5,12円除外",
-            "「TEL携帯」 → 空でない値のみ",
-            "回収ランク → 「督促停止」「弁護士介入」除外"
+            "「TEL携帯」 → 空でない値のみ"
         ],
         process_function=process_plaza_main_data,
         title_icon="📞"
@@ -43,9 +44,10 @@ def show_plaza_guarantor():
         filter_conditions=[
             "委託先法人ID → 6",
             "入金予定日 → 前日以前とNaN",
+            "回収ランク → 「督促停止」「弁護士介入」除外",
+            "滞納残債 → 1円以上のみ対象",
             "入金予定金額 → 2,3,5,12円除外",
-            "「TEL携帯.1」 → 空でない値のみ",
-            "回収ランク → 「督促停止」「弁護士介入」除外"
+            "「TEL携帯.1」 → 空でない値のみ"
         ],
         process_function=process_plaza_guarantor_data,
         title_icon="📞"
@@ -60,9 +62,10 @@ def show_plaza_contact():
         filter_conditions=[
             "委託先法人ID → 6",
             "入金予定日 → 前日以前とNaN",
+            "回収ランク → 「督促停止」「弁護士介入」除外",
+            "滞納残債 → 1円以上のみ対象",
             "入金予定金額 → 2,3,5,12円除外",
-            "「緊急連絡人１のTEL（携帯）」 → 空でない値のみ",
-            "回収ランク → 「督促停止」「弁護士介入」除外"
+            "「緊急連絡人１のTEL（携帯）」 → 空でない値のみ"
         ],
         process_function=process_plaza_contact_data,
         title_icon="📞"

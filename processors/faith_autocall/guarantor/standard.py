@@ -113,11 +113,31 @@ def apply_faith_guarantor_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[
     )
     if detail_log:
         logs.append(detail_log)
-    
+
     df = df[~df["回収ランク"].isin(exclude_ranks)]
     logs.append(DetailedLogger.log_filter_result(before_filter, len(df), "回収ランク"))
-    
-    # 5. TEL携帯.1のフィルタリング（保証人電話番号が必須）
+
+    # 5. 滞納残債のフィルタリング（1円以上のみ対象）
+    df["滞納残債"] = pd.to_numeric(
+        df["滞納残債"].astype(str).str.replace(',', ''),
+        errors='coerce'
+    )
+    before_filter = len(df)
+    # 除外されるデータの詳細を記録
+    excluded_data = df[~(df["滞納残債"] >= 1)]
+    detail_log = DetailedLogger.log_exclusion_details(
+        excluded_data,
+        df.columns.get_loc("滞納残債"),
+        "滞納残債",
+        'amount'
+    )
+    if detail_log:
+        logs.append(detail_log)
+
+    df = df[df["滞納残債"] >= 1]
+    logs.append(DetailedLogger.log_filter_result(before_filter, len(df), "滞納残債（1円以上）"))
+
+    # 6. TEL携帯.1のフィルタリング（保証人電話番号が必須）
     before_filter = len(df)
     # 除外されるデータの詳細を記録
     excluded_data = df[~(df["TEL携帯.1"].notna() &
@@ -130,13 +150,13 @@ def apply_faith_guarantor_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[
     )
     if detail_log:
         logs.append(detail_log)
-    
+
     df = df[
         df["TEL携帯.1"].notna() &
         (~df["TEL携帯.1"].astype(str).str.strip().isin(["", "nan", "NaN"]))
     ]
     logs.append(DetailedLogger.log_filter_result(before_filter, len(df), "TEL携帯.1"))
-    
+
     return df, logs
 
 

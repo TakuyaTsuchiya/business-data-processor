@@ -158,9 +158,32 @@ def apply_common_filters(df: pd.DataFrame, skip_rank_filter: bool = False) -> Tu
             excluded = before_df[before_df.iloc[:, 86].isin(['死亡決定', '弁護士介入'])]
             detail = DetailedLogger.log_exclusion_details(excluded, 86, "回収ランク", 'category')
             logs.append(detail)
-    
+
+    # 滞納残債（BT列 = 71列目）でフィルタ（1円以上のみ対象）
+    before_count = len(df)
+    before_df = df.copy()
+    # カンマを削除して数値に変換
+    arrears_numeric = pd.to_numeric(
+        df.iloc[:, 71].astype(str).str.replace(',', ''),
+        errors='coerce'
+    )
+    df = df[arrears_numeric >= 1]
+
+    log = DetailedLogger.log_filter_result(before_count, len(df), "滞納残債（1円以上）")
+    logs.append(log)
+
+    # 除外データの詳細
+    if before_count > len(df):
+        arrears_numeric_before = pd.to_numeric(
+            before_df.iloc[:, 71].astype(str).str.replace(',', ''),
+            errors='coerce'
+        )
+        excluded = before_df[~(arrears_numeric_before >= 1)]
+        detail = DetailedLogger.log_exclusion_details(excluded, 71, "滞納残債", 'amount')
+        logs.append(detail)
+
     logs.append(f"共通フィルタリング完了: {initial_count}件 → {len(df)}件")
-    
+
     return df, logs
 
 

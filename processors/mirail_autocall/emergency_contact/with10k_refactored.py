@@ -23,7 +23,7 @@ from common.contract_list_columns import ContractListColumns as COL
 class MirailEmergencyContactWith10kConfig:
     """ミライル緊急連絡人（残債含む全件）処理の設定"""
     
-    # フィルタ設定（with10k版：残債フィルタなし）
+    # フィルタ設定（with10k版：特殊残債フィルタなし）
     FILTER_CONFIG = {
         "trustee_id": {
             "column": COL.TRUSTEE_ID,
@@ -44,7 +44,12 @@ class MirailEmergencyContactWith10kConfig:
             "log_type": "category",
             "label": "回収ランク"
         },
-        # with10k版では残債フィルタなし（全件処理）
+        "arrears": {
+            "column": COL.DEBT_AMOUNT,
+            "min_amount": 1,
+            "label": "滞納残債"
+        },
+        # with10k版では特殊残債フィルタなし（10,000円・11,000円も含む）
         "mobile_phone": {
             "column": COL.TEL_MOBILE_2,  # 緊急連絡人電話番号（BE列=列56）
             "log_type": "phone",

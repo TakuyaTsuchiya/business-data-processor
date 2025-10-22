@@ -125,8 +125,31 @@ def process_plaza_sms_contract_data(
             )
             if detail:
                 logs.append(detail)
-        
-        # Filter 5: 電話番号 (Keep only valid mobile phone numbers)
+
+        # Filter 5: BT列　滞納残債 (Keep only >= 1)
+        # BT列は列番号71（0ベース）
+        arrears_column = contract_df.iloc[:, 71]
+        arrears_numeric = pd.to_numeric(
+            arrears_column.astype(str).str.replace(',', ''),
+            errors='coerce'
+        )
+
+        # フィルター適用
+        before_count = len(contract_df)
+        valid_arrears_mask = arrears_numeric >= 1
+        excluded_arrears = contract_df[~valid_arrears_mask]
+        contract_df = contract_df[valid_arrears_mask]
+        logs.append(DetailedLogger.log_filter_result(before_count, len(contract_df), '滞納残債（1円以上）'))
+
+        # 除外データの詳細を記録
+        if len(excluded_arrears) > 0:
+            detail = DetailedLogger.log_exclusion_details(
+                excluded_arrears, 71, '滞納残債', 'amount', top_n=3
+            )
+            if detail:
+                logs.append(detail)
+
+        # Filter 6: 電話番号 (Keep only valid mobile phone numbers)
         mobile_phone_regex = r'^(090|080|070)-\d{4}-\d{4}$'
         
         # AB列（TEL携帯）を取得

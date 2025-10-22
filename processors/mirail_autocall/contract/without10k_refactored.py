@@ -45,6 +45,11 @@ class MirailWithout10kConfig:
             "log_type": "category",
             "label": "回収ランク"
         },
+        "arrears": {
+            "column": COL.DEBT_AMOUNT,
+            "min_amount": 1,
+            "label": "滞納残債"
+        },
         "special_debt": {
             "client_cd_column": COL.CLIENT_CD,
             "debt_column": COL.DEBT_AMOUNT,
