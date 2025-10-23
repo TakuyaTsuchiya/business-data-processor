@@ -84,6 +84,11 @@ class MirailAutocallUnifiedProcessor:
                 "log_type": "category",
                 "label": "回収ランク"
             },
+            "arrears": {
+                "column": COL.DEBT_AMOUNT,
+                "min_amount": 1,
+                "label": "滞納残債"
+            },
             "mobile_phone": {
                 "column": self.TARGET_CONFIG[target]["phone_column"],
                 "log_type": "phone",
