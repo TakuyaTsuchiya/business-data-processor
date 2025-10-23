@@ -235,6 +235,67 @@ class DataConverter:
 
         return phone
 
+    def has_old_name_notation(self, name: str) -> bool:
+        """
+        氏名に旧姓表記が含まれているか判定
+
+        Args:
+            name: 判定対象の氏名
+
+        Returns:
+            bool: 旧姓表記が含まれる場合True
+
+        Examples:
+            "井上紗樹（旧姓谷紗樹）" → True
+            "井上紗樹(旧姓谷紗樹)" → True
+            "井上紗樹 旧姓谷紗樹" → True
+            "井上紗樹" → False
+        """
+        if not name:
+            return False
+
+        # 旧姓表記のパターン（括弧あり・なし両対応）
+        old_name_patterns = [
+            "（旧姓", "(旧姓",  # 括弧付き全角・半角
+            "（旧", "(旧",      # 括弧付き短縮形
+            "旧姓"              # 括弧なし
+        ]
+
+        return any(pattern in name for pattern in old_name_patterns)
+
+    def remove_old_name_notation(self, name: str) -> str:
+        """
+        氏名から旧姓表記を除去
+
+        Args:
+            name: 旧姓表記を含む可能性のある氏名
+
+        Returns:
+            str: 旧姓表記を除去した氏名
+
+        Examples:
+            "井上紗樹（旧姓谷紗樹）" → "井上紗樹"
+            "井上紗樹(旧姓谷紗樹)" → "井上紗樹"
+            "井上紗樹 旧姓谷紗樹" → "井上紗樹"
+        """
+        if not name:
+            return ""
+
+        import re
+
+        # 括弧付きパターンを削除（全角括弧）
+        name = re.sub(r'（旧姓[^）]*）', '', name)
+        name = re.sub(r'（旧[^）]*）', '', name)
+
+        # 括弧付きパターンを削除（半角括弧）
+        name = re.sub(r'\(旧姓[^)]*\)', '', name)
+        name = re.sub(r'\(旧[^)]*\)', '', name)
+
+        # 括弧なしパターンを削除（スペース+旧姓以降を削除）
+        name = re.sub(r'\s*旧姓.*$', '', name)
+
+        return name.strip()
+
     def split_address(self, address: str) -> Dict[str, str]:
         """住所を郵便番号、都道府県、市区町村、残り住所に分割（辞書方式）"""
         if pd.isna(address) or str(address).strip() == "":
@@ -331,13 +392,29 @@ class DataConverter:
             self.logger.debug(f"日付パースエラー: {date_value} - {e}")
             return ""
 
-    def convert_jid_data(self, jid_df: pd.DataFrame) -> pd.DataFrame:
+    def convert_jid_data(self, jid_df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
         """JIDデータを111列テンプレートに変換（譲渡一覧なし）"""
         return self.convert_jid_data_with_transfer(jid_df, has_transfer=False)
 
-    def convert_jid_data_with_transfer(self, merged_df: pd.DataFrame, has_transfer: bool = False) -> pd.DataFrame:
-        """JIDデータ（譲渡一覧マージ済み）を111列テンプレートに変換"""
+    def convert_jid_data_with_transfer(self, merged_df: pd.DataFrame, has_transfer: bool = False) -> Tuple[pd.DataFrame, List[str]]:
+        """
+        JIDデータ（譲渡一覧マージ済み）を111列テンプレートに変換
+
+        Args:
+            merged_df: マージ済みのデータフレーム
+            has_transfer: 譲渡一覧データの有無
+
+        Returns:
+            Tuple[pd.DataFrame, List[str]]: (変換済みDF, 処理ログ)
+        """
         output_data = []
+        logs = []
+
+        # 旧姓処理の統計を記録
+        old_name_count = 0
+        old_name_from_transfer = 0
+        old_name_removed = 0
+        old_name_examples = []
 
         for _, row in merged_df.iterrows():
             converted_row = {}
@@ -345,12 +422,38 @@ class DataConverter:
             # 1. 基本情報（JIDデータから）
             converted_row["引継番号"] = self.safe_str_convert(row.get("契約番号", ""))
 
-            # 譲渡一覧データがある場合は譲渡一覧の氏名を優先（旧姓→新姓対応）
-            if has_transfer and row.get("賃借人氏名"):
-                converted_row["契約者氏名"] = self.remove_all_spaces(self.safe_str_convert(row.get("賃借人氏名", "")))
-            else:
-                converted_row["契約者氏名"] = self.remove_all_spaces(self.safe_str_convert(row.get("対象者名", "")))
+            # 2. 氏名の優先ロジック（旧姓表記対応）
+            iog_name = self.safe_str_convert(row.get("対象者名", ""))
+            transfer_name = self.safe_str_convert(row.get("賃借人氏名", ""))
 
+            # 旧姓表記チェック
+            if self.has_old_name_notation(iog_name):
+                old_name_count += 1
+
+                if has_transfer and transfer_name:
+                    # 譲渡一覧から取得（新姓）
+                    final_name = transfer_name
+                    source = "譲渡一覧"
+                    old_name_from_transfer += 1
+                else:
+                    # 旧姓部分を除去
+                    final_name = self.remove_old_name_notation(iog_name)
+                    source = "IOG(旧姓削除)"
+                    old_name_removed += 1
+
+                # 最初の3件を例として記録
+                if len(old_name_examples) < 3:
+                    old_name_examples.append({
+                        "引継番号": row.get("契約番号"),
+                        "元の氏名": iog_name,
+                        "処理後": final_name,
+                        "参照元": source
+                    })
+            else:
+                # 旧姓表記なし → IOGをそのまま使用
+                final_name = iog_name
+
+            converted_row["契約者氏名"] = self.remove_all_spaces(final_name)
             converted_row["契約者カナ"] = self.remove_all_spaces(self.safe_str_convert(row.get("フリガナ", "")))
 
             # 2. 電話番号処理（JIDデータから）
@@ -487,7 +590,20 @@ class DataConverter:
         final_df = final_df.reindex(columns=temp_columns)
         final_df.columns = IOGConfig.OUTPUT_COLUMNS
 
-        return final_df
+        # 旧姓処理のログを生成
+        if old_name_count > 0:
+            logs.append("")
+            logs.append(f"⚠️ 旧姓表記を検出・処理: {old_name_count}件")
+            if old_name_from_transfer > 0:
+                logs.append(f"  └─ 譲渡一覧から新姓取得: {old_name_from_transfer}件")
+            if old_name_removed > 0:
+                logs.append(f"  └─ IOGデータから旧姓削除: {old_name_removed}件")
+
+            # 処理例を表示
+            for example in old_name_examples:
+                logs.append(f"  例: {example['引継番号']} \"{example['元の氏名']}\" → \"{example['処理後']}\" ({example['参照元']})")
+
+        return final_df, logs
 
 
 def load_transfer_files(transfer_files: List[Tuple[str, bytes]]) -> pd.DataFrame:
@@ -656,7 +772,10 @@ def process_jid_data(excel_content: bytes, transfer_files: List[Tuple[str, bytes
 
         # 4. データ変換（111列テンプレート準拠）
         data_converter = DataConverter()
-        output_df = data_converter.convert_jid_data_with_transfer(merged_df, not transfer_df.empty)
+        output_df, conversion_logs = data_converter.convert_jid_data_with_transfer(merged_df, not transfer_df.empty)
+
+        # 変換ログを追加
+        logs.extend(conversion_logs)
 
         logs.append(f"データ変換完了: {len(output_df)}件 → 111列テンプレート形式")
         logs.append(DetailedLogger.log_final_result(len(output_df)))
