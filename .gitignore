@@ -25,3 +25,4 @@ rollback_*.log
 
 # Streamlit logs
 streamlit.log
+.claude/settings.local.json
