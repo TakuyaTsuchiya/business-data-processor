@@ -366,8 +366,8 @@ class DataConverter:
             else:
                 final_name = iog_name
 
-            converted_row["契約者氏名"] = self.remove_all_spaces(final_name)
-            converted_row["契約者カナ"] = self.remove_all_spaces(self.safe_str_convert(row.get("フリガナ", "")))
+            converted_row["契約者氏名"] = final_name
+            converted_row["契約者カナ"] = self.safe_str_convert(row.get("フリガナ", ""))
 
             # 2. 電話番号処理（JIDデータから）
             phone_result = self.process_phone_numbers(
@@ -407,7 +407,7 @@ class DataConverter:
                 converted_row["物件住所3"] = self.safe_str_convert(row.get("物件町域名", ""))
 
                 # 7. 保証人1（譲渡一覧から）
-                converted_row["保証人１氏名"] = self.remove_all_spaces(self.safe_str_convert(row.get("連帯保証人氏名（滞納）", "")))
+                converted_row["保証人１氏名"] = self.safe_str_convert(row.get("連帯保証人氏名（滞納）", ""))
                 converted_row["保証人１カナ"] = ""  # 譲渡一覧にカナなし
 
                 # 続柄変換（値がある場合「他」に統一）
@@ -436,7 +436,7 @@ class DataConverter:
                 converted_row["保証人１TEL携帯"] = guarantor_phone["mobile"]
 
                 # 8. 緊急連絡先1（譲渡一覧から）
-                converted_row["緊急連絡人１氏名"] = self.remove_all_spaces(self.safe_str_convert(row.get("緊急連絡先氏名（滞納）", "")))
+                converted_row["緊急連絡人１氏名"] = self.safe_str_convert(row.get("緊急連絡先氏名（滞納）", ""))
                 converted_row["緊急連絡人１カナ"] = ""  # 譲渡一覧にカナなし
 
                 # 続柄変換（値がある場合「他」に統一）
@@ -475,9 +475,22 @@ class DataConverter:
             else:
                 converted_row["登録フラグ"] = ""
 
-            # 11. 全項目を一括正規化（英数字→半角、カタカナ→全角）
+            # 11. 全項目を正規化
+            # 氏名関連フィールドは normalize_name を使用（異体字統一・通称除去・スペース除去）
+            # その他のフィールドは normalize_for_client_system を使用（スペース保持）
+            name_fields = [
+                "契約者氏名", "契約者カナ",
+                "保証人１氏名", "保証人１カナ",
+                "保証人２氏名", "保証人２カナ",
+                "緊急連絡人１氏名", "緊急連絡人１カナ",
+                "緊急連絡人２氏名", "緊急連絡人２カナ"
+            ]
+
             for key in converted_row:
-                converted_row[key] = self.normalize_for_client_system(converted_row[key])
+                if key in name_fields:
+                    converted_row[key] = normalize_name(converted_row[key])
+                else:
+                    converted_row[key] = self.normalize_for_client_system(converted_row[key])
 
             output_data.append(converted_row)
 
@@ -549,30 +562,130 @@ def load_transfer_files(transfer_files: List[Tuple[str, bytes]]) -> pd.DataFrame
     return combined_df
 
 
+def normalize_kanji_variants(text: str) -> str:
+    """
+    漢字異体字を統一
+
+    マッチング精度向上のため、よくある異体字を標準字体に統一します。
+
+    Args:
+        text: 変換対象の文字列
+
+    Returns:
+        str: 異体字を統一した文字列
+
+    Examples:
+        >>> normalize_kanji_variants("髙橋")
+        '高橋'
+        >>> normalize_kanji_variants("﨑本")
+        '崎本'
+    """
+    if not text:
+        return ""
+
+    # はしごだか
+    text = text.replace('髙', '高')  # U+9AD9 → U+9AD8
+
+    # たつさき
+    text = text.replace('﨑', '崎')  # U+FA11 → U+5D0E
+
+    # その他よくある異体字
+    text = text.replace('濵', '浜')  # U+6FF5 → U+6D5C
+    text = text.replace('邊', '辺')  # U+908A → U+8FBA
+    text = text.replace('󠄀', '')     # 異体字セレクタ削除
+
+    return text
+
+
+def remove_tsusho(text: str) -> str:
+    """
+    通称表記を除去
+
+    「通称〇〇」パターンを削除して、実際の氏名のみを抽出します。
+
+    Args:
+        text: 氏名文字列
+
+    Returns:
+        str: 通称表記を除去した氏名
+
+    Examples:
+        >>> remove_tsusho("姜利一通称山本昭雄")
+        '姜利一'
+        >>> remove_tsusho("ISHIMOTOCINTIAHARUMI通称石元ハルミ")
+        'ISHIMOTOCINTIAHARUMI'
+    """
+    if not text:
+        return ""
+
+    import re
+    # 「通称」以降を削除
+    text = re.sub(r'通称.+$', '', text)
+
+    return text.strip()
+
+
 def normalize_name(name: str) -> str:
     """
-    氏名を正規化（スペース統一）
+    氏名専用の正規化（マッチング・出力両用）
+
+    マッチング精度向上のため、以下の処理を行います：
+    1. 通称表記の除去
+    2. 異体字の統一
+    3. NFKC正規化（半角カナ→全角カナ）
+    4. 全角英数→半角英数
+    5. 全スペース除去
 
     Args:
         name: 氏名文字列
 
     Returns:
         str: 正規化された氏名
+
+    Examples:
+        >>> normalize_name("ｲ ｼﾞﾆ")
+        'イジニ'
+        >>> normalize_name("イ　ジニ")
+        'イジニ'
+        >>> normalize_name("髙橋由美")
+        '高橋由美'
+        >>> normalize_name("姜利一通称山本昭雄")
+        '姜利一'
     """
     if pd.isna(name) or not name:
         return ""
 
-    # 全角スペースを半角スペースに
-    normalized = str(name).replace("　", " ")
+    # Step1: 通称表記を除去
+    normalized = remove_tsusho(str(name))
 
-    # 連続スペースを1つに
-    import re
-    normalized = re.sub(r'\s+', ' ', normalized)
+    # Step2: 異体字を統一
+    normalized = normalize_kanji_variants(normalized)
 
-    # 前後の空白削除
-    normalized = normalized.strip()
+    # Step3: Unicode正規化（NFKC: 半角カナ→全角カナ）
+    normalized = unicodedata.normalize('NFKC', normalized)
 
-    return normalized
+    # Step4: 全角英数→半角英数
+    result = []
+    for char in normalized:
+        code = ord(char)
+        # 全角英大文字 A-Z → 半角
+        if 0xFF21 <= code <= 0xFF3A:
+            result.append(chr(code - 0xFEE0))
+        # 全角英小文字 a-z → 半角
+        elif 0xFF41 <= code <= 0xFF5A:
+            result.append(chr(code - 0xFEE0))
+        # 全角数字 0-9 → 半角
+        elif 0xFF10 <= code <= 0xFF19:
+            result.append(chr(code - 0xFEE0))
+        else:
+            result.append(char)
+    normalized = ''.join(result)
+
+    # Step5: 全スペース除去（全角・半角）
+    normalized = normalized.replace(" ", "").replace("　", "")
+
+    # Step6: 前後の空白削除（念のため）
+    return normalized.strip()
 
 
 def find_matching_transfer(iog_name: str, transfer_df: pd.DataFrame) -> pd.Series:
