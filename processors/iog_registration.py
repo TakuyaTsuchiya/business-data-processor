@@ -601,26 +601,29 @@ def remove_tsusho(text: str) -> str:
     """
     通称表記を除去
 
-    「通称〇〇」パターンを削除して、実際の氏名のみを抽出します。
+    「通称」という文字だけを削除します。
+    通称の前後にある氏名は両方とも残るため、
+    部分一致マッチングでどちらの名前でもマッチング可能になります。
 
     Args:
         text: 氏名文字列
 
     Returns:
-        str: 通称表記を除去した氏名
+        str: 「通称」という文字を除去した氏名
 
     Examples:
         >>> remove_tsusho("姜利一通称山本昭雄")
-        '姜利一'
+        '姜利一山本昭雄'
+        >>> remove_tsusho("(通称)水山 義常　KANG RYOON")
+        '()水山 義常　KANG RYOON'
         >>> remove_tsusho("ISHIMOTOCINTIAHARUMI通称石元ハルミ")
-        'ISHIMOTOCINTIAHARUMI'
+        'ISHIMOTOCINTIAHARUMI石元ハルミ'
     """
     if not text:
         return ""
 
-    import re
-    # 「通称」以降を削除
-    text = re.sub(r'通称.+$', '', text)
+    # 「通称」という文字だけ削除（前後の名前は両方残す）
+    text = text.replace('通称', '')
 
     return text.strip()
 
