@@ -199,31 +199,139 @@ class TestDataConverter:
 
 
 class TestNormalizeName:
-    """normalize_name() 関数のテスト"""
+    """normalize_name() 関数のテスト（6ステップ正規化）"""
 
-    def test_normalize_name_全角スペースを半角に(self):
-        """全角スペースが半角スペースに変換されることを確認"""
-        result = normalize_name("山田　太郎")
-        assert result == "山田 太郎"
+    def test_normalize_name_全スペース除去(self):
+        """全角・半角スペースが完全に除去されることを確認"""
+        assert normalize_name("山田　太郎") == "山田太郎"
+        assert normalize_name("山田 太郎") == "山田太郎"
+        assert normalize_name("山田  太郎") == "山田太郎"
 
-    def test_normalize_name_連続スペースを1つに(self):
-        """連続スペースが1つに統一されることを確認"""
-        result = normalize_name("山田  太郎")
-        assert result == "山田 太郎"
+    def test_normalize_name_半角カナをNFKC正規化(self):
+        """半角カナが全角カナに変換されることを確認"""
+        assert normalize_name("ｲ ｼﾞﾆ") == "イジニ"
+        assert normalize_name("ﾔﾏﾀﾞ ﾀﾛｳ") == "ヤマダタロウ"
 
-    def test_normalize_name_前後の空白削除(self):
-        """前後の空白が削除されることを確認"""
-        result = normalize_name("  山田 太郎  ")
-        assert result == "山田 太郎"
+    def test_normalize_name_異体字を統一(self):
+        """漢字異体字が標準字体に統一されることを確認"""
+        assert normalize_name("髙橋由美") == "高橋由美"
+        assert normalize_name("﨑本花子") == "崎本花子"
+
+    def test_normalize_name_通称を除去(self):
+        """通称表記が除去されることを確認"""
+        assert normalize_name("姜利一通称山本昭雄") == "姜利一山本昭雄"
+        assert normalize_name("(通称)水山 義常") == "()水山義常"
+
+    def test_normalize_name_全角英数を半角に(self):
+        """全角英数字が半角に変換されることを確認"""
+        assert normalize_name("ＡＢＣ１２３") == "ABC123"
+
+    def test_normalize_name_複合パターン(self):
+        """通称・異体字・半角カナ・スペースの複合パターンを確認"""
+        # 通称 + 異体字 + スペース
+        assert normalize_name("髙橋 由美通称佐藤 由美") == "高橋由美佐藤由美"
+        # 半角カナ + 異体字 + スペース
+        assert normalize_name("ﾀｶﾊｼ 髙子") == "タカハシ高子"
 
     def test_normalize_name_空文字(self):
         """空文字を渡すと空文字が返ることを確認"""
-        result = normalize_name("")
-        assert result == ""
+        assert normalize_name("") == ""
 
     def test_normalize_name_None(self):
         """Noneを渡すと空文字が返ることを確認"""
-        result = normalize_name(None)
+        assert normalize_name(None) == ""
+
+
+class TestRemoveTsusho:
+    """remove_tsusho() 関数のテスト"""
+
+    def setup_method(self):
+        """各テストの前に実行される準備処理"""
+        from processors.iog_registration import remove_tsusho
+        self.remove_tsusho = remove_tsusho
+
+    def test_remove_tsusho_括弧付き通称(self):
+        """括弧付き通称が正しく除去されることを確認"""
+        result = self.remove_tsusho("(通称)水山 義常　KANG RYOON")
+        assert result == "()水山 義常　KANG RYOON"
+
+    def test_remove_tsusho_括弧なし通称(self):
+        """括弧なし通称が正しく除去されることを確認"""
+        result = self.remove_tsusho("姜利一通称山本昭雄")
+        assert result == "姜利一山本昭雄"
+
+    def test_remove_tsusho_英字と通称(self):
+        """英字と通称の複合パターンが正しく処理されることを確認"""
+        result = self.remove_tsusho("ISHIMOTOCINTIAHARUMI通称石元ハルミ")
+        assert result == "ISHIMOTOCINTIAHARUMI石元ハルミ"
+
+    def test_remove_tsusho_通称なし(self):
+        """通称がない場合、そのまま返されることを確認"""
+        result = self.remove_tsusho("山田太郎")
+        assert result == "山田太郎"
+
+    def test_remove_tsusho_空文字(self):
+        """空文字を渡すと空文字が返ることを確認"""
+        result = self.remove_tsusho("")
+        assert result == ""
+
+    def test_remove_tsusho_None(self):
+        """Noneを渡すと空文字が返ることを確認"""
+        result = self.remove_tsusho(None)
+        assert result == ""
+
+    def test_remove_tsusho_複数の通称(self):
+        """複数の「通称」が全て除去されることを確認"""
+        result = self.remove_tsusho("姜利一通称山本昭雄通称田中太郎")
+        assert result == "姜利一山本昭雄田中太郎"
+
+
+class TestNormalizeKanjiVariants:
+    """normalize_kanji_variants() 関数のテスト"""
+
+    def setup_method(self):
+        """各テストの前に実行される準備処理"""
+        from processors.iog_registration import normalize_kanji_variants
+        self.normalize_kanji_variants = normalize_kanji_variants
+
+    def test_normalize_kanji_variants_はしごだか(self):
+        """はしごだか（髙）が標準字体（高）に変換されることを確認"""
+        result = self.normalize_kanji_variants("髙橋由美")
+        assert result == "高橋由美"
+
+    def test_normalize_kanji_variants_たつさき(self):
+        """たつさき（﨑）が標準字体（崎）に変換されることを確認"""
+        result = self.normalize_kanji_variants("﨑本花子")
+        assert result == "崎本花子"
+
+    def test_normalize_kanji_variants_濵(self):
+        """濵が浜に変換されることを確認"""
+        result = self.normalize_kanji_variants("濵田太郎")
+        assert result == "浜田太郎"
+
+    def test_normalize_kanji_variants_邊(self):
+        """邊が辺に変換されることを確認"""
+        result = self.normalize_kanji_variants("渡邊次郎")
+        assert result == "渡辺次郎"
+
+    def test_normalize_kanji_variants_複数の異体字(self):
+        """複数の異体字が同時に変換されることを確認"""
+        result = self.normalize_kanji_variants("髙橋﨑本濵田邊")
+        assert result == "高橋崎本浜田辺"
+
+    def test_normalize_kanji_variants_異体字なし(self):
+        """異体字がない場合、そのまま返されることを確認"""
+        result = self.normalize_kanji_variants("山田太郎")
+        assert result == "山田太郎"
+
+    def test_normalize_kanji_variants_空文字(self):
+        """空文字を渡すと空文字が返ることを確認"""
+        result = self.normalize_kanji_variants("")
+        assert result == ""
+
+    def test_normalize_kanji_variants_None(self):
+        """Noneを渡すと空文字が返ることを確認"""
+        result = self.normalize_kanji_variants(None)
         assert result == ""
 
 
