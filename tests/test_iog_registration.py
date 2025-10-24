@@ -463,3 +463,110 @@ class TestOldNameNotation:
 
         # ログに2件の旧姓処理が記録されることを確認
         assert any("旧姓表記を検出・処理: 2件" in log for log in logs)
+
+
+class TestPartialNameMatching:
+    """部分一致マッチングのテスト"""
+
+    def setup_method(self):
+        """各テストの前に実行される準備処理"""
+        import sys
+        import os
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+        from processors.iog_registration import find_matching_transfer, merge_transfer_data
+
+        self.find_matching_transfer = find_matching_transfer
+        self.merge_transfer_data = merge_transfer_data
+
+    def test_部分一致_繰り返し氏名パターン(self):
+        """繰り返し氏名パターンで部分一致が機能することを確認"""
+        transfer_df = pd.DataFrame({
+            "賃借人氏名": ["谷田絵理"],
+            "物件名": ["サンプル物件"]
+        })
+
+        matched = self.find_matching_transfer("佐藤絵理福岡絵理谷田絵理", transfer_df)
+        assert matched is not None
+        assert matched["賃借人氏名"] == "谷田絵理"
+
+    def test_部分一致_複数回結婚パターン(self):
+        """複数回結婚パターンで部分一致が機能することを確認"""
+        transfer_df = pd.DataFrame({
+            "賃借人氏名": ["長野美生"],
+            "物件名": ["テスト物件"]
+        })
+
+        matched = self.find_matching_transfer("岩城美生長野美生", transfer_df)
+        assert matched is not None
+        assert matched["賃借人氏名"] == "長野美生"
+
+    def test_部分一致_3文字未満は誤マッチ防止(self):
+        """3文字未満の名前は誤マッチしないことを確認"""
+        transfer_df = pd.DataFrame({
+            "賃借人氏名": ["太郎"],  # 2文字
+            "物件名": ["誤マッチ物件"]
+        })
+
+        # "山田太郎" に "太郎" が含まれるが、3文字未満なのでマッチしない
+        matched = self.find_matching_transfer("山田太郎", transfer_df)
+        assert matched is None
+
+    def test_部分一致_完全一致優先(self):
+        """完全一致がある場合は部分一致より優先されることを確認"""
+        jid_df = pd.DataFrame({
+            "対象者名": ["田中花子", "佐藤絵理福岡絵理谷田絵理"]
+        })
+
+        transfer_df = pd.DataFrame({
+            "賃借人氏名": ["田中花子", "谷田絵理"],
+            "物件名": ["物件A", "物件B"],
+            "_source_info": ["完全一致", "部分一致"]
+        })
+
+        merged_df, duplicates, match_stats = self.merge_transfer_data(jid_df, transfer_df)
+
+        # 統計確認
+        assert match_stats["exact"] == 1  # 完全一致 1件
+        assert match_stats["partial"] == 1  # 部分一致 1件
+
+        # データ確認
+        assert merged_df.loc[0, "物件名"] == "物件A"  # 完全一致
+        assert merged_df.loc[1, "物件名"] == "物件B"  # 部分一致
+
+    def test_部分一致_マッチなし(self):
+        """部分一致でもマッチしない場合の確認"""
+        transfer_df = pd.DataFrame({
+            "賃借人氏名": ["山田太郎"],
+            "物件名": ["物件X"]
+        })
+
+        # 全く異なる名前
+        matched = self.find_matching_transfer("鈴木一郎", transfer_df)
+        assert matched is None
+
+    def test_統合_2段階マッチング(self):
+        """完全一致と部分一致が両方機能する統合テスト"""
+        jid_df = pd.DataFrame({
+            "対象者名": [
+                "田中花子",                      # 完全一致する
+                "佐藤絵理福岡絵理谷田絵理",      # 部分一致する
+                "鈴木一郎"                       # マッチしない
+            ]
+        })
+
+        transfer_df = pd.DataFrame({
+            "賃借人氏名": ["田中花子", "谷田絵理"],
+            "物件名": ["物件A", "物件B"],
+            "_source_info": ["完全", "部分"]
+        })
+
+        merged_df, duplicates, match_stats = self.merge_transfer_data(jid_df, transfer_df)
+
+        # 統計確認
+        assert match_stats["exact"] == 1
+        assert match_stats["partial"] == 1
+
+        # データ確認
+        assert merged_df.loc[0, "物件名"] == "物件A"  # 完全一致
+        assert merged_df.loc[1, "物件名"] == "物件B"  # 部分一致
+        assert pd.isna(merged_df.loc[2, "物件名"])    # マッチなし

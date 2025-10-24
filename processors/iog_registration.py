@@ -675,19 +675,54 @@ def normalize_name(name: str) -> str:
     return normalized
 
 
-def merge_transfer_data(jid_df: pd.DataFrame, transfer_df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, int]]:
+def find_matching_transfer(iog_name: str, transfer_df: pd.DataFrame) -> pd.Series:
     """
-    JIDデータと譲渡一覧を氏名でマージ
+    部分一致で譲渡一覧を検索（最小3文字制限）
+
+    Args:
+        iog_name: IOGデータの氏名
+        transfer_df: 譲渡一覧データ
+
+    Returns:
+        pd.Series: マッチした譲渡一覧の行（マッチしない場合はNone）
+
+    Examples:
+        IOG: "佐藤絵理福岡絵理谷田絵理"
+        譲渡: "谷田絵理"
+        → マッチ（"谷田絵理" in "佐藤絵理福岡絵理谷田絵理"）
+    """
+    if not iog_name or transfer_df.empty:
+        return None
+
+    iog_normalized = normalize_name(iog_name)
+
+    for idx, row in transfer_df.iterrows():
+        transfer_name = normalize_name(row.get("賃借人氏名", ""))
+
+        # 3文字以上のフルネームのみマッチング対象（誤マッチ防止）
+        if len(transfer_name) >= 3 and transfer_name in iog_normalized:
+            return row
+
+    return None
+
+
+def merge_transfer_data(jid_df: pd.DataFrame, transfer_df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, int], Dict[str, int]]:
+    """
+    JIDデータと譲渡一覧を氏名でマージ（2段階マッチング）
+
+    第1段階: 完全一致でマージ
+    第2段階: マッチしなかった行について部分一致でマージ
 
     Args:
         jid_df: JIDデータ
         transfer_df: 譲渡一覧データ
 
     Returns:
-        Tuple[pd.DataFrame, Dict[str, int]]: (マージされたデータ, 同姓同名辞書)
+        Tuple[pd.DataFrame, Dict[str, int], Dict[str, int]]:
+            (マージされたデータ, 同姓同名辞書, マッチング統計)
     """
     if transfer_df.empty:
-        return jid_df, {}
+        return jid_df, {}, {"exact": 0, "partial": 0}
 
     # 氏名を正規化
     jid_df = jid_df.copy()
@@ -700,7 +735,7 @@ def merge_transfer_data(jid_df: pd.DataFrame, transfer_df: pd.DataFrame) -> Tupl
     name_counts = transfer_df["_normalized_name"].value_counts()
     duplicates = name_counts[name_counts > 1].to_dict()
 
-    # 左結合（JIDデータを基準に、譲渡一覧データを追加）
+    # 第1段階: 完全一致でマージ
     merged_df = jid_df.merge(
         transfer_df,
         on="_normalized_name",
@@ -708,10 +743,33 @@ def merge_transfer_data(jid_df: pd.DataFrame, transfer_df: pd.DataFrame) -> Tupl
         suffixes=("", "_transfer")
     )
 
+    # 完全一致のカウント
+    exact_match_count = merged_df["物件名"].notna().sum() if "物件名" in merged_df.columns else 0
+    partial_match_count = 0
+
+    # 第2段階: 部分一致（マッチしなかった行のみ）
+    unmatched_mask = merged_df["物件名"].isna() if "物件名" in merged_df.columns else pd.Series([True] * len(merged_df))
+
+    for idx in merged_df[unmatched_mask].index:
+        iog_name = merged_df.loc[idx, "対象者名"]
+        matched_row = find_matching_transfer(iog_name, transfer_df)
+
+        if matched_row is not None:
+            # マッチした譲渡一覧のデータをマージ
+            for col in transfer_df.columns:
+                if col != "_normalized_name":
+                    merged_df.loc[idx, col] = matched_row[col]
+            partial_match_count += 1
+
     # 正規化列を削除
     merged_df = merged_df.drop("_normalized_name", axis=1)
 
-    return merged_df, duplicates
+    match_stats = {
+        "exact": exact_match_count,
+        "partial": partial_match_count
+    }
+
+    return merged_df, duplicates, match_stats
 
 
 def process_jid_data(excel_content: bytes, transfer_files: List[Tuple[str, bytes]] = None) -> Tuple[pd.DataFrame, List[str], str]:
@@ -756,12 +814,16 @@ def process_jid_data(excel_content: bytes, transfer_files: List[Tuple[str, bytes
         else:
             logs.append("譲渡一覧なし（IOGデータのみで処理）")
 
-        # 3. データマージ（氏名マッチング）
-        merged_df, duplicates = merge_transfer_data(iog_df, transfer_df)
+        # 3. データマージ（氏名マッチング：2段階）
+        merged_df, duplicates, match_stats = merge_transfer_data(iog_df, transfer_df)
 
         if not transfer_df.empty:
-            match_count = merged_df["物件名"].notna().sum() if "物件名" in merged_df.columns else 0
-            logs.append(f"氏名マッチング結果: {match_count}件マッチ（{len(iog_df) - match_count}件マッチなし）")
+            total_match = match_stats["exact"] + match_stats["partial"]
+            logs.append(f"氏名マッチング結果: {total_match}件マッチ（{len(iog_df) - total_match}件マッチなし）")
+            if match_stats["exact"] > 0:
+                logs.append(f"  └─ 完全一致: {match_stats['exact']}件")
+            if match_stats["partial"] > 0:
+                logs.append(f"  └─ 部分一致: {match_stats['partial']}件（繰り返し氏名対応）")
 
             # 同姓同名の警告
             if duplicates:
