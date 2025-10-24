@@ -235,66 +235,6 @@ class DataConverter:
 
         return phone
 
-    def has_old_name_notation(self, name: str) -> bool:
-        """
-        氏名に旧姓表記が含まれているか判定
-
-        Args:
-            name: 判定対象の氏名
-
-        Returns:
-            bool: 旧姓表記が含まれる場合True
-
-        Examples:
-            "井上紗樹（旧姓谷紗樹）" → True
-            "井上紗樹(旧姓谷紗樹)" → True
-            "井上紗樹 旧姓谷紗樹" → True
-            "井上紗樹" → False
-        """
-        if not name:
-            return False
-
-        # 旧姓表記のパターン（括弧あり・なし両対応）
-        old_name_patterns = [
-            "（旧姓", "(旧姓",  # 括弧付き全角・半角
-            "（旧", "(旧",      # 括弧付き短縮形
-            "旧姓"              # 括弧なし
-        ]
-
-        return any(pattern in name for pattern in old_name_patterns)
-
-    def remove_old_name_notation(self, name: str) -> str:
-        """
-        氏名から旧姓表記を除去
-
-        Args:
-            name: 旧姓表記を含む可能性のある氏名
-
-        Returns:
-            str: 旧姓表記を除去した氏名
-
-        Examples:
-            "井上紗樹（旧姓谷紗樹）" → "井上紗樹"
-            "井上紗樹(旧姓谷紗樹)" → "井上紗樹"
-            "井上紗樹 旧姓谷紗樹" → "井上紗樹"
-        """
-        if not name:
-            return ""
-
-        import re
-
-        # 括弧付きパターンを削除（全角括弧）
-        name = re.sub(r'（旧姓[^）]*）', '', name)
-        name = re.sub(r'（旧[^）]*）', '', name)
-
-        # 括弧付きパターンを削除（半角括弧）
-        name = re.sub(r'\(旧姓[^)]*\)', '', name)
-        name = re.sub(r'\(旧[^)]*\)', '', name)
-
-        # 括弧なしパターンを削除（スペース+旧姓以降を削除）
-        name = re.sub(r'\s*旧姓.*$', '', name)
-
-        return name.strip()
 
     def split_address(self, address: str) -> Dict[str, str]:
         """住所を郵便番号、都道府県、市区町村、残り住所に分割（辞書方式）"""
@@ -410,47 +350,20 @@ class DataConverter:
         output_data = []
         logs = []
 
-        # 旧姓処理の統計を記録
-        old_name_count = 0
-        old_name_from_transfer = 0
-        old_name_removed = 0
-        old_name_examples = []
-
         for _, row in merged_df.iterrows():
             converted_row = {}
 
             # 1. 基本情報（JIDデータから）
             converted_row["引継番号"] = self.safe_str_convert(row.get("契約番号", ""))
 
-            # 2. 氏名の優先ロジック（旧姓表記対応）
+            # 2. 氏名の優先ロジック（譲渡一覧優先）
             iog_name = self.safe_str_convert(row.get("対象者名", ""))
             transfer_name = self.safe_str_convert(row.get("賃借人氏名", ""))
 
-            # 旧姓表記チェック
-            if self.has_old_name_notation(iog_name):
-                old_name_count += 1
-
-                if has_transfer and transfer_name:
-                    # 譲渡一覧から取得（新姓）
-                    final_name = transfer_name
-                    source = "譲渡一覧"
-                    old_name_from_transfer += 1
-                else:
-                    # 旧姓部分を除去
-                    final_name = self.remove_old_name_notation(iog_name)
-                    source = "IOG(旧姓削除)"
-                    old_name_removed += 1
-
-                # 最初の3件を例として記録
-                if len(old_name_examples) < 3:
-                    old_name_examples.append({
-                        "引継番号": row.get("契約番号"),
-                        "元の氏名": iog_name,
-                        "処理後": final_name,
-                        "参照元": source
-                    })
+            # 譲渡一覧にマッチした場合は譲渡一覧の氏名を使用、それ以外はIOGの氏名をそのまま使用
+            if has_transfer and transfer_name:
+                final_name = transfer_name
             else:
-                # 旧姓表記なし → IOGをそのまま使用
                 final_name = iog_name
 
             converted_row["契約者氏名"] = self.remove_all_spaces(final_name)
@@ -589,19 +502,6 @@ class DataConverter:
         # 列順を正しく設定し、空列の仮名前を元の空文字列に戻す
         final_df = final_df.reindex(columns=temp_columns)
         final_df.columns = IOGConfig.OUTPUT_COLUMNS
-
-        # 旧姓処理のログを生成
-        if old_name_count > 0:
-            logs.append("")
-            logs.append(f"⚠️ 旧姓表記を検出・処理: {old_name_count}件")
-            if old_name_from_transfer > 0:
-                logs.append(f"  └─ 譲渡一覧から新姓取得: {old_name_from_transfer}件")
-            if old_name_removed > 0:
-                logs.append(f"  └─ IOGデータから旧姓削除: {old_name_removed}件")
-
-            # 処理例を表示
-            for example in old_name_examples:
-                logs.append(f"  例: {example['引継番号']} \"{example['元の氏名']}\" → \"{example['処理後']}\" ({example['参照元']})")
 
         return final_df, logs
 
