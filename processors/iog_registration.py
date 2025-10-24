@@ -551,25 +551,24 @@ def load_transfer_files(transfer_files: List[Tuple[str, bytes]]) -> pd.DataFrame
 
 def normalize_name(name: str) -> str:
     """
-    氏名を正規化（スペース統一）
+    氏名を正規化（全スペース除去）
+
+    マッチング精度向上のため、全角・半角スペースを完全除去します。
+    これにより「イ　ジニ」と「イジニ」が同一人物として判定されます。
 
     Args:
         name: 氏名文字列
 
     Returns:
-        str: 正規化された氏名
+        str: 正規化された氏名（スペースなし）
     """
     if pd.isna(name) or not name:
         return ""
 
-    # 全角スペースを半角スペースに
-    normalized = str(name).replace("　", " ")
+    # 全スペース除去（全角・半角）
+    normalized = str(name).replace("　", "").replace(" ", "")
 
-    # 連続スペースを1つに
-    import re
-    normalized = re.sub(r'\s+', ' ', normalized)
-
-    # 前後の空白削除
+    # 前後の空白削除（念のため）
     normalized = normalized.strip()
 
     return normalized
