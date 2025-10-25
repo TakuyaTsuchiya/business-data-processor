@@ -353,8 +353,8 @@ class DataConverter:
         for _, row in merged_df.iterrows():
             converted_row = {}
 
-            # 1. 基本情報（JIDデータから）
-            converted_row["引継番号"] = self.safe_str_convert(row.get("契約番号", ""))
+            # 1. 基本情報（譲渡一覧から保証番号を優先）
+            converted_row["引継番号"] = self.safe_str_convert(row.get("保証番号", ""))
 
             # 2. 氏名の優先ロジック（譲渡一覧優先）
             iog_name = self.safe_str_convert(row.get("対象者名", ""))
@@ -861,8 +861,7 @@ def process_jid_data(excel_content: bytes, transfer_files: List[Tuple[str, bytes
         # 5. マッピング可視化情報
         logs.append("")
         logs.append("=== データマッピング状況 ===")
-        logs.append("【IOGデータから（9項目）】")
-        logs.append("  ✓ 引継番号 ← 契約番号")
+        logs.append("【IOGデータから（8項目）】")
         logs.append("  ✓ 契約者氏名 ← 対象者名")
         logs.append("  ✓ 契約者カナ ← フリガナ")
         logs.append("  ✓ 契約者TEL自宅 ← 自宅電話")
@@ -875,6 +874,7 @@ def process_jid_data(excel_content: bytes, transfer_files: List[Tuple[str, bytes
         if not transfer_df.empty:
             logs.append("")
             logs.append("【譲渡一覧から（追加項目）】")
+            logs.append("  ✓ 引継番号 ← 保証番号")
             logs.append("  ✓ 物件名・部屋番号（自動分割）")
             logs.append("  ✓ 物件住所（郵便番号、都道府県、市区町村、町域名）")
             logs.append("  ✓ 保証人1（氏名、続柄、住所、電話、携帯）")
