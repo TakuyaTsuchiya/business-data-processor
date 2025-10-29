@@ -146,3 +146,67 @@ class TestDataExtraction:
         # 9列目（インデックス8）が結合住所であることを確認
         assert output_list[8][0] == ""  # 空白ヘッダー
         assert output_list[8][1] == "北海道札幌市北区1-1-1"  # 結合住所
+
+
+class TestSorting:
+    """ソート処理のテスト"""
+
+    def test_sort_by_prefecture_北から南(self):
+        """都道府県順（北→南）にソートされることを確認"""
+        from processors.visit_list.processor import sort_by_prefecture, OUTPUT_COLUMNS
+
+        # 5行のサンプルデータ（都道府県がバラバラ）
+        df = pd.DataFrame([
+            {col: None for col in OUTPUT_COLUMNS} for _ in range(5)
+        ])
+        df["管理番号"] = [1001, 1002, 1003, 1004, 1005]
+        df["現住所1"] = ["沖縄県", "東京都", "北海道", "大阪府", "神奈川県"]
+
+        sorted_df = sort_by_prefecture(df)
+        result_ids = sorted_df["管理番号"].tolist()
+
+        # 期待: 北海道(0) → 東京都(12) → 神奈川県(13) → 大阪府(26) → 沖縄県(46)
+        assert result_ids == [1003, 1002, 1005, 1004, 1001]
+
+
+class TestExcelGeneration:
+    """Excel生成処理のテスト"""
+
+    def test_generate_excel_5シート生成(self):
+        """5シート（契約者/保証人1/保証人2/連絡人1/連絡人2）が生成されることを確認"""
+        from processors.visit_list.processor import generate_excel, OUTPUT_COLUMNS
+        import openpyxl
+
+        # サンプルデータ（各シート1行ずつ）
+        df_dict = {}
+        for person_type in ["contractor", "guarantor1", "guarantor2", "contact1", "contact2"]:
+            df = pd.DataFrame([{col: f"test_{person_type}" for col in OUTPUT_COLUMNS}])
+            df_dict[person_type] = df
+
+        excel_bytes, logs = generate_excel(df_dict, "test.xlsx")
+
+        # Excelファイルを読み込んで検証
+        import io as io_module
+        wb = openpyxl.load_workbook(io_module.BytesIO(excel_bytes))
+
+        # 5シート存在確認
+        assert len(wb.sheetnames) == 5
+        assert "契約者" in wb.sheetnames
+        assert "保証人1" in wb.sheetnames
+
+    def test_generate_excel_フォント設定(self):
+        """游ゴシック 11ptが設定されることを確認"""
+        from processors.visit_list.processor import generate_excel, OUTPUT_COLUMNS
+        import openpyxl
+
+        df_dict = {"contractor": pd.DataFrame([{col: "test" for col in OUTPUT_COLUMNS}])}
+        excel_bytes, logs = generate_excel(df_dict, "test.xlsx")
+
+        import io as io_module
+        wb = openpyxl.load_workbook(io_module.BytesIO(excel_bytes))
+        ws = wb["契約者"]
+
+        # 最初のセルのフォントを確認
+        cell = ws["A1"]
+        assert cell.font.name == "游ゴシック"
+        assert cell.font.size == 11

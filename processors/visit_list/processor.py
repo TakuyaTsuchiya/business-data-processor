@@ -6,8 +6,12 @@ ContractList.csvから訪問スタッフ用の訪問リストExcelを生成
 """
 
 import pandas as pd
+import io
 from datetime import datetime
 from typing import Tuple, List, Dict
+from openpyxl import Workbook
+from openpyxl.styles import Font
+from processors.common.prefecture_order import get_prefecture_order, extract_prefecture_from_address
 
 
 # 22列の出力構造定義
@@ -210,3 +214,122 @@ def create_output_row(row: pd.Series, person_type: str, config: Dict) -> Dict:
     }
 
     return output
+
+
+def sort_by_prefecture(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    都道府県順（北→南）でソート
+
+    Args:
+        df: 22列形式のDataFrame
+
+    Returns:
+        pd.DataFrame: ソート後のDataFrame
+    """
+    # 現住所1から都道府県を抽出し、順序番号を取得
+    df['prefecture_order'] = df['現住所1'].apply(
+        lambda addr: get_prefecture_order(extract_prefecture_from_address(str(addr)))
+    )
+
+    # 都道府県順でソート
+    df_sorted = df.sort_values('prefecture_order').drop(columns=['prefecture_order'])
+
+    return df_sorted
+
+
+def generate_excel(
+    df_dict: Dict[str, pd.DataFrame],
+    output_filename: str
+) -> Tuple[bytes, List[str]]:
+    """
+    5シートのExcelファイルを生成（フォント設定付き）
+
+    Args:
+        df_dict: 人物タイプ別のDataFrame辞書
+        output_filename: 出力ファイル名
+
+    Returns:
+        Tuple[bytes, List[str]]: Excelバイト列とログ
+    """
+    logs = []
+
+    # Excelファイルを作成
+    excel_buffer = io.BytesIO()
+
+    with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+        for person_type, config in VisitListConfig.PERSON_TYPES.items():
+            if person_type in df_dict and len(df_dict[person_type]) > 0:
+                df = df_dict[person_type]
+                sheet_name = config["sheet_name"]
+
+                # Excelシートに書き込み
+                df.to_excel(writer, sheet_name=sheet_name, index=False)
+                logs.append(f"{sheet_name}シート: {len(df)}件")
+
+        # フォント設定を適用
+        workbook = writer.book
+        font = Font(name='游ゴシック', size=11)
+
+        for sheet_name in workbook.sheetnames:
+            ws = workbook[sheet_name]
+            for row in ws.iter_rows():
+                for cell in row:
+                    cell.font = font
+
+    excel_buffer.seek(0)
+    return excel_buffer.getvalue(), logs
+
+
+def process_visit_list(df_input: pd.DataFrame) -> Tuple[bytes, str, str, List[str]]:
+    """
+    訪問リスト作成のメイン処理
+
+    Args:
+        df_input: ContractList DataFrame
+
+    Returns:
+        Tuple[bytes, str, str, List[str]]: Excelバイト列、ファイル名、メッセージ、ログ
+    """
+    logs = []
+
+    # 1. フィルタリング
+    df_filtered, filter_logs = filter_records(df_input)
+    logs.extend(filter_logs)
+
+    if len(df_filtered) == 0:
+        return None, "", "フィルタ条件に一致するレコードがありませんでした", logs
+
+    # 2. 5つの人物タイプ別にデータ作成
+    df_dict = {}
+    for person_type, config in VisitListConfig.PERSON_TYPES.items():
+        # 該当人物の現住所1が存在するレコードのみ
+        address1_col = config["address1_col"]
+        mask = df_filtered.iloc[:, address1_col].notna() & (df_filtered.iloc[:, address1_col] != '')
+        df_person = df_filtered[mask].copy()
+
+        if len(df_person) > 0:
+            # 22列の出力データ作成
+            output_rows = []
+            for _, row in df_person.iterrows():
+                output_row = create_output_row(row, person_type, config)
+                output_rows.append(output_row)
+
+            # DataFrameに変換
+            df_output = pd.DataFrame(output_rows, columns=OUTPUT_COLUMNS)
+
+            # 都道府県順でソート
+            df_output = sort_by_prefecture(df_output)
+
+            df_dict[person_type] = df_output
+
+    # 3. Excelファイル生成
+    today = datetime.now()
+    filename = f"{today.strftime('%m%d')}訪問リスト.xlsx"
+    excel_bytes, excel_logs = generate_excel(df_dict, filename)
+    logs.extend(excel_logs)
+
+    # 4. サマリーメッセージ
+    total_records = sum(len(df) for df in df_dict.values())
+    message = f"訪問リスト作成完了 - 合計 {total_records}件"
+
+    return excel_bytes, filename, message, logs
