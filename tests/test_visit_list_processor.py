@@ -9,6 +9,20 @@ import pytest
 import pandas as pd
 from datetime import datetime, timedelta
 import io
+from processors.visit_list.processor import (
+    combine_address,
+    filter_records,
+    create_output_row,
+    extract_person_data,
+    sort_by_prefecture,
+    generate_excel,
+    VisitListConfig
+)
+from processors.common.prefecture_order import (
+    get_prefecture_order,
+    extract_prefecture_from_address,
+    PREFECTURE_ORDER
+)
 
 
 class TestVisitListFiltering:
@@ -16,25 +30,28 @@ class TestVisitListFiltering:
 
     def setup_method(self):
         """各テストの前に実行される準備処理"""
-        # テスト用のサンプルDataFrame作成
+        # テスト用のサンプルDataFrame作成（121列を模擬）
         today = datetime.now().date()
-        self.sample_data = pd.DataFrame({
-            # 基本情報
-            0: [1001, 1002, 1003, 1004, 1005, 1006],  # 管理番号
-            20: ["田中太郎", "鈴木花子", "佐藤次郎", "山田三郎", "高橋四郎", "伊藤五郎"],  # 契約者氏名
 
-            # フィルタ対象列
-            86: ["交渉困難", "死亡決定", "弁護士介入", "交渉継続中", "交渉困難", "追跡調査中"],  # 回収ランク
-            72: [today - timedelta(days=1), today, today + timedelta(days=1),
-                 today - timedelta(days=5), today - timedelta(days=2), today + timedelta(days=3)],  # 入金予定日
-            73: [10, 2, 5, 10, 3, 15],  # 入金予定金額
+        # 121列のダミーデータを作成（必要な列のみ実データ、残りはNone）
+        data = {i: [None] * 6 for i in range(121)}
 
-            # 住所（契約者）
-            22: ["", "100-0001", "200-0002", "300-0003", "400-0004", "500-0005"],  # 郵便番号
-            23: ["東京都", "北海道", "", "大阪府", "神奈川県", "沖縄県"],  # 現住所1
-            24: ["新宿区", "札幌市", "大阪市", "大阪市", "横浜市", "那覇市"],  # 現住所2
-            25: ["西新宿1-1-1", "北区1-1", "北区1-1-1", "中央区2-2-2", "西区3-3-3", "おもろまち4-4-4"],  # 現住所3
-        })
+        # 基本情報
+        data[0] = [1001, 1002, 1003, 1004, 1005, 1006]  # 管理番号
+        data[20] = ["田中太郎", "鈴木花子", "佐藤次郎", "山田三郎", "高橋四郎", "伊藤五郎"]  # 契約者氏名
+
+        # フィルタ対象列
+        data[86] = ["交渉困難", "死亡決定", "弁護士介入", "交渉継続中", "交渉困難", "追跡調査中"]  # 回収ランク
+        data[72] = [today - timedelta(days=1), today, today + timedelta(days=1),
+                    today - timedelta(days=5), today - timedelta(days=2), today + timedelta(days=3)]  # 入金予定日
+        data[73] = [10, 2, 5, 10, 3, 15]  # 入金予定金額
+
+        # 住所（契約者）
+        data[23] = ["東京都", "北海道", "", "大阪府", "神奈川県", "沖縄県"]  # 現住所1
+        data[24] = ["新宿区", "札幌市", "大阪市", "大阪市", "横浜市", "那覇市"]  # 現住所2
+        data[25] = ["西新宿1-1-1", "北区1-1", "北区1-1-1", "中央区2-2-2", "西区3-3-3", "おもろまち4-4-4"]  # 現住所3
+
+        self.sample_data = pd.DataFrame(data)
 
     # ========================================
     # 回収ランクフィルタのテスト
@@ -111,11 +128,16 @@ class TestVisitListFiltering:
 
     def test_filter_combined_すべての条件を満たす(self):
         """すべてのフィルタ条件を満たすレコードのみが残ることを確認"""
-        # 期待値: 管理番号1001と1005のみ
-        # 1001: 交渉困難, 昨日, 10, 住所あり
-        # 1005: 交渉困難, 2日前, 3（除外される）
-        # 実際には1001のみが残る
-        pass
+        # 期待値: 管理番号1001のみ
+        # 1001: 交渉困難, 昨日, 10, 住所あり → OK
+        # 1002: 死亡決定, 今日, 2（除外される金額）
+        # 1003: 弁護士介入, 明日（除外される日付）, 5（除外される金額）, 住所なし
+        # 1004: 交渉継続中（除外されるランク）
+        # 1005: 交渉困難, 2日前, 3（除外される金額）
+        # 1006: 追跡調査中（除外されるランク）
+        filtered_df, logs = filter_records(self.sample_data)
+        assert len(filtered_df) == 1
+        assert filtered_df.iloc[0, 0] == 1001  # 管理番号
 
 
 class TestVisitListDataExtraction:
@@ -123,66 +145,137 @@ class TestVisitListDataExtraction:
 
     def setup_method(self):
         """各テストの前に実行される準備処理"""
-        # 5種類の人物情報を含むサンプルデータ
-        self.sample_data = pd.DataFrame({
-            0: [1001],  # 管理番号
+        # 121列のダミーデータを作成
+        data = {i: [None] for i in range(121)}
 
-            # 契約者（列20, 22-25, 27）
-            20: ["田中太郎"],
-            22: ["100-0001"],
-            23: ["東京都"],
-            24: ["新宿区"],
-            25: ["西新宿1-1-1"],
-            27: ["090-1111-1111"],
+        # 基本情報
+        data[0] = [1001]  # 管理番号
+        data[2] = ["新規"]  # 最新契約種類
+        data[14] = ["入居中"]  # 入居ステータス
+        data[15] = ["滞納あり"]  # 滞納ステータス
+        data[17] = [0]  # 退去手続き（実費）
+        data[18] = [5000]  # 更新契約手数料
+        data[19] = ["営業太郎"]  # 営業担当者
 
-            # 保証人1（列42, 43-46, 46）
-            42: ["鈴木一郎"],
-            43: ["200-0002"],
-            44: ["北海道"],
-            45: ["札幌市"],
-            46: ["北区1-1-1"],
+        # 契約者（列20, 23-25）
+        data[20] = ["田中太郎"]
+        data[23] = ["東京都"]
+        data[24] = ["新宿区"]
+        data[25] = ["西新宿1-1-1"]
 
-            # 保証人2（列49, 50-53, 53）
-            49: ["佐藤二郎"],
-            50: ["300-0003"],
-            51: ["大阪府"],
-            52: ["大阪市"],
-            53: ["中央区2-2-2"],
+        # 保証人1（列41, 43-45）
+        data[41] = ["鈴木一郎"]
+        data[43] = ["北海道"]
+        data[44] = ["札幌市"]
+        data[45] = ["北区1-1-1"]
 
-            # 連絡人1（列53(氏名), 58-61, 56）
-            56: ["090-4444-4444"],
-            58: ["500-0005"],
-            59: ["神奈川県"],
-            60: ["横浜市"],
-            61: ["西区4-4-4"],
+        # 保証人2（列48, 50-52）
+        data[48] = ["佐藤二郎"]
+        data[50] = ["大阪府"]
+        data[51] = ["大阪市"]
+        data[52] = ["中央区2-2-2"]
 
-            # 連絡人2（列60(氏名), 64-67, 63）
-            63: ["090-5555-5555"],
-            64: ["600-0006"],
-            65: ["沖縄県"],
-            66: ["那覇市"],
-            67: ["おもろまち5-5-5"],
-        })
+        # 連絡人1（列55, 58-60）
+        data[55] = ["高橋三郎"]
+        data[58] = ["神奈川県"]
+        data[59] = ["横浜市"]
+        data[60] = ["西区4-4-4"]
+
+        # 連絡人2（列62, 64-66）
+        data[62] = ["伊藤四郎"]
+        data[64] = ["沖縄県"]
+        data[65] = ["那覇市"]
+        data[66] = ["おもろまち5-5-5"]
+
+        # 金額・日付情報
+        data[71] = [50000]  # 滞納残債
+        data[72] = ["2025-01-15"]  # 入金予定日
+        data[73] = [10000]  # 入金予定金額
+        data[84] = [80000]  # 月額賃料合計
+        data[86] = ["交渉困難"]  # 回収ランク
+
+        # クライアント情報
+        data[97] = ["C001"]  # クライアントCD
+        data[98] = ["テスト管理会社"]  # クライアント名
+        data[118] = ["T001"]  # 委託先法人ID
+        data[119] = ["テスト委託先"]  # 委託先法人名
+        data[120] = ["2025-03-31"]  # 解約日
+
+        self.sample_data = pd.DataFrame(data)
 
     def test_extract_contractor_data_契約者情報を抽出(self):
-        """契約者シート用のデータが正しく抽出されることを確認"""
-        pass
+        """契約者シート用のデータが正しく抽出されることを確認（32列マッピング検証）"""
+        row = self.sample_data.iloc[0]
+        config = VisitListConfig.PERSON_TYPES["contractor"]
+        output = create_output_row(row, "contractor", config)
+
+        # 基本情報の検証
+        assert output["管理番号"] == 1001
+        assert output["最新契約種類"] == "新規"
+        assert output["入居ステータス"] == "入居中"
+        assert output["滞納ステータス"] == "滞納あり"
+        assert output["営業担当者"] == "営業太郎"
+
+        # 契約者情報の検証
+        assert output["[人物]氏名"] == "田中太郎"
+        assert output["現住所1"] == "東京都"
+        assert output["現住所2"] == "新宿区"
+        assert output["現住所3"] == "西新宿1-1-1"
+
+        # 保証人1情報の検証
+        assert output["保証人１氏名"] == "鈴木一郎"
+        assert output["現住所1.1"] == "北海道"
+
+        # 連絡人1情報の検証
+        assert output["緊急連絡人１氏名"] == "高橋三郎"
+        assert output["現住所1.2"] == "神奈川県"
+
+        # 金額情報の検証
+        assert output["滞納残債"] == 50000
+        assert output["回収ランク"] == "交渉困難"
+        assert output["クライアント名"] == "テスト管理会社"
 
     def test_extract_guarantor1_data_保証人1情報を抽出(self):
         """保証人1シート用のデータが正しく抽出されることを確認"""
-        pass
+        row = self.sample_data.iloc[0]
+        config = VisitListConfig.PERSON_TYPES["guarantor1"]
+        output = create_output_row(row, "guarantor1", config)
+
+        # 保証人1が[人物]氏名に配置されることを確認
+        assert output["[人物]氏名"] == "鈴木一郎"
+        assert output["現住所1"] == "北海道"
+        assert output["現住所2"] == "札幌市"
+        assert output["現住所3"] == "北区1-1-1"
 
     def test_extract_guarantor2_data_保証人2情報を抽出(self):
         """保証人2シート用のデータが正しく抽出されることを確認"""
-        pass
+        row = self.sample_data.iloc[0]
+        config = VisitListConfig.PERSON_TYPES["guarantor2"]
+        output = create_output_row(row, "guarantor2", config)
+
+        # 保証人2が[人物]氏名に配置されることを確認
+        assert output["[人物]氏名"] == "佐藤二郎"
+        assert output["現住所1"] == "大阪府"
 
     def test_extract_contact1_data_連絡人1情報を抽出(self):
         """連絡人1シート用のデータが正しく抽出されることを確認"""
-        pass
+        row = self.sample_data.iloc[0]
+        config = VisitListConfig.PERSON_TYPES["contact1"]
+        output = create_output_row(row, "contact1", config)
+
+        # 連絡人1が[人物]氏名に配置されることを確認
+        assert output["[人物]氏名"] == "高橋三郎"
+        assert output["現住所1"] == "神奈川県"
 
     def test_extract_contact2_data_連絡人2情報を抽出(self):
         """連絡人2シート用のデータが正しく抽出されることを確認"""
-        pass
+        row = self.sample_data.iloc[0]
+        config = VisitListConfig.PERSON_TYPES["contact2"]
+        output = create_output_row(row, "contact2", config)
+
+        # 連絡人2が[人物]氏名に配置されることを確認
+        assert output["[人物]氏名"] == "伊藤四郎"
+        assert output["現住所1"] == "沖縄県"
 
 
 class TestVisitListAddressCombination:
@@ -194,33 +287,28 @@ class TestVisitListAddressCombination:
 
     def test_combine_address_3つ全て結合(self):
         """現住所1+2+3がすべて存在する場合、正しく結合されることを確認"""
-        # 入力: "東京都", "新宿区", "西新宿1-1-1"
-        # 期待値: "東京都新宿区西新宿1-1-1"
-        pass
+        result = combine_address("東京都", "新宿区", "西新宿1-1-1")
+        assert result == "東京都新宿区西新宿1-1-1"
 
     def test_combine_address_現住所3が空白(self):
         """現住所3が空白の場合、現住所1+2のみ結合されることを確認"""
-        # 入力: "東京都", "新宿区", ""
-        # 期待値: "東京都新宿区"
-        pass
+        result = combine_address("東京都", "新宿区", "")
+        assert result == "東京都新宿区"
 
     def test_combine_address_現住所2が空白(self):
         """現住所2が空白の場合、現住所1+3のみ結合されることを確認"""
-        # 入力: "東京都", "", "西新宿1-1-1"
-        # 期待値: "東京都西新宿1-1-1"
-        pass
+        result = combine_address("東京都", "", "西新宿1-1-1")
+        assert result == "東京都西新宿1-1-1"
 
     def test_combine_address_現住所1のみ(self):
         """現住所1のみ存在する場合、現住所1がそのまま返されることを確認"""
-        # 入力: "東京都", "", ""
-        # 期待値: "東京都"
-        pass
+        result = combine_address("東京都", "", "")
+        assert result == "東京都"
 
     def test_combine_address_すべて空白(self):
         """すべて空白の場合、空文字が返されることを確認"""
-        # 入力: "", "", ""
-        # 期待値: ""
-        pass
+        result = combine_address("", "", "")
+        assert result == ""
 
 
 class TestVisitListPrefectureSort:
@@ -228,26 +316,50 @@ class TestVisitListPrefectureSort:
 
     def setup_method(self):
         """各テストの前に実行される準備処理"""
-        # 都道府県がランダムに並んだサンプルデータ
-        self.sample_data = pd.DataFrame({
-            0: [1001, 1002, 1003, 1004, 1005],  # 管理番号
-            20: ["A", "B", "C", "D", "E"],  # 契約者氏名
-            23: ["沖縄県", "東京都", "北海道", "大阪府", "神奈川県"],  # 現住所1
-        })
+        # 都道府県がランダムに並んだサンプルデータ（32列フォーマット）
+        from processors.visit_list.processor import OUTPUT_COLUMNS
+        self.sample_data = pd.DataFrame([
+            {col: None for col in OUTPUT_COLUMNS} for _ in range(5)
+        ])
+        self.sample_data["管理番号"] = [1001, 1002, 1003, 1004, 1005]
+        self.sample_data["現住所1"] = ["沖縄県那覇市", "東京都新宿区", "北海道札幌市", "大阪府大阪市", "神奈川県横浜市"]
 
     def test_sort_prefecture_北から南に並び替え(self):
         """都道府県が北から南の順に並び替えられることを確認"""
-        # 期待される順序: 北海道(3) → 東京都(13) → 神奈川県(14) → 大阪府(27) → 沖縄県(47)
+        # 期待される順序: 北海道(0) → 東京都(12) → 神奈川県(13) → 大阪府(26) → 沖縄県(46)
         # 管理番号の並び: 1003, 1002, 1005, 1004, 1001
-        pass
+        sorted_df = sort_by_prefecture(self.sample_data)
+        result_ids = sorted_df["管理番号"].tolist()
+        assert result_ids == [1003, 1002, 1005, 1004, 1001]
 
     def test_sort_prefecture_同一都道府県の順序は維持(self):
         """同一都道府県内のレコード順序が維持されることを確認"""
-        pass
+        # 同じ都道府県のデータを作成
+        from processors.visit_list.processor import OUTPUT_COLUMNS
+        df = pd.DataFrame([
+            {col: None for col in OUTPUT_COLUMNS} for _ in range(3)
+        ])
+        df["管理番号"] = [2001, 2002, 2003]
+        df["現住所1"] = ["東京都新宿区", "東京都渋谷区", "東京都港区"]
+
+        sorted_df = sort_by_prefecture(df)
+        result_ids = sorted_df["管理番号"].tolist()
+        # 元の順序が維持される
+        assert result_ids == [2001, 2002, 2003]
 
     def test_sort_prefecture_不明な都道府県は最後(self):
         """認識できない都道府県文字列は最後に配置されることを確認"""
-        pass
+        from processors.visit_list.processor import OUTPUT_COLUMNS
+        df = pd.DataFrame([
+            {col: None for col in OUTPUT_COLUMNS} for _ in range(3)
+        ])
+        df["管理番号"] = [3001, 3002, 3003]
+        df["現住所1"] = ["不明な住所", "北海道札幌市", "東京都新宿区"]
+
+        sorted_df = sort_by_prefecture(df)
+        result_ids = sorted_df["管理番号"].tolist()
+        # 北海道、東京都、不明な住所の順
+        assert result_ids == [3002, 3003, 3001]
 
 
 class TestVisitListExcelGeneration:
@@ -303,12 +415,23 @@ class TestPrefectureOrder:
 
     def test_prefecture_order_47都道府県すべて含む(self):
         """47都道府県すべてが定義されていることを確認"""
-        pass
+        assert len(PREFECTURE_ORDER) == 47
 
     def test_prefecture_order_順序が正しい(self):
         """北海道が1番、沖縄県が47番であることを確認"""
-        pass
+        assert PREFECTURE_ORDER[0] == "北海道"
+        assert PREFECTURE_ORDER[46] == "沖縄県"
+        assert get_prefecture_order("北海道") == 0
+        assert get_prefecture_order("沖縄県") == 46
 
     def test_prefecture_order_重複がない(self):
         """都道府県名に重複がないことを確認"""
-        pass
+        assert len(PREFECTURE_ORDER) == len(set(PREFECTURE_ORDER))
+
+    def test_extract_prefecture_from_address(self):
+        """住所から都道府県を正しく抽出できることを確認"""
+        assert extract_prefecture_from_address("東京都新宿区西新宿1-1-1") == "東京都"
+        assert extract_prefecture_from_address("北海道札幌市北区") == "北海道"
+        assert extract_prefecture_from_address("大阪府大阪市中央区") == "大阪府"
+        assert extract_prefecture_from_address("沖縄県那覇市") == "沖縄県"
+        assert extract_prefecture_from_address("不明な住所") == ""
