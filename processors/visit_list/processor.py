@@ -196,7 +196,7 @@ def create_output_row(row: pd.Series, person_type: str, config: Dict) -> Dict:
     output = {
         "管理番号": row.iloc[0],
         "最新契約種類": row.iloc[2],
-        "受託状況": row.iloc[16],
+        "受託状況": row.iloc[3],
         "入居ステータス": row.iloc[14],
         "滞納ステータス": row.iloc[15],
         "退去手続き（実費）": pd.to_numeric(row.iloc[17], errors='coerce'),
@@ -250,7 +250,7 @@ def create_output_row_bulk(df_person: pd.DataFrame, person_type: str, config: Di
     df_output = pd.DataFrame({
         "管理番号": df_person.iloc[:, 0].values,
         "最新契約種類": df_person.iloc[:, 2].values,
-        "受託状況": df_person.iloc[:, 16].values,
+        "受託状況": df_person.iloc[:, 3].values,
         "入居ステータス": df_person.iloc[:, 14].values,
         "滞納ステータス": df_person.iloc[:, 15].values,
         "退去手続き（実費）": pd.to_numeric(
