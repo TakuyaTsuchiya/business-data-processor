@@ -157,7 +157,13 @@ def filter_records(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     df_filtered = df_filtered[mask_amount].copy()
     logs.append(f"入金予定金額フィルタ後: {len(df_filtered)}件")
 
-    # 4. 現住所1フィルタ（契約者の住所があるもののみ）
+    # 4. 委託先法人IDフィルタ（5と空白のみ）
+    delegated_corp_id = df_filtered.iloc[:, 118]
+    mask_corp_id = (delegated_corp_id == '5') | (delegated_corp_id == 5) | delegated_corp_id.isna() | (delegated_corp_id == '')
+    df_filtered = df_filtered[mask_corp_id].copy()
+    logs.append(f"委託先法人IDフィルタ後: {len(df_filtered)}件")
+
+    # 5. 現住所1フィルタ（契約者の住所があるもののみ）
     mask_address = df_filtered.iloc[:, 23].notna() & (df_filtered.iloc[:, 23] != '')
     df_filtered = df_filtered[mask_address].copy()
     logs.append(f"現住所1フィルタ後（最終）: {len(df_filtered)}件")
