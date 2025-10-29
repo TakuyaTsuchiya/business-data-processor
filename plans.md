@@ -375,4 +375,43 @@ plans.md                      # 本ファイル
 
 ---
 
+### テスト実装 (2025-10-29)
+
+**事後テスト実装**:
+TDDの原則に反して、実装後にテストを追加（Post-hoc testing）
+
+**実装内容**:
+- Phase 1: 住所結合・都道府県順序（9テスト）
+  - `combine_address()` の5パターンテスト
+  - `get_prefecture_order()` / `extract_prefecture_from_address()` の4テスト
+- Phase 2: フィルタリング処理（1複合テスト）
+  - `filter_records()` の全フィルタ統合テスト
+- Phase 3: データ抽出・32列マッピング（5テスト）
+  - `create_output_row()` の5種類の人物別テスト（最重要）
+- Phase 4: ソート処理（3テスト）
+  - `sort_by_prefecture()` の3パターンテスト
+
+**テスト結果**:
+```
+============================= test session starts ==============================
+collected 39 items
+
+tests/test_visit_list_processor.py::TestVisitListFiltering ... 14 passed
+tests/test_visit_list_processor.py::TestVisitListDataExtraction ... 5 passed
+tests/test_visit_list_processor.py::TestVisitListAddressCombination ... 5 passed
+tests/test_visit_list_processor.py::TestVisitListPrefectureSort ... 3 passed
+tests/test_visit_list_processor.py::TestVisitListExcelGeneration ... 5 passed
+tests/test_visit_list_processor.py::TestVisitListIntegration ... 3 passed
+tests/test_visit_list_processor.py::TestPrefectureOrder ... 4 passed
+
+============================== 39 passed in 0.23s ==============================
+```
+
+**実装済みテスト**: 18テスト
+**プレースホルダー**: 21テスト（`pass` のまま）
+
+**commit**: 054702e - `test: 訪問リスト作成プロセッサーのテスト実装`
+
+---
+
 最終更新: 2025-10-29
