@@ -10,7 +10,7 @@ import io
 from datetime import datetime
 from typing import Tuple, List, Dict
 from openpyxl import Workbook
-from openpyxl.styles import Font
+from openpyxl.styles import Font, Border
 from processors.common.prefecture_order import get_prefecture_order, extract_prefecture_from_address
 
 
@@ -49,6 +49,7 @@ class VisitListConfig:
         "contractor": {
             "name": "契約者",
             "sheet_name": "契約者",
+            "output_name_col": "契約者氏名",
             "name_col": 20,      # 契約者氏名
             "address1_col": 23,  # 現住所1
             "address2_col": 24,  # 現住所2
@@ -57,6 +58,7 @@ class VisitListConfig:
         "guarantor1": {
             "name": "保証人1",
             "sheet_name": "保証人1",
+            "output_name_col": "保証人１氏名",
             "name_col": 41,      # 保証人１氏名
             "address1_col": 43,  # 現住所1.1
             "address2_col": 44,  # 現住所2.1
@@ -65,6 +67,7 @@ class VisitListConfig:
         "guarantor2": {
             "name": "保証人2",
             "sheet_name": "保証人2",
+            "output_name_col": "保証人２氏名",
             "name_col": 48,      # 保証人２氏名
             "address1_col": 50,  # 現住所1.2
             "address2_col": 51,  # 現住所2.2
@@ -73,6 +76,7 @@ class VisitListConfig:
         "contact1": {
             "name": "連絡人1",
             "sheet_name": "連絡人1",
+            "output_name_col": "緊急連絡人１氏名",
             "name_col": 55,      # 緊急連絡人１氏名
             "address1_col": 58,  # 現住所1.3
             "address2_col": 59,  # 現住所2.3
@@ -81,6 +85,7 @@ class VisitListConfig:
         "contact2": {
             "name": "連絡人2",
             "sheet_name": "連絡人2",
+            "output_name_col": "緊急連絡人２氏名",
             "name_col": 62,      # 緊急連絡人２氏名
             "address1_col": 64,  # 現住所1.4
             "address2_col": 65,  # 現住所2.4
@@ -131,8 +136,8 @@ def filter_records(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     initial_count = len(df)
     logs.append(f"入力レコード数: {initial_count}件")
 
-    # 1. 回収ランクフィルタ
-    mask_rank = df.iloc[:, 86].isin(["交渉困難", "死亡決定", "弁護士介入"])
+    # 1. 回収ランクフィルタ（「交渉困難」「死亡決定」「弁護士介入」を除外）
+    mask_rank = ~df.iloc[:, 86].isin(["交渉困難", "死亡決定", "弁護士介入"])
     df_filtered = df[mask_rank].copy()
     logs.append(f"回収ランクフィルタ後: {len(df_filtered)}件")
 
@@ -191,12 +196,12 @@ def create_output_row(row: pd.Series, person_type: str, config: Dict) -> Dict:
     output = {
         "管理番号": row.iloc[0],
         "最新契約種類": row.iloc[2],
-        "受託状況": row.iloc[3] if len(row) > 3 else None,  # 仮
+        "受託状況": row.iloc[16],
         "入居ステータス": row.iloc[14],
         "滞納ステータス": row.iloc[15],
         "退去手続き（実費）": row.iloc[17],
         "営業担当者": row.iloc[19],
-        "[人物]氏名": person_name,
+        config["output_name_col"]: person_name,
         "": person_combined,  # 結合住所（空白ヘッダー）
         "現住所1": person_addr1,
         "現住所2": person_addr2,
@@ -266,15 +271,16 @@ def generate_excel(
                 df.to_excel(writer, sheet_name=sheet_name, index=False)
                 logs.append(f"{sheet_name}シート: {len(df)}件")
 
-        # フォント設定を適用
+        # フォント設定と罫線削除を適用
         workbook = writer.book
-        font = Font(name='游ゴシック', size=11)
+        font = Font(name='游ゴシック Regular', size=11)
 
         for sheet_name in workbook.sheetnames:
             ws = workbook[sheet_name]
             for row in ws.iter_rows():
                 for cell in row:
                     cell.font = font
+                    cell.border = Border()  # 罫線削除
 
     excel_buffer.seek(0)
     return excel_buffer.getvalue(), logs
@@ -314,8 +320,8 @@ def process_visit_list(df_input: pd.DataFrame) -> Tuple[bytes, str, str, List[st
                 output_row = create_output_row(row, person_type, config)
                 output_rows.append(output_row)
 
-            # DataFrameに変換
-            df_output = pd.DataFrame(output_rows, columns=OUTPUT_COLUMNS)
+            # DataFrameに変換（辞書のキーから列名を自動取得）
+            df_output = pd.DataFrame(output_rows)
 
             # 都道府県順でソート
             df_output = sort_by_prefecture(df_output)

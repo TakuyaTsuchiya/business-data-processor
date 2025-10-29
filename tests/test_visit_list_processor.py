@@ -66,9 +66,9 @@ class TestFiltering:
         # 121列のダミーデータ作成（必要な列のみ実データ）
         data = {i: [None] * 6 for i in range(121)}
         data[0] = [1001, 1002, 1003, 1004, 1005, 1006]  # 管理番号
-        data[86] = ["交渉困難", "死亡決定", "弁護士介入", "交渉継続中", "交渉困難", "追跡調査中"]  # 回収ランク
+        data[86] = ["交渉継続中", "死亡決定", "弁護士介入", "交渉継続中", "交渉困難", "追跡調査中"]  # 回収ランク
         data[72] = [today - timedelta(days=1), today, today + timedelta(days=1),
-                    today - timedelta(days=5), today - timedelta(days=2), today + timedelta(days=3)]  # 入金予定日
+                    today + timedelta(days=5), today - timedelta(days=2), today + timedelta(days=3)]  # 入金予定日
         data[73] = [10, 2, 5, 10, 3, 15]  # 入金予定金額
         data[118] = ['5', None, '10', '5', '', '3']  # 委託先法人ID
         data[23] = ["北海道", "東京都", "", "大阪府", "神奈川県", "沖縄県"]  # 現住所1
@@ -76,7 +76,8 @@ class TestFiltering:
         df = pd.DataFrame(data)
         filtered_df, logs = filter_records(df)
 
-        # 期待: 1001のみ（交渉困難, 昨日, 10, '5', 北海道）
+        # 期待: 1001のみ（交渉継続中, 昨日, 10, '5', 北海道）
+        # 1002は死亡決定で除外、1003は弁護士介入で除外、1004は入金予定日が未来、1005は交渉困難で除外、1006は入金予定日が未来
         assert len(filtered_df) == 1
         assert filtered_df.iloc[0, 0] == 1001
 
@@ -121,7 +122,7 @@ class TestDataExtraction:
         assert output["管理番号"] == 1001
         assert output["最新契約種類"] == "レントワン"
         assert output["入居ステータス"] == "入居中"
-        assert output["[人物]氏名"] == "田中太郎"  # シートによって変わるプレースホルダー
+        assert output["契約者氏名"] == "田中太郎"  # 契約者シートの場合は「契約者氏名」
         assert output["現住所1"] == "北海道"
         assert output["回収ランク"] == "交渉困難"
 
@@ -195,7 +196,7 @@ class TestExcelGeneration:
         assert "保証人1" in wb.sheetnames
 
     def test_generate_excel_フォント設定(self):
-        """游ゴシック 11ptが設定されることを確認"""
+        """游ゴシック Regular 11ptが設定されることを確認"""
         from processors.visit_list.processor import generate_excel, OUTPUT_COLUMNS
         import openpyxl
 
@@ -208,5 +209,5 @@ class TestExcelGeneration:
 
         # 最初のセルのフォントを確認
         cell = ws["A1"]
-        assert cell.font.name == "游ゴシック"
+        assert cell.font.name == "游ゴシック Regular"
         assert cell.font.size == 11
