@@ -221,6 +221,60 @@ def create_output_row(row: pd.Series, person_type: str, config: Dict) -> Dict:
     return output
 
 
+def create_output_row_bulk(df_person: pd.DataFrame, person_type: str, config: Dict) -> pd.DataFrame:
+    """
+    DataFrameの全行を一括処理（ベクトル化版）
+
+    Args:
+        df_person: ContractListのDataFrame
+        person_type: 人物種類（"contractor", "guarantor1" など）
+        config: 人物別の列定義
+
+    Returns:
+        pd.DataFrame: 22列の出力DataFrame
+    """
+    # 人物情報の列番号
+    name_col = config["name_col"]
+    addr1_col = config["address1_col"]
+    addr2_col = config["address2_col"]
+    addr3_col = config["address3_col"]
+
+    # 結合住所を一括生成
+    combined_addresses = (
+        df_person.iloc[:, addr1_col].fillna('').astype(str) +
+        df_person.iloc[:, addr2_col].fillna('').astype(str) +
+        df_person.iloc[:, addr3_col].fillna('').astype(str)
+    )
+
+    # 全列を一括取得（ベクトル化）
+    df_output = pd.DataFrame({
+        "管理番号": df_person.iloc[:, 0].values,
+        "最新契約種類": df_person.iloc[:, 2].values,
+        "受託状況": df_person.iloc[:, 16].values,
+        "入居ステータス": df_person.iloc[:, 14].values,
+        "滞納ステータス": df_person.iloc[:, 15].values,
+        "退去手続き（実費）": pd.to_numeric(df_person.iloc[:, 17], errors='coerce'),
+        "営業担当者": df_person.iloc[:, 19].values,
+        config["output_name_col"]: df_person.iloc[:, name_col].values,
+        "": combined_addresses.values,
+        "現住所1": df_person.iloc[:, addr1_col].values,
+        "現住所2": df_person.iloc[:, addr2_col].values,
+        "現住所3": df_person.iloc[:, addr3_col].values,
+        "滞納残債": pd.to_numeric(df_person.iloc[:, 71], errors='coerce'),
+        "入金予定日": df_person.iloc[:, 72].values,
+        "入金予定金額": pd.to_numeric(df_person.iloc[:, 73], errors='coerce'),
+        "月額賃料合計": pd.to_numeric(df_person.iloc[:, 84], errors='coerce'),
+        "回収ランク": df_person.iloc[:, 86].values,
+        "クライアントCD": df_person.iloc[:, 97].values,
+        "クライアント名": df_person.iloc[:, 98].values,
+        "委託先法人ID": df_person.iloc[:, 118].values,
+        "委託先法人名": df_person.iloc[:, 119].values,
+        "解約日": df_person.iloc[:, 120].values,
+    })
+
+    return df_output
+
+
 def sort_by_prefecture(df: pd.DataFrame) -> pd.DataFrame:
     """
     都道府県順（北→南）でソート
@@ -314,14 +368,8 @@ def process_visit_list(df_input: pd.DataFrame) -> Tuple[bytes, str, str, List[st
         df_person = df_filtered[mask].copy()
 
         if len(df_person) > 0:
-            # 22列の出力データ作成
-            output_rows = []
-            for _, row in df_person.iterrows():
-                output_row = create_output_row(row, person_type, config)
-                output_rows.append(output_row)
-
-            # DataFrameに変換（辞書のキーから列名を自動取得）
-            df_output = pd.DataFrame(output_rows)
+            # 一括処理（ベクトル化）
+            df_output = create_output_row_bulk(df_person, person_type, config)
 
             # 都道府県順でソート
             df_output = sort_by_prefecture(df_output)
