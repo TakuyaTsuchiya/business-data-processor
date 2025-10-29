@@ -330,8 +330,8 @@ def process_visit_list(file_content: bytes) -> Tuple[bytes, List[str], str]:
 
         # 4. Excelファイル生成
         logs.append("\n=== Excelファイル生成 ===")
-        today_str = datetime.now().strftime("%Y%m%d")
-        output_filename = f"{VisitListConfig.OUTPUT_FILE_PREFIX}_{today_str}.xlsx"
+        today_str = datetime.now().strftime("%m%d")
+        output_filename = f"{today_str}{VisitListConfig.OUTPUT_FILE_PREFIX}.xlsx"
 
         excel_content, excel_logs = generate_excel(df_dict, output_filename)
         logs.extend(excel_logs)
