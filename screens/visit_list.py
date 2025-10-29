@@ -51,12 +51,12 @@ def render_visit_list():
         # CSVデータを読み込み（エンコーディング自動判定）
         file_data = uploaded_file.getvalue()
         try:
-            df_preview = pd.read_csv(io.BytesIO(file_data), encoding='cp932')
+            df_preview = pd.read_csv(io.BytesIO(file_data), encoding='cp932', low_memory=False)
         except UnicodeDecodeError:
             try:
-                df_preview = pd.read_csv(io.BytesIO(file_data), encoding='shift_jis')
+                df_preview = pd.read_csv(io.BytesIO(file_data), encoding='shift_jis', low_memory=False)
             except UnicodeDecodeError:
-                df_preview = pd.read_csv(io.BytesIO(file_data), encoding='utf-8-sig')
+                df_preview = pd.read_csv(io.BytesIO(file_data), encoding='utf-8-sig', low_memory=False)
 
         # 処理実行ボタン
         if st.button("処理を実行", type="primary", key="visit_list_process"):
