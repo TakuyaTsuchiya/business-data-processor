@@ -253,17 +253,25 @@ def create_output_row_bulk(df_person: pd.DataFrame, person_type: str, config: Di
         "受託状況": df_person.iloc[:, 16].values,
         "入居ステータス": df_person.iloc[:, 14].values,
         "滞納ステータス": df_person.iloc[:, 15].values,
-        "退去手続き（実費）": pd.to_numeric(df_person.iloc[:, 17], errors='coerce'),
+        "退去手続き（実費）": pd.to_numeric(
+            df_person.iloc[:, 17].astype(str).str.replace(',', ''), errors='coerce'
+        ),
         "営業担当者": df_person.iloc[:, 19].values,
         config["output_name_col"]: df_person.iloc[:, name_col].values,
         "": combined_addresses.values,
         "現住所1": df_person.iloc[:, addr1_col].values,
         "現住所2": df_person.iloc[:, addr2_col].values,
         "現住所3": df_person.iloc[:, addr3_col].values,
-        "滞納残債": pd.to_numeric(df_person.iloc[:, 71], errors='coerce'),
+        "滞納残債": pd.to_numeric(
+            df_person.iloc[:, 71].astype(str).str.replace(',', ''), errors='coerce'
+        ),
         "入金予定日": df_person.iloc[:, 72].values,
-        "入金予定金額": pd.to_numeric(df_person.iloc[:, 73], errors='coerce'),
-        "月額賃料合計": pd.to_numeric(df_person.iloc[:, 84], errors='coerce'),
+        "入金予定金額": pd.to_numeric(
+            df_person.iloc[:, 73].astype(str).str.replace(',', ''), errors='coerce'
+        ),
+        "月額賃料合計": pd.to_numeric(
+            df_person.iloc[:, 84].astype(str).str.replace(',', ''), errors='coerce'
+        ),
         "回収ランク": df_person.iloc[:, 86].values,
         "クライアントCD": df_person.iloc[:, 97].values,
         "クライアント名": df_person.iloc[:, 98].values,
@@ -331,10 +339,26 @@ def generate_excel(
 
         for sheet_name in workbook.sheetnames:
             ws = workbook[sheet_name]
+
+            # フォントと罫線の設定
             for row in ws.iter_rows():
                 for cell in row:
                     cell.font = font
                     cell.border = Border()  # 罫線削除
+
+            # 数値列にカンマ区切り書式を適用
+            headers = [cell.value for cell in ws[1]]
+            numeric_cols = []
+            for idx, header in enumerate(headers, start=1):
+                if header in ["退去手続き（実費）", "滞納残債", "入金予定金額", "月額賃料合計"]:
+                    numeric_cols.append(idx)
+
+            # 2行目以降の数値列にカンマ書式
+            for row in ws.iter_rows(min_row=2):
+                for col_idx in numeric_cols:
+                    cell = row[col_idx - 1]
+                    if cell.value is not None and isinstance(cell.value, (int, float)):
+                        cell.number_format = '#,##0'
 
     excel_buffer.seek(0)
     return excel_buffer.getvalue(), logs
