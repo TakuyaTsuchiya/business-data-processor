@@ -337,7 +337,7 @@ def create_output_row_bulk(df_person: pd.DataFrame, person_type: str, config: Di
 
 def sort_by_prefecture(df: pd.DataFrame) -> pd.DataFrame:
     """
-    都道府県順（北→南）でソート
+    都道府県順（北→南）でソート（ベクトル化版）
 
     Args:
         df: 22列形式のDataFrame
@@ -345,10 +345,21 @@ def sort_by_prefecture(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame: ソート後のDataFrame
     """
-    # 現住所1から都道府県を抽出し、順序番号を取得
-    df['prefecture_order'] = df['現住所1'].apply(
-        lambda addr: get_prefecture_order(extract_prefecture_from_address(str(addr)))
-    )
+    from processors.common.prefecture_order import PREFECTURE_ORDER
+
+    # 都道府県名→順序番号のマッピング辞書を作成
+    prefecture_map = {pref: idx for idx, pref in enumerate(PREFECTURE_ORDER)}
+
+    # 現住所1から都道府県を一括抽出（ベクトル化）
+    addresses = df['現住所1'].astype(str)
+
+    # 正規表現で都道府県名を抽出（最初にマッチしたもの）
+    # 北海道|青森県|...のパターンを作成
+    prefecture_pattern = '|'.join(PREFECTURE_ORDER)
+    extracted_prefectures = addresses.str.extract(f'({prefecture_pattern})', expand=False)
+
+    # 都道府県名を順序番号にマッピング（見つからない場合は999）
+    df['prefecture_order'] = extracted_prefectures.map(prefecture_map).fillna(999).astype(int)
 
     # 都道府県順でソート
     df_sorted = df.sort_values('prefecture_order').drop(columns=['prefecture_order'])
