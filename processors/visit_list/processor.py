@@ -239,7 +239,7 @@ def filter_records(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
 
 def create_output_row(row: pd.Series, person_type: str, config: Dict) -> Dict:
     """
-    ContractListの1行から22列の出力データを作成
+    ContractListの1行から22列の出力データを作成（ラッパー関数）
 
     Args:
         row: ContractListの1行
@@ -249,40 +249,10 @@ def create_output_row(row: pd.Series, person_type: str, config: Dict) -> Dict:
     Returns:
         Dict: 22列のデータ辞書
     """
-    # 該当人物の情報
-    person_name = row.iloc[config["name_col"]]
-    person_addr1 = row.iloc[config["address1_col"]]
-    person_addr2 = row.iloc[config["address2_col"]]
-    person_addr3 = row.iloc[config["address3_col"]]
-    person_combined = combine_address(person_addr1, person_addr2, person_addr3)
-
-    # 基本情報
-    output = {
-        "管理番号": row.iloc[ContractListColumns.MANAGEMENT_NUMBER],
-        "最新契約種類": row.iloc[ContractListColumns.CONTRACT_TYPE],
-        "受託状況": row.iloc[ContractListColumns.ENTRUSTED_STATUS],
-        "入居ステータス": row.iloc[ContractListColumns.OCCUPANCY_STATUS],
-        "滞納ステータス": row.iloc[ContractListColumns.ARREARS_STATUS],
-        "退去手続き（実費）": pd.to_numeric(row.iloc[ContractListColumns.EVICTION_ACTUAL_COST], errors='coerce'),
-        "営業担当者": row.iloc[ContractListColumns.SALES_REP],
-        config["output_name_col"]: person_name,
-        "": person_combined,  # 結合住所（空白ヘッダー）
-        "現住所1": person_addr1,
-        "現住所2": person_addr2,
-        "現住所3": person_addr3,
-        "滞納残債": pd.to_numeric(row.iloc[ContractListColumns.ARREARS_BALANCE], errors='coerce'),
-        "入金予定日": row.iloc[ContractListColumns.PAYMENT_DUE_DATE],
-        "入金予定金額": pd.to_numeric(row.iloc[ContractListColumns.PAYMENT_DUE_AMOUNT], errors='coerce'),
-        "月額賃料合計": pd.to_numeric(row.iloc[ContractListColumns.MONTHLY_RENT_TOTAL], errors='coerce'),
-        "回収ランク": row.iloc[ContractListColumns.COLLECTION_RANK],
-        "クライアントCD": row.iloc[ContractListColumns.CLIENT_CD],
-        "クライアント名": row.iloc[ContractListColumns.CLIENT_NAME],
-        "委託先法人ID": row.iloc[ContractListColumns.DELEGATED_CORP_ID],
-        "委託先法人名": row.iloc[ContractListColumns.DELEGATED_CORP_NAME],
-        "解約日": row.iloc[ContractListColumns.TERMINATION_DATE],
-    }
-
-    return output
+    # 単一行をDataFrameに変換してバルク処理を呼び出す
+    df_single = pd.DataFrame([row])
+    df_output = create_output_row_bulk(df_single, person_type, config)
+    return df_output.iloc[0].to_dict()
 
 
 def create_output_row_bulk(df_person: pd.DataFrame, person_type: str, config: Dict) -> pd.DataFrame:
