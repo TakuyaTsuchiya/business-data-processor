@@ -119,12 +119,15 @@ def filter_records(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     """
     フィルタリング処理
 
-    5つのフィルタ条件:
-    1. 回収ランク: 「交渉困難」「死亡決定」「弁護士介入」
+    8つのフィルタ条件:
+    1. 回収ランク: 「交渉困難」「死亡決定」「弁護士介入」を除外
     2. 入金予定日: 当日以前
     3. 入金予定金額: 2, 3, 5を除外
     4. 委託先法人ID: 5と空白のみ
     5. 現住所1: 空白を除外
+    6. 滞納残債: 1円以上
+    7. クライアントCD: 9268を除外
+    8. 受託状況: 「契約中」のみ
 
     Args:
         df: ContractList DataFrame
@@ -168,7 +171,27 @@ def filter_records(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     # 5. 現住所1フィルタ（契約者の住所があるもののみ）
     mask_address = df_filtered.iloc[:, 23].notna() & (df_filtered.iloc[:, 23] != '')
     df_filtered = df_filtered[mask_address].copy()
-    logs.append(f"現住所1フィルタ後（最終）: {len(df_filtered)}件")
+    logs.append(f"現住所1フィルタ後: {len(df_filtered)}件")
+
+    # 6. 滞納残債フィルタ（1円以上）
+    debt_amount = pd.to_numeric(
+        df_filtered.iloc[:, 71].astype(str).str.replace(',', ''),
+        errors='coerce'
+    )
+    mask_debt = debt_amount >= 1
+    df_filtered = df_filtered[mask_debt].copy()
+    logs.append(f"滞納残債1円以上フィルタ後: {len(df_filtered)}件")
+
+    # 7. クライアントCDフィルタ（9268を除外）
+    client_cd = pd.to_numeric(df_filtered.iloc[:, 97], errors='coerce')
+    mask_client = client_cd != 9268
+    df_filtered = df_filtered[mask_client].copy()
+    logs.append(f"クライアントCD9268除外後: {len(df_filtered)}件")
+
+    # 8. 受託状況フィルタ（「契約中」のみ）
+    mask_status = df_filtered.iloc[:, 13] == "契約中"
+    df_filtered = df_filtered[mask_status].copy()
+    logs.append(f"受託状況「契約中」フィルタ後（最終）: {len(df_filtered)}件")
 
     return df_filtered, logs
 

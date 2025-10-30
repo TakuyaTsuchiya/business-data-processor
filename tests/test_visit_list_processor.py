@@ -57,8 +57,8 @@ class TestPrefectureOrder:
 class TestFiltering:
     """フィルタリング処理のテスト"""
 
-    def test_filter_records_5条件統合(self):
-        """5つのフィルタ条件を満たすレコードのみが残ることを確認"""
+    def test_filter_records_8条件統合(self):
+        """8つのフィルタ条件を満たすレコードのみが残ることを確認"""
         from processors.visit_list.processor import filter_records
 
         today = datetime.now().date()
@@ -66,18 +66,23 @@ class TestFiltering:
         # 121列のダミーデータ作成（必要な列のみ実データ）
         data = {i: [None] * 6 for i in range(121)}
         data[0] = [1001, 1002, 1003, 1004, 1005, 1006]  # 管理番号
+        data[13] = ["契約中", "契約中", "解約", "契約中", "契約中", "契約中"]  # 受託状況
         data[86] = ["交渉継続中", "死亡決定", "弁護士介入", "交渉継続中", "交渉困難", "追跡調査中"]  # 回収ランク
         data[72] = [today - timedelta(days=1), today, today + timedelta(days=1),
                     today + timedelta(days=5), today - timedelta(days=2), today + timedelta(days=3)]  # 入金予定日
         data[73] = [10, 2, 5, 10, 3, 15]  # 入金予定金額
         data[118] = ['5', None, '10', '5', '', '3']  # 委託先法人ID
         data[23] = ["北海道", "東京都", "", "大阪府", "神奈川県", "沖縄県"]  # 現住所1
+        data[71] = ["10,000", "5,000", "1,000", "0", "100", "500"]  # 滞納残債
+        data[97] = ["1000", "2000", "3000", "9268", "5000", "6000"]  # クライアントCD
 
         df = pd.DataFrame(data)
         filtered_df, logs = filter_records(df)
 
-        # 期待: 1001のみ（交渉継続中, 昨日, 10, '5', 北海道）
-        # 1002は死亡決定で除外、1003は弁護士介入で除外、1004は入金予定日が未来、1005は交渉困難で除外、1006は入金予定日が未来
+        # 期待: 1001のみ（受託状況=契約中, 回収ランク=交渉継続中, 入金予定日=昨日, 入金予定金額=10,
+        #              委託先法人ID=5, 現住所1=北海道, 滞納残債=10000, クライアントCD=1000）
+        # 1002は死亡決定で除外、1003は弁護士介入で除外、1004はクライアントCD=9268で除外、
+        # 1005は交渉困難で除外、1006は入金予定日が未来で除外
         assert len(filtered_df) == 1
         assert filtered_df.iloc[0, 0] == 1001
 
