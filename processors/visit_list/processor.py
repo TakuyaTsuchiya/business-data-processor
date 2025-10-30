@@ -181,11 +181,14 @@ def filter_records(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     logs.append(f"入力レコード数: {initial_count}件")
 
     # 1. 回収ランクフィルタ（「交渉困難」「死亡決定」「弁護士介入」を除外）
+    before_count = len(df)
     mask_rank = ~df.iloc[:, ContractListColumns.COLLECTION_RANK].isin(["交渉困難", "死亡決定", "弁護士介入"])
     df_filtered = df[mask_rank].copy()
-    logs.append(f"回収ランクフィルタ後: {len(df_filtered)}件")
+    excluded_count = before_count - len(df_filtered)
+    logs.append(f"回収ランクフィルタ: {excluded_count}件除外 → {len(df_filtered)}件残存")
 
     # 2. 入金予定日フィルタ（当日以前）
+    before_count = len(df_filtered)
     today = datetime.now().date()
     df_filtered['payment_date_parsed'] = pd.to_datetime(
         df_filtered.iloc[:, ContractListColumns.PAYMENT_DUE_DATE], errors='coerce'
@@ -195,44 +198,57 @@ def filter_records(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     )
     df_filtered = df_filtered[mask_date].copy()
     df_filtered = df_filtered.drop(columns=['payment_date_parsed'])
-    logs.append(f"入金予定日フィルタ後: {len(df_filtered)}件")
+    excluded_count = before_count - len(df_filtered)
+    logs.append(f"入金予定日フィルタ: {excluded_count}件除外 → {len(df_filtered)}件残存")
 
     # 3. 入金予定金額フィルタ（2, 3, 5を除外）
+    before_count = len(df_filtered)
     payment_amount_numeric = pd.to_numeric(df_filtered.iloc[:, ContractListColumns.PAYMENT_DUE_AMOUNT], errors='coerce')
     mask_amount = ~payment_amount_numeric.isin([2, 3, 5])
     df_filtered = df_filtered[mask_amount].copy()
-    logs.append(f"入金予定金額フィルタ後: {len(df_filtered)}件")
+    excluded_count = before_count - len(df_filtered)
+    logs.append(f"入金予定金額フィルタ: {excluded_count}件除外 → {len(df_filtered)}件残存")
 
     # 4. 委託先法人IDフィルタ（5と空白のみ）
+    before_count = len(df_filtered)
     delegated_corp_id = df_filtered.iloc[:, ContractListColumns.DELEGATED_CORP_ID]
     mask_corp_id = (delegated_corp_id == '5') | (delegated_corp_id == 5) | delegated_corp_id.isna() | (delegated_corp_id == '')
     df_filtered = df_filtered[mask_corp_id].copy()
-    logs.append(f"委託先法人IDフィルタ後: {len(df_filtered)}件")
+    excluded_count = before_count - len(df_filtered)
+    logs.append(f"委託先法人IDフィルタ: {excluded_count}件除外 → {len(df_filtered)}件残存")
 
     # 5. 現住所1フィルタ（契約者の住所があるもののみ）
+    before_count = len(df_filtered)
     mask_address = df_filtered.iloc[:, ContractListColumns.CONTRACTOR_ADDRESS1].notna() & (df_filtered.iloc[:, ContractListColumns.CONTRACTOR_ADDRESS1] != '')
     df_filtered = df_filtered[mask_address].copy()
-    logs.append(f"現住所1フィルタ後: {len(df_filtered)}件")
+    excluded_count = before_count - len(df_filtered)
+    logs.append(f"現住所1フィルタ: {excluded_count}件除外 → {len(df_filtered)}件残存")
 
     # 6. 滞納残債フィルタ（1円以上）
+    before_count = len(df_filtered)
     debt_amount = pd.to_numeric(
         df_filtered.iloc[:, ContractListColumns.ARREARS_BALANCE].astype(str).str.replace(',', ''),
         errors='coerce'
     )
     mask_debt = debt_amount >= 1
     df_filtered = df_filtered[mask_debt].copy()
-    logs.append(f"滞納残債1円以上フィルタ後: {len(df_filtered)}件")
+    excluded_count = before_count - len(df_filtered)
+    logs.append(f"滞納残債1円以上フィルタ: {excluded_count}件除外 → {len(df_filtered)}件残存")
 
     # 7. クライアントCDフィルタ（9268を除外）
+    before_count = len(df_filtered)
     client_cd = pd.to_numeric(df_filtered.iloc[:, ContractListColumns.CLIENT_CD], errors='coerce')
     mask_client = client_cd != 9268
     df_filtered = df_filtered[mask_client].copy()
-    logs.append(f"クライアントCD9268除外後: {len(df_filtered)}件")
+    excluded_count = before_count - len(df_filtered)
+    logs.append(f"クライアントCD9268除外: {excluded_count}件除外 → {len(df_filtered)}件残存")
 
     # 8. 受託状況フィルタ（「契約中」のみ）
+    before_count = len(df_filtered)
     mask_status = df_filtered.iloc[:, ContractListColumns.ENTRUSTED_STATUS] == "契約中"
     df_filtered = df_filtered[mask_status].copy()
-    logs.append(f"受託状況「契約中」フィルタ後（最終）: {len(df_filtered)}件")
+    excluded_count = before_count - len(df_filtered)
+    logs.append(f"受託状況「契約中」フィルタ: {excluded_count}件除外 → {len(df_filtered)}件残存（最終）")
 
     return df_filtered, logs
 
