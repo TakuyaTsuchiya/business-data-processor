@@ -14,6 +14,47 @@ from openpyxl.styles import Font, Border
 from processors.common.prefecture_order import get_prefecture_order, extract_prefecture_from_address
 
 
+class ContractListColumns:
+    """ContractList.csv の列番号定義（121列）"""
+    MANAGEMENT_NUMBER = 0
+    CONTRACT_TYPE = 2
+    ENTRUSTED_STATUS = 13
+    OCCUPANCY_STATUS = 14
+    ARREARS_STATUS = 15
+    EVICTION_ACTUAL_COST = 17
+    SALES_REP = 19
+    CONTRACTOR_NAME = 20
+    CONTRACTOR_ADDRESS1 = 23
+    CONTRACTOR_ADDRESS2 = 24
+    CONTRACTOR_ADDRESS3 = 25
+    GUARANTOR1_NAME = 41
+    GUARANTOR1_ADDRESS1 = 43
+    GUARANTOR1_ADDRESS2 = 44
+    GUARANTOR1_ADDRESS3 = 45
+    GUARANTOR2_NAME = 48
+    GUARANTOR2_ADDRESS1 = 50
+    GUARANTOR2_ADDRESS2 = 51
+    GUARANTOR2_ADDRESS3 = 52
+    CONTACT1_NAME = 55
+    CONTACT1_ADDRESS1 = 58
+    CONTACT1_ADDRESS2 = 59
+    CONTACT1_ADDRESS3 = 60
+    CONTACT2_NAME = 62
+    CONTACT2_ADDRESS1 = 64
+    CONTACT2_ADDRESS2 = 65
+    CONTACT2_ADDRESS3 = 66
+    ARREARS_BALANCE = 71
+    PAYMENT_DUE_DATE = 72
+    PAYMENT_DUE_AMOUNT = 73
+    MONTHLY_RENT_TOTAL = 84
+    COLLECTION_RANK = 86
+    CLIENT_CD = 97
+    CLIENT_NAME = 98
+    DELEGATED_CORP_ID = 118
+    DELEGATED_CORP_NAME = 119
+    TERMINATION_DATE = 120
+
+
 # 22列の出力構造定義
 OUTPUT_COLUMNS = [
     "管理番号",           # 1
@@ -50,46 +91,46 @@ class VisitListConfig:
             "name": "契約者",
             "sheet_name": "契約者",
             "output_name_col": "契約者氏名",
-            "name_col": 20,      # 契約者氏名
-            "address1_col": 23,  # 現住所1
-            "address2_col": 24,  # 現住所2
-            "address3_col": 25,  # 現住所3
+            "name_col": ContractListColumns.CONTRACTOR_NAME,
+            "address1_col": ContractListColumns.CONTRACTOR_ADDRESS1,
+            "address2_col": ContractListColumns.CONTRACTOR_ADDRESS2,
+            "address3_col": ContractListColumns.CONTRACTOR_ADDRESS3,
         },
         "guarantor1": {
             "name": "保証人1",
             "sheet_name": "保証人1",
             "output_name_col": "保証人１氏名",
-            "name_col": 41,      # 保証人１氏名
-            "address1_col": 43,  # 現住所1.1
-            "address2_col": 44,  # 現住所2.1
-            "address3_col": 45,  # 現住所3.1
+            "name_col": ContractListColumns.GUARANTOR1_NAME,
+            "address1_col": ContractListColumns.GUARANTOR1_ADDRESS1,
+            "address2_col": ContractListColumns.GUARANTOR1_ADDRESS2,
+            "address3_col": ContractListColumns.GUARANTOR1_ADDRESS3,
         },
         "guarantor2": {
             "name": "保証人2",
             "sheet_name": "保証人2",
             "output_name_col": "保証人２氏名",
-            "name_col": 48,      # 保証人２氏名
-            "address1_col": 50,  # 現住所1.2
-            "address2_col": 51,  # 現住所2.2
-            "address3_col": 52,  # 現住所3.2
+            "name_col": ContractListColumns.GUARANTOR2_NAME,
+            "address1_col": ContractListColumns.GUARANTOR2_ADDRESS1,
+            "address2_col": ContractListColumns.GUARANTOR2_ADDRESS2,
+            "address3_col": ContractListColumns.GUARANTOR2_ADDRESS3,
         },
         "contact1": {
             "name": "連絡人1",
             "sheet_name": "連絡人1",
             "output_name_col": "緊急連絡人１氏名",
-            "name_col": 55,      # 緊急連絡人１氏名
-            "address1_col": 58,  # 現住所1.3
-            "address2_col": 59,  # 現住所2.3
-            "address3_col": 60,  # 現住所3.3
+            "name_col": ContractListColumns.CONTACT1_NAME,
+            "address1_col": ContractListColumns.CONTACT1_ADDRESS1,
+            "address2_col": ContractListColumns.CONTACT1_ADDRESS2,
+            "address3_col": ContractListColumns.CONTACT1_ADDRESS3,
         },
         "contact2": {
             "name": "連絡人2",
             "sheet_name": "連絡人2",
             "output_name_col": "緊急連絡人２氏名",
-            "name_col": 62,      # 緊急連絡人２氏名
-            "address1_col": 64,  # 現住所1.4
-            "address2_col": 65,  # 現住所2.4
-            "address3_col": 66,  # 現住所3.4
+            "name_col": ContractListColumns.CONTACT2_NAME,
+            "address1_col": ContractListColumns.CONTACT2_ADDRESS1,
+            "address2_col": ContractListColumns.CONTACT2_ADDRESS2,
+            "address3_col": ContractListColumns.CONTACT2_ADDRESS3,
         },
     }
 
@@ -140,14 +181,14 @@ def filter_records(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     logs.append(f"入力レコード数: {initial_count}件")
 
     # 1. 回収ランクフィルタ（「交渉困難」「死亡決定」「弁護士介入」を除外）
-    mask_rank = ~df.iloc[:, 86].isin(["交渉困難", "死亡決定", "弁護士介入"])
+    mask_rank = ~df.iloc[:, ContractListColumns.COLLECTION_RANK].isin(["交渉困難", "死亡決定", "弁護士介入"])
     df_filtered = df[mask_rank].copy()
     logs.append(f"回収ランクフィルタ後: {len(df_filtered)}件")
 
     # 2. 入金予定日フィルタ（当日以前）
     today = datetime.now().date()
     df_filtered['payment_date_parsed'] = pd.to_datetime(
-        df_filtered.iloc[:, 72], errors='coerce'
+        df_filtered.iloc[:, ContractListColumns.PAYMENT_DUE_DATE], errors='coerce'
     )
     mask_date = df_filtered['payment_date_parsed'].notna() & (
         df_filtered['payment_date_parsed'].dt.date <= today
@@ -157,25 +198,25 @@ def filter_records(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     logs.append(f"入金予定日フィルタ後: {len(df_filtered)}件")
 
     # 3. 入金予定金額フィルタ（2, 3, 5を除外）
-    payment_amount_numeric = pd.to_numeric(df_filtered.iloc[:, 73], errors='coerce')
+    payment_amount_numeric = pd.to_numeric(df_filtered.iloc[:, ContractListColumns.PAYMENT_DUE_AMOUNT], errors='coerce')
     mask_amount = ~payment_amount_numeric.isin([2, 3, 5])
     df_filtered = df_filtered[mask_amount].copy()
     logs.append(f"入金予定金額フィルタ後: {len(df_filtered)}件")
 
     # 4. 委託先法人IDフィルタ（5と空白のみ）
-    delegated_corp_id = df_filtered.iloc[:, 118]
+    delegated_corp_id = df_filtered.iloc[:, ContractListColumns.DELEGATED_CORP_ID]
     mask_corp_id = (delegated_corp_id == '5') | (delegated_corp_id == 5) | delegated_corp_id.isna() | (delegated_corp_id == '')
     df_filtered = df_filtered[mask_corp_id].copy()
     logs.append(f"委託先法人IDフィルタ後: {len(df_filtered)}件")
 
     # 5. 現住所1フィルタ（契約者の住所があるもののみ）
-    mask_address = df_filtered.iloc[:, 23].notna() & (df_filtered.iloc[:, 23] != '')
+    mask_address = df_filtered.iloc[:, ContractListColumns.CONTRACTOR_ADDRESS1].notna() & (df_filtered.iloc[:, ContractListColumns.CONTRACTOR_ADDRESS1] != '')
     df_filtered = df_filtered[mask_address].copy()
     logs.append(f"現住所1フィルタ後: {len(df_filtered)}件")
 
     # 6. 滞納残債フィルタ（1円以上）
     debt_amount = pd.to_numeric(
-        df_filtered.iloc[:, 71].astype(str).str.replace(',', ''),
+        df_filtered.iloc[:, ContractListColumns.ARREARS_BALANCE].astype(str).str.replace(',', ''),
         errors='coerce'
     )
     mask_debt = debt_amount >= 1
@@ -183,13 +224,13 @@ def filter_records(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     logs.append(f"滞納残債1円以上フィルタ後: {len(df_filtered)}件")
 
     # 7. クライアントCDフィルタ（9268を除外）
-    client_cd = pd.to_numeric(df_filtered.iloc[:, 97], errors='coerce')
+    client_cd = pd.to_numeric(df_filtered.iloc[:, ContractListColumns.CLIENT_CD], errors='coerce')
     mask_client = client_cd != 9268
     df_filtered = df_filtered[mask_client].copy()
     logs.append(f"クライアントCD9268除外後: {len(df_filtered)}件")
 
     # 8. 受託状況フィルタ（「契約中」のみ）
-    mask_status = df_filtered.iloc[:, 13] == "契約中"
+    mask_status = df_filtered.iloc[:, ContractListColumns.ENTRUSTED_STATUS] == "契約中"
     df_filtered = df_filtered[mask_status].copy()
     logs.append(f"受託状況「契約中」フィルタ後（最終）: {len(df_filtered)}件")
 
@@ -217,28 +258,28 @@ def create_output_row(row: pd.Series, person_type: str, config: Dict) -> Dict:
 
     # 基本情報
     output = {
-        "管理番号": row.iloc[0],
-        "最新契約種類": row.iloc[2],
-        "受託状況": row.iloc[13],
-        "入居ステータス": row.iloc[14],
-        "滞納ステータス": row.iloc[15],
-        "退去手続き（実費）": pd.to_numeric(row.iloc[17], errors='coerce'),
-        "営業担当者": row.iloc[19],
+        "管理番号": row.iloc[ContractListColumns.MANAGEMENT_NUMBER],
+        "最新契約種類": row.iloc[ContractListColumns.CONTRACT_TYPE],
+        "受託状況": row.iloc[ContractListColumns.ENTRUSTED_STATUS],
+        "入居ステータス": row.iloc[ContractListColumns.OCCUPANCY_STATUS],
+        "滞納ステータス": row.iloc[ContractListColumns.ARREARS_STATUS],
+        "退去手続き（実費）": pd.to_numeric(row.iloc[ContractListColumns.EVICTION_ACTUAL_COST], errors='coerce'),
+        "営業担当者": row.iloc[ContractListColumns.SALES_REP],
         config["output_name_col"]: person_name,
         "": person_combined,  # 結合住所（空白ヘッダー）
         "現住所1": person_addr1,
         "現住所2": person_addr2,
         "現住所3": person_addr3,
-        "滞納残債": pd.to_numeric(row.iloc[71], errors='coerce'),
-        "入金予定日": row.iloc[72],
-        "入金予定金額": pd.to_numeric(row.iloc[73], errors='coerce'),
-        "月額賃料合計": pd.to_numeric(row.iloc[84], errors='coerce'),
-        "回収ランク": row.iloc[86],
-        "クライアントCD": row.iloc[97],
-        "クライアント名": row.iloc[98],
-        "委託先法人ID": row.iloc[118],
-        "委託先法人名": row.iloc[119],
-        "解約日": row.iloc[120],
+        "滞納残債": pd.to_numeric(row.iloc[ContractListColumns.ARREARS_BALANCE], errors='coerce'),
+        "入金予定日": row.iloc[ContractListColumns.PAYMENT_DUE_DATE],
+        "入金予定金額": pd.to_numeric(row.iloc[ContractListColumns.PAYMENT_DUE_AMOUNT], errors='coerce'),
+        "月額賃料合計": pd.to_numeric(row.iloc[ContractListColumns.MONTHLY_RENT_TOTAL], errors='coerce'),
+        "回収ランク": row.iloc[ContractListColumns.COLLECTION_RANK],
+        "クライアントCD": row.iloc[ContractListColumns.CLIENT_CD],
+        "クライアント名": row.iloc[ContractListColumns.CLIENT_NAME],
+        "委託先法人ID": row.iloc[ContractListColumns.DELEGATED_CORP_ID],
+        "委託先法人名": row.iloc[ContractListColumns.DELEGATED_CORP_NAME],
+        "解約日": row.iloc[ContractListColumns.TERMINATION_DATE],
     }
 
     return output
@@ -271,36 +312,36 @@ def create_output_row_bulk(df_person: pd.DataFrame, person_type: str, config: Di
 
     # 全列を一括取得（ベクトル化）
     df_output = pd.DataFrame({
-        "管理番号": df_person.iloc[:, 0].values,
-        "最新契約種類": df_person.iloc[:, 2].values,
-        "受託状況": df_person.iloc[:, 13].values,
-        "入居ステータス": df_person.iloc[:, 14].values,
-        "滞納ステータス": df_person.iloc[:, 15].values,
+        "管理番号": df_person.iloc[:, ContractListColumns.MANAGEMENT_NUMBER].values,
+        "最新契約種類": df_person.iloc[:, ContractListColumns.CONTRACT_TYPE].values,
+        "受託状況": df_person.iloc[:, ContractListColumns.ENTRUSTED_STATUS].values,
+        "入居ステータス": df_person.iloc[:, ContractListColumns.OCCUPANCY_STATUS].values,
+        "滞納ステータス": df_person.iloc[:, ContractListColumns.ARREARS_STATUS].values,
         "退去手続き（実費）": pd.to_numeric(
-            df_person.iloc[:, 17].astype(str).str.replace(',', ''), errors='coerce'
+            df_person.iloc[:, ContractListColumns.EVICTION_ACTUAL_COST].astype(str).str.replace(',', ''), errors='coerce'
         ),
-        "営業担当者": df_person.iloc[:, 19].values,
+        "営業担当者": df_person.iloc[:, ContractListColumns.SALES_REP].values,
         config["output_name_col"]: df_person.iloc[:, name_col].values,
         "": combined_addresses.values,
         "現住所1": df_person.iloc[:, addr1_col].values,
         "現住所2": df_person.iloc[:, addr2_col].values,
         "現住所3": df_person.iloc[:, addr3_col].values,
         "滞納残債": pd.to_numeric(
-            df_person.iloc[:, 71].astype(str).str.replace(',', ''), errors='coerce'
+            df_person.iloc[:, ContractListColumns.ARREARS_BALANCE].astype(str).str.replace(',', ''), errors='coerce'
         ),
-        "入金予定日": df_person.iloc[:, 72].values,
+        "入金予定日": df_person.iloc[:, ContractListColumns.PAYMENT_DUE_DATE].values,
         "入金予定金額": pd.to_numeric(
-            df_person.iloc[:, 73].astype(str).str.replace(',', ''), errors='coerce'
+            df_person.iloc[:, ContractListColumns.PAYMENT_DUE_AMOUNT].astype(str).str.replace(',', ''), errors='coerce'
         ),
         "月額賃料合計": pd.to_numeric(
-            df_person.iloc[:, 84].astype(str).str.replace(',', ''), errors='coerce'
+            df_person.iloc[:, ContractListColumns.MONTHLY_RENT_TOTAL].astype(str).str.replace(',', ''), errors='coerce'
         ),
-        "回収ランク": df_person.iloc[:, 86].values,
-        "クライアントCD": df_person.iloc[:, 97].values,
-        "クライアント名": df_person.iloc[:, 98].values,
-        "委託先法人ID": df_person.iloc[:, 118].values,
-        "委託先法人名": df_person.iloc[:, 119].values,
-        "解約日": df_person.iloc[:, 120].values,
+        "回収ランク": df_person.iloc[:, ContractListColumns.COLLECTION_RANK].values,
+        "クライアントCD": df_person.iloc[:, ContractListColumns.CLIENT_CD].values,
+        "クライアント名": df_person.iloc[:, ContractListColumns.CLIENT_NAME].values,
+        "委託先法人ID": df_person.iloc[:, ContractListColumns.DELEGATED_CORP_ID].values,
+        "委託先法人名": df_person.iloc[:, ContractListColumns.DELEGATED_CORP_NAME].values,
+        "解約日": df_person.iloc[:, ContractListColumns.TERMINATION_DATE].values,
     })
 
     return df_output
