@@ -152,3 +152,8 @@ def build_sidebar_menu():
         st.markdown('<div class="sidebar-category">居住訪問調査報告書</div>', unsafe_allow_html=True)
         if st.button("請求書作成用データを生成", key="residence_survey_billing", use_container_width=True):
             st.session_state.selected_processor = "residence_survey_billing"
+
+        # 訪問リスト作成
+        st.markdown('<div class="sidebar-category">📋 訪問リスト作成</div>', unsafe_allow_html=True)
+        if st.button("訪問リスト作成", key="visit_list", use_container_width=True):
+            st.session_state.selected_processor = "visit_list"
