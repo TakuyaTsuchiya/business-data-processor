@@ -133,6 +133,62 @@ class TestOutputGeneration:
         assert filename.endswith("オートコール履歴.csv")
 
 
+class TestEdgeCases:
+    """エッジケースのテスト"""
+
+    def test_filter_全件通話済の場合(self):
+        """全レコードが通話済の場合、空DataFrameが返されることを確認"""
+        from processors.autocall_history import AutocallHistoryProcessor
+        from io import StringIO
+
+        # 全件通話済のデータ
+        data = """顧客ID,電話番号,入居ステータス,滞納ステータス,作成日,更新日,更新時間,管理番号,契約者名（カナ）,物件名,クライアント,架電番号,ステータス,残債,事前情報8,架電結果,再コール日,再コール時間,所属,担当OP,架電禁止,最終履歴OP,最終架電日,架電回数,メモ
+1,09012345678,退去済,未精算,2025-10-31,2025-10-31,10:00:01,10001,テスト,物件A,テスト1,090-1234-5678,,10000,,通話済,,,テスト,,許可,,2025-10-31 10:00:01,1回,
+2,08011112222,退去済,未精算,2025-10-31,2025-10-31,10:15:01,10002,テスト,物件B,テスト2,080-1111-2222,,15000,,通話済,,,テスト,,許可,,2025-10-31 10:15:01,1回,"""
+
+        df = pd.read_csv(StringIO(data))
+        processor = AutocallHistoryProcessor(target_person="契約者")
+        result_df = processor.process(df)
+
+        # 空DataFrameが返されることを確認
+        assert len(result_df) == 0
+        assert list(result_df.columns) == processor.OUTPUT_COLUMNS
+
+    def test_残債が空白の場合(self):
+        """残債列が空白の場合、「不明」と表示されることを確認"""
+        from processors.autocall_history import AutocallHistoryProcessor
+        from io import StringIO
+
+        # 残債が空白のデータ
+        data = """顧客ID,電話番号,入居ステータス,滞納ステータス,作成日,更新日,更新時間,管理番号,契約者名（カナ）,物件名,クライアント,架電番号,ステータス,残債,事前情報8,架電結果,再コール日,再コール時間,所属,担当OP,架電禁止,最終履歴OP,最終架電日,架電回数,メモ
+1,09012345678,退去済,未精算,2025-10-31,2025-10-31,10:00:01,10001,テスト,物件A,テスト1,090-1234-5678,,,,その他,,,テスト,,許可,,2025-10-31 10:00:01,1回,"""
+
+        df = pd.read_csv(StringIO(data))
+        processor = AutocallHistoryProcessor(target_person="契約者")
+        result_df = processor.process(df)
+
+        # 交渉備考に「不明」が含まれることを確認
+        assert "不明" in result_df.iloc[0]['交渉備考']
+        assert result_df.iloc[0]['交渉備考'] == "架電番号090-1234-5678オートコール　残債不明円"
+
+    def test_架電番号が空白の場合(self):
+        """架電番号が空白でも正常に処理されることを確認"""
+        from processors.autocall_history import AutocallHistoryProcessor
+        from io import StringIO
+
+        # 架電番号が空白のデータ
+        data = """顧客ID,電話番号,入居ステータス,滞納ステータス,作成日,更新日,更新時間,管理番号,契約者名（カナ）,物件名,クライアント,架電番号,ステータス,残債,事前情報8,架電結果,再コール日,再コール時間,所属,担当OP,架電禁止,最終履歴OP,最終架電日,架電回数,メモ
+1,09012345678,退去済,未精算,2025-10-31,2025-10-31,10:00:01,10001,テスト,物件A,テスト1,,,10000,,その他,,,テスト,,許可,,2025-10-31 10:00:01,1回,"""
+
+        df = pd.read_csv(StringIO(data))
+        processor = AutocallHistoryProcessor(target_person="契約者")
+        result_df = processor.process(df)
+
+        # 架電番号が空でも正常に処理される
+        assert len(result_df) == 1
+        assert "架電番号nan" in result_df.iloc[0]['交渉備考']  # NaNと表示される
+
+
 class TestExcelGeneration:
     """Excel生成のテスト"""
 

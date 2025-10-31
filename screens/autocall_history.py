@@ -8,6 +8,7 @@ import streamlit as st
 import pandas as pd
 import io
 from processors.autocall_history import AutocallHistoryProcessor
+from components.file_utils import read_csv_with_encoding
 
 
 def render_autocall_history():
@@ -50,12 +51,10 @@ def render_autocall_history():
         # CSVデータを読み込み（エンコーディング自動判定）
         file_data = uploaded_file.getvalue()
         try:
-            df_input = pd.read_csv(io.BytesIO(file_data), encoding='cp932', low_memory=False)
-        except UnicodeDecodeError:
-            try:
-                df_input = pd.read_csv(io.BytesIO(file_data), encoding='shift_jis', low_memory=False)
-            except UnicodeDecodeError:
-                df_input = pd.read_csv(io.BytesIO(file_data), encoding='utf-8-sig', low_memory=False)
+            df_input = read_csv_with_encoding(file_data, low_memory=False)
+        except ValueError as e:
+            st.error(f"ファイル読み込みエラー: {str(e)}")
+            return
 
         # 処理実行ボタン
         if st.button("処理を実行", type="primary", key="autocall_history_process"):

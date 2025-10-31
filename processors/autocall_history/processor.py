@@ -29,6 +29,20 @@ class AutocallHistoryProcessor:
         "交渉備考"
     ]
 
+    # Excel列幅設定
+    COLUMN_WIDTHS = {
+        'A': 12,  # 管理番号
+        'B': 20,  # 交渉日時（「2025-10-31 10:43:01」完全表示）
+        'C': 8,   # 担当
+        'D': 10,  # 相手
+        'E': 8,   # 手段
+        'F': 12,  # 回収ランク
+        'G': 10,  # 結果
+        'H': 14,  # 入金予定日
+        'I': 12,  # 予定金額
+        'J': 50   # 交渉備考（長い文字列対応）
+    }
+
     def __init__(self, target_person: str):
         """
         Args:
@@ -68,10 +82,10 @@ class AutocallHistoryProcessor:
         output_df['予定金額'] = ''
 
         # 交渉備考: f"架電番号{架電番号}オートコール　残債{残債}円"
-        output_df['交渉備考'] = df.apply(
-            lambda row: f"架電番号{row['架電番号']}オートコール　残債{row['残債']}円",
-            axis=1
-        )
+        # NaN対策: fillna()でベクトル化処理（apply()よりパフォーマンス向上）
+        debt_str = df['残債'].fillna('不明').astype(str)
+        phone_str = df['架電番号'].astype(str)
+        output_df['交渉備考'] = "架電番号" + phone_str + "オートコール　残債" + debt_str + "円"
 
         return output_df[self.OUTPUT_COLUMNS]
 
@@ -121,20 +135,7 @@ class AutocallHistoryProcessor:
                     cell.border = Border()  # 罫線削除
 
             # 列幅を設定
-            column_widths = {
-                'A': 12,  # 管理番号
-                'B': 20,  # 交渉日時
-                'C': 8,   # 担当
-                'D': 10,  # 相手
-                'E': 8,   # 手段
-                'F': 12,  # 回収ランク
-                'G': 10,  # 結果
-                'H': 14,  # 入金予定日
-                'I': 12,  # 予定金額
-                'J': 50   # 交渉備考
-            }
-
-            for col, width in column_widths.items():
+            for col, width in self.COLUMN_WIDTHS.items():
                 ws.column_dimensions[col].width = width
 
         excel_buffer.seek(0)
