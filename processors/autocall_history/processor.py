@@ -81,11 +81,11 @@ class AutocallHistoryProcessor:
         output_df['入金予定日'] = ''
         output_df['予定金額'] = ''
 
-        # 交渉備考: f"架電番号{架電番号}オートコール　残債{残債}円"
+        # 交渉備考: f"{架電番号}オートコール　残債{残債}円"
         # NaN対策: fillna()でベクトル化処理（apply()よりパフォーマンス向上）
         debt_str = df['残債'].fillna('不明').astype(str)
         phone_str = df['架電番号'].astype(str)
-        output_df['交渉備考'] = "架電番号" + phone_str + "オートコール　残債" + debt_str + "円"
+        output_df['交渉備考'] = phone_str + "オートコール　残債" + debt_str + "円"
 
         return output_df[self.OUTPUT_COLUMNS]
 
