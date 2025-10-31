@@ -72,7 +72,8 @@ class AutocallHistoryProcessor:
         # マッピング処理
         output_df = pd.DataFrame()
         output_df['管理番号'] = df['管理番号']
-        output_df['交渉日時'] = df['最終架電日']
+        # 交渉日時: ハイフンをスラッシュに変換（2025-10-31 12:08:55 → 2025/10/31 12:08:55）
+        output_df['交渉日時'] = df['最終架電日'].str.replace('-', '/', regex=False)
         output_df['担当'] = ''
         output_df['相手'] = self.target_person
         output_df['手段'] = '架電'
