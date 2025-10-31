@@ -102,15 +102,15 @@ class TestAutocallHistoryProcessor:
 class TestOutputGeneration:
     """出力ファイル名生成のテスト"""
 
-    def test_generate_filename_MMDD形式(self):
-        """出力ファイル名がMMDD形式であることを確認"""
+    def test_generate_filename_MMDD形式_xlsx(self):
+        """出力ファイル名がMMDD形式（xlsx）であることを確認"""
         from processors.autocall_history import AutocallHistoryProcessor
 
         processor = AutocallHistoryProcessor(target_person="契約者")
-        filename = processor.generate_output_filename()
+        filename = processor.generate_output_filename(extension='xlsx')
 
-        # ファイル名が「MMDDオートコール履歴.csv」形式であることを確認
-        assert filename.endswith("オートコール履歴.csv")
+        # ファイル名が「MMDDオートコール履歴.xlsx」形式であることを確認
+        assert filename.endswith("オートコール履歴.xlsx")
 
         # MMDDが4桁の数字であることを確認
         mmdd_part = filename.split("オートコール履歴")[0]
@@ -121,3 +121,75 @@ class TestOutputGeneration:
         today = datetime.now()
         expected_mmdd = today.strftime('%m%d')
         assert mmdd_part == expected_mmdd
+
+    def test_generate_filename_MMDD形式_csv(self):
+        """出力ファイル名がMMDD形式（csv）であることを確認"""
+        from processors.autocall_history import AutocallHistoryProcessor
+
+        processor = AutocallHistoryProcessor(target_person="契約者")
+        filename = processor.generate_output_filename(extension='csv')
+
+        # ファイル名が「MMDDオートコール履歴.csv」形式であることを確認
+        assert filename.endswith("オートコール履歴.csv")
+
+
+class TestExcelGeneration:
+    """Excel生成のテスト"""
+
+    def test_generate_excel_正常系(self, sample_autocall_history_data):
+        """Excelファイルが正常に生成されることを確認"""
+        from processors.autocall_history import AutocallHistoryProcessor
+        import openpyxl
+        import io
+
+        processor = AutocallHistoryProcessor(target_person="契約者")
+        result_df = processor.process(sample_autocall_history_data)
+        excel_bytes, logs = processor.generate_excel(result_df)
+
+        # バイト列が返されることを確認
+        assert isinstance(excel_bytes, bytes)
+        assert len(excel_bytes) > 0
+
+        # ログが返されることを確認
+        assert isinstance(logs, list)
+        assert len(logs) > 0
+
+        # Excelファイルとして読み込めることを確認
+        wb = openpyxl.load_workbook(io.BytesIO(excel_bytes))
+        assert "オートコール履歴" in wb.sheetnames
+
+    def test_generate_excel_列幅設定(self, sample_autocall_history_data):
+        """列幅が正しく設定されることを確認"""
+        from processors.autocall_history import AutocallHistoryProcessor
+        import openpyxl
+        import io
+
+        processor = AutocallHistoryProcessor(target_person="契約者")
+        result_df = processor.process(sample_autocall_history_data)
+        excel_bytes, logs = processor.generate_excel(result_df)
+
+        wb = openpyxl.load_workbook(io.BytesIO(excel_bytes))
+        ws = wb["オートコール履歴"]
+
+        # 列幅を確認
+        assert ws.column_dimensions['A'].width == 12  # 管理番号
+        assert ws.column_dimensions['B'].width == 20  # 交渉日時
+        assert ws.column_dimensions['J'].width == 50  # 交渉備考
+
+    def test_generate_excel_フォント設定(self, sample_autocall_history_data):
+        """フォントが正しく設定されることを確認"""
+        from processors.autocall_history import AutocallHistoryProcessor
+        import openpyxl
+        import io
+
+        processor = AutocallHistoryProcessor(target_person="契約者")
+        result_df = processor.process(sample_autocall_history_data)
+        excel_bytes, logs = processor.generate_excel(result_df)
+
+        wb = openpyxl.load_workbook(io.BytesIO(excel_bytes))
+        ws = wb["オートコール履歴"]
+
+        # 最初のセルのフォントを確認
+        cell = ws["A1"]
+        assert cell.font.name == "游ゴシック Regular"
+        assert cell.font.size == 11

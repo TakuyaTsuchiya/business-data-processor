@@ -25,7 +25,7 @@ def render_autocall_history():
         1. **最終架電日の空白処理**: 空白セルは1つ上の行の値でフォワードフィル
         2. **通話済除外**: 「架電結果」が「通話済」のレコードを除外
 
-        **出力**: `MMDDオートコール履歴.csv`（NegotiatesInfo形式、10列）
+        **出力**: `MMDDオートコール履歴.xlsx`（NegotiatesInfo形式、10列、列幅調整済み）
         - 管理番号、交渉日時、担当、相手、手段、回収ランク、結果、入金予定日、予定金額、交渉備考
         - 交渉備考: `架電番号{架電番号}オートコール　残債{残債}円`
         """)
@@ -64,7 +64,8 @@ def render_autocall_history():
                     # プロセッサー呼び出し
                     processor = AutocallHistoryProcessor(target_person=target_person)
                     result_df = processor.process(df_input)
-                    output_filename = processor.generate_output_filename()
+                    excel_bytes, logs = processor.generate_excel(result_df)
+                    output_filename = processor.generate_output_filename(extension='xlsx')
 
                     # 成功メッセージ
                     st.success(f"✅ 処理完了: {len(result_df)}件のデータを生成しました")
@@ -73,16 +74,18 @@ def render_autocall_history():
                     with st.expander("📊 データプレビュー（先頭10件）", expanded=True):
                         st.dataframe(result_df.head(10))
 
-                    # CSVダウンロードボタン
-                    csv_buffer = io.BytesIO()
-                    result_df.to_csv(csv_buffer, index=False, encoding='cp932')
-                    csv_buffer.seek(0)
+                    # 処理ログ表示
+                    if logs:
+                        with st.expander("📊 処理ログ"):
+                            for log in logs:
+                                st.write(f"• {log}")
 
+                    # Excelダウンロードボタン
                     st.download_button(
                         label=f"📥 {output_filename} をダウンロード",
-                        data=csv_buffer,
+                        data=excel_bytes,
                         file_name=output_filename,
-                        mime="text/csv",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                         key="autocall_history_download",
                         type="primary"
                     )
