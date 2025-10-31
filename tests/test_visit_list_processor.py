@@ -86,6 +86,56 @@ class TestFiltering:
         assert len(filtered_df) == 1
         assert filtered_df.iloc[0, 0] == 1001
 
+    def test_filter_records_受託状況_口振停止も対象(self):
+        """受託状況「契約中(口振停止)」も対象になることを確認"""
+        from processors.visit_list.processor import filter_records
+
+        today = datetime.now().date()
+
+        # 121列のダミーデータ作成（必要な列のみ実データ）
+        data = {i: [None] * 2 for i in range(121)}
+        data[0] = [2001, 2002]  # 管理番号
+        data[13] = ["契約中(口振停止)", "解約"]  # 受託状況
+        data[86] = ["追跡調査中", "追跡調査中"]  # 回収ランク（除外対象外）
+        data[72] = [today - timedelta(days=1), today - timedelta(days=1)]  # 入金予定日
+        data[73] = [10, 10]  # 入金予定金額
+        data[118] = ['5', '5']  # 委託先法人ID
+        data[23] = ["東京都", "東京都"]  # 現住所1
+        data[71] = ["10,000", "10,000"]  # 滞納残債
+        data[97] = ["1000", "1000"]  # クライアントCD
+
+        df = pd.DataFrame(data)
+        filtered_df, logs = filter_records(df)
+
+        # 期待: 2001のみ（契約中(口振停止)が対象）、2002は解約で除外
+        assert len(filtered_df) == 1
+        assert filtered_df.iloc[0, 0] == 2001
+
+    def test_filter_records_入金予定日_空白も対象(self):
+        """入金予定日が空白（None）でも対象になることを確認"""
+        from processors.visit_list.processor import filter_records
+
+        today = datetime.now().date()
+
+        # 121列のダミーデータ作成（必要な列のみ実データ）
+        data = {i: [None] * 2 for i in range(121)}
+        data[0] = [3001, 3002]  # 管理番号
+        data[13] = ["契約中", "契約中"]  # 受託状況
+        data[86] = ["追跡調査中", "追跡調査中"]  # 回収ランク
+        data[72] = [None, today + timedelta(days=10)]  # 入金予定日（空白と未来）
+        data[73] = [10, 10]  # 入金予定金額
+        data[118] = ['5', '5']  # 委託先法人ID
+        data[23] = ["大阪府", "大阪府"]  # 現住所1
+        data[71] = ["10,000", "10,000"]  # 滞納残債
+        data[97] = ["1000", "1000"]  # クライアントCD
+
+        df = pd.DataFrame(data)
+        filtered_df, logs = filter_records(df)
+
+        # 期待: 3001のみ（空白が対象）、3002は未来日付で除外
+        assert len(filtered_df) == 1
+        assert filtered_df.iloc[0, 0] == 3001
+
 
 class TestDataExtraction:
     """データ抽出と22列マッピングのテスト"""

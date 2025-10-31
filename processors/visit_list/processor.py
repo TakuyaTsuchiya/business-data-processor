@@ -247,7 +247,8 @@ def filter_records(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
 
     # 8. 受託状況フィルタ（「契約中」「契約中(口振停止)」）
     before_count = len(df_filtered)
-    mask_status = df_filtered.iloc[:, ContractListColumns.ENTRUSTED_STATUS].isin(["契約中", "契約中(口振停止)"])
+    status_values = df_filtered.iloc[:, ContractListColumns.ENTRUSTED_STATUS].astype(str).str.strip()
+    mask_status = status_values.isin(["契約中", "契約中(口振停止)"])
     df_filtered = df_filtered[mask_status].copy()
     excluded_count = before_count - len(df_filtered)
     logs.append(f"受託状況フィルタ: {excluded_count}件除外 → {len(df_filtered)}件残存（最終）")
