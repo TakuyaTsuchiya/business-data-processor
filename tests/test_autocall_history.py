@@ -74,14 +74,14 @@ class TestAutocallHistoryProcessor:
         processor = AutocallHistoryProcessor(target_person="契約者")
         result_df = processor.process(sample_autocall_history_data)
 
-        # 1行目の確認
+        # 1行目の確認（カンマ区切り）
         first_row = result_df.iloc[0]
-        expected_remark = "090-1234-5678オートコール　残債10000円"
+        expected_remark = "090-1234-5678オートコール　残債10,000円"
         assert first_row['交渉備考'] == expected_remark
 
-        # 2行目の確認（管理番号10003）
+        # 2行目の確認（管理番号10003、カンマ区切り）
         second_row = result_df.iloc[1]
-        expected_remark2 = "090-3333-4444オートコール　残債20000円"
+        expected_remark2 = "090-3333-4444オートコール　残債20,000円"
         assert second_row['交渉備考'] == expected_remark2
 
     def test_complete_processing(self, sample_autocall_history_data, expected_autocall_history_output):

@@ -82,8 +82,13 @@ class AutocallHistoryProcessor:
         output_df['予定金額'] = ''
 
         # 交渉備考: f"{架電番号}オートコール　残債{残債}円"
-        # NaN対策: fillna()でベクトル化処理（apply()よりパフォーマンス向上）
-        debt_str = df['残債'].fillna('不明').astype(str)
+        # 残債フォーマット: NaNは「不明」、数値はカンマ区切り（例: 10,000）
+        def format_debt(value):
+            if pd.isna(value):
+                return '不明'
+            return f'{int(value):,}'
+
+        debt_str = df['残債'].apply(format_debt)
         phone_str = df['架電番号'].astype(str)
         output_df['交渉備考'] = phone_str + "オートコール　残債" + debt_str + "円"
 
