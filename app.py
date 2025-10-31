@@ -120,6 +120,9 @@ from screens.billing.residence_survey import (
 from screens.visit_list import (
     render_visit_list
 )
+from screens.autocall_history import (
+    render_autocall_history
+)
 
 # プロセッサーをインポート
 
@@ -190,7 +193,8 @@ def main():
         "mirail_e_145": show_mirail_contact_145,
         "mirail_e_not145": show_mirail_contact_not145,
         "residence_survey_billing": render_residence_survey_billing,
-        "visit_list": render_visit_list
+        "visit_list": render_visit_list,
+        "autocall_history": render_autocall_history
     }
     
     # カスタムCSSを適用

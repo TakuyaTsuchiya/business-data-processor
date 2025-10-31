@@ -157,3 +157,8 @@ def build_sidebar_menu():
         st.markdown('<div class="sidebar-category">📋 訪問リスト作成</div>', unsafe_allow_html=True)
         if st.button("訪問リスト作成", key="visit_list", use_container_width=True):
             st.session_state.selected_processor = "visit_list"
+
+        # オートコール履歴
+        st.markdown('<div class="sidebar-category">📋 オートコール履歴</div>', unsafe_allow_html=True)
+        if st.button("オートコール履歴作成", key="autocall_history", use_container_width=True):
+            st.session_state.selected_processor = "autocall_history"
