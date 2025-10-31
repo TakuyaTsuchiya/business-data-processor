@@ -164,13 +164,13 @@ def filter_records(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
 
     8つのフィルタ条件:
     1. 回収ランク: 「交渉困難」「死亡決定」「弁護士介入」を除外
-    2. 入金予定日: 当日以前
+    2. 入金予定日: 当日以前または空白
     3. 入金予定金額: 2, 3, 5を除外
     4. 委託先法人ID: 5と空白のみ
     5. 現住所1: 空白を除外
     6. 滞納残債: 1円以上
     7. クライアントCD: 9268を除外
-    8. 受託状況: 「契約中」のみ
+    8. 受託状況: 「契約中」「契約中(口振停止)」
 
     Args:
         df: ContractList DataFrame
@@ -189,13 +189,13 @@ def filter_records(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     excluded_count = before_count - len(df_filtered)
     logs.append(f"回収ランクフィルタ: {excluded_count}件除外 → {len(df_filtered)}件残存")
 
-    # 2. 入金予定日フィルタ（当日以前）
+    # 2. 入金予定日フィルタ（当日以前または空白）
     before_count = len(df_filtered)
     today = datetime.now().date()
     df_filtered['payment_date_parsed'] = pd.to_datetime(
         df_filtered.iloc[:, ContractListColumns.PAYMENT_DUE_DATE], errors='coerce'
     )
-    mask_date = df_filtered['payment_date_parsed'].notna() & (
+    mask_date = df_filtered['payment_date_parsed'].isna() | (
         df_filtered['payment_date_parsed'].dt.date <= today
     )
     df_filtered = df_filtered[mask_date].copy()
@@ -245,12 +245,12 @@ def filter_records(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     excluded_count = before_count - len(df_filtered)
     logs.append(f"クライアントCD9268除外: {excluded_count}件除外 → {len(df_filtered)}件残存")
 
-    # 8. 受託状況フィルタ（「契約中」のみ）
+    # 8. 受託状況フィルタ（「契約中」「契約中(口振停止)」）
     before_count = len(df_filtered)
-    mask_status = df_filtered.iloc[:, ContractListColumns.ENTRUSTED_STATUS] == "契約中"
+    mask_status = df_filtered.iloc[:, ContractListColumns.ENTRUSTED_STATUS].isin(["契約中", "契約中(口振停止)"])
     df_filtered = df_filtered[mask_status].copy()
     excluded_count = before_count - len(df_filtered)
-    logs.append(f"受託状況「契約中」フィルタ: {excluded_count}件除外 → {len(df_filtered)}件残存（最終）")
+    logs.append(f"受託状況フィルタ: {excluded_count}件除外 → {len(df_filtered)}件残存（最終）")
 
     return df_filtered, logs
 
