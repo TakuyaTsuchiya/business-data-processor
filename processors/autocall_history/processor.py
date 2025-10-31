@@ -67,7 +67,7 @@ class AutocallHistoryProcessor:
         output_df['入金予定日'] = ''
         output_df['予定金額'] = ''
 
-        # 交渉備考: f"{架電番号}オートコール　残債{残債}円"
+        # 交渉備考: f"{架電番号}オートコール{架電結果}　残債：{残債}円"
         # 残債フォーマット: NaNは「不明」、数値はカンマ区切り（例: 10,000）
         def format_debt(value):
             if pd.isna(value):
@@ -76,7 +76,8 @@ class AutocallHistoryProcessor:
 
         debt_str = df['残債'].apply(format_debt)
         phone_str = df['架電番号'].astype(str)
-        output_df['交渉備考'] = phone_str + "オートコール　残債" + debt_str + "円"
+        result_str = df['架電結果'].fillna('').astype(str)
+        output_df['交渉備考'] = phone_str + "オートコール" + result_str + "　残債：" + debt_str + "円"
 
         return output_df[self.OUTPUT_COLUMNS]
 
