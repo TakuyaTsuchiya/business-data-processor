@@ -2,14 +2,13 @@
 オートコール履歴プロセッサー
 
 list_export*.csvからオートコール履歴データを生成する。
-NegotiatesInfoSample.csvのフォーマットに従って出力。
+NegotiatesInfoSample.csv形式（10列）で出力。
 """
 
 import pandas as pd
 import io
 from typing import Optional, Tuple, List
 from datetime import datetime
-from openpyxl.styles import Font, Border
 
 
 class AutocallHistoryProcessor:
@@ -28,20 +27,6 @@ class AutocallHistoryProcessor:
         "予定金額",
         "交渉備考"
     ]
-
-    # Excel列幅設定
-    COLUMN_WIDTHS = {
-        'A': 12,  # 管理番号
-        'B': 20,  # 交渉日時（「2025-10-31 10:43:01」完全表示）
-        'C': 8,   # 担当
-        'D': 10,  # 相手
-        'E': 8,   # 手段
-        'F': 12,  # 回収ランク
-        'G': 10,  # 結果
-        'H': 14,  # 入金予定日
-        'I': 12,  # 予定金額
-        'J': 50   # 交渉備考（長い文字列対応）
-    }
 
     def __init__(self, target_person: str):
         """
@@ -95,12 +80,12 @@ class AutocallHistoryProcessor:
 
         return output_df[self.OUTPUT_COLUMNS]
 
-    def generate_output_filename(self, extension: str = 'xlsx') -> str:
+    def generate_output_filename(self, extension: str = 'csv') -> str:
         """
         出力ファイル名を生成
 
         Args:
-            extension: ファイル拡張子（'csv' または 'xlsx'）
+            extension: ファイル拡張子（デフォルト: 'csv'）
 
         Returns:
             MMDDオートコール履歴.{extension}形式のファイル名
@@ -109,40 +94,22 @@ class AutocallHistoryProcessor:
         mmdd = today.strftime('%m%d')
         return f"{mmdd}オートコール履歴.{extension}"
 
-    def generate_excel(self, df: pd.DataFrame) -> Tuple[bytes, List[str]]:
+    def generate_csv(self, df: pd.DataFrame) -> Tuple[bytes, List[str]]:
         """
-        DataFrameをExcel形式に変換（列幅調整付き）
+        DataFrameをCSV形式に変換
 
         Args:
             df: 出力するDataFrame
 
         Returns:
-            Tuple[bytes, List[str]]: Excelバイト列とログ
+            Tuple[bytes, List[str]]: CSVバイト列とログ
         """
         logs = []
 
-        # Excelファイルを作成
-        excel_buffer = io.BytesIO()
+        # CSVファイルを作成（CP932エンコーディング）
+        csv_buffer = io.BytesIO()
+        df.to_csv(csv_buffer, index=False, encoding='cp932')
+        logs.append(f"オートコール履歴: {len(df)}件")
 
-        with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
-            # シートに書き込み
-            df.to_excel(writer, sheet_name='オートコール履歴', index=False)
-            logs.append(f"オートコール履歴: {len(df)}件")
-
-            # フォント設定と列幅調整を適用
-            workbook = writer.book
-            font = Font(name='游ゴシック Regular', size=11)
-            ws = workbook['オートコール履歴']
-
-            # フォントと罫線の設定
-            for row in ws.iter_rows():
-                for cell in row:
-                    cell.font = font
-                    cell.border = Border()  # 罫線削除
-
-            # 列幅を設定
-            for col, width in self.COLUMN_WIDTHS.items():
-                ws.column_dimensions[col].width = width
-
-        excel_buffer.seek(0)
-        return excel_buffer.getvalue(), logs
+        csv_buffer.seek(0)
+        return csv_buffer.getvalue(), logs

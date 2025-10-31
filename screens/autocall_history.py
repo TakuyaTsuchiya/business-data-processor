@@ -26,7 +26,7 @@ def render_autocall_history():
         1. **最終架電日の空白処理**: 空白セルは1つ上の行の値でフォワードフィル
         2. **通話済除外**: 「架電結果」が「通話済」のレコードを除外
 
-        **出力**: `MMDDオートコール履歴.xlsx`（NegotiatesInfo形式、10列、列幅調整済み）
+        **出力**: `MMDDオートコール履歴.csv`（NegotiatesInfo形式、10列）
         - 管理番号、交渉日時、担当、相手、手段、回収ランク、結果、入金予定日、予定金額、交渉備考
         - 交渉備考: `{架電番号}オートコール　残債{残債}円`
         """)
@@ -63,8 +63,8 @@ def render_autocall_history():
                     # プロセッサー呼び出し
                     processor = AutocallHistoryProcessor(target_person=target_person)
                     result_df = processor.process(df_input)
-                    excel_bytes, logs = processor.generate_excel(result_df)
-                    output_filename = processor.generate_output_filename(extension='xlsx')
+                    csv_bytes, logs = processor.generate_csv(result_df)
+                    output_filename = processor.generate_output_filename()
 
                     # 成功メッセージ
                     st.success(f"✅ 処理完了: {len(result_df)}件のデータを生成しました")
@@ -79,12 +79,12 @@ def render_autocall_history():
                             for log in logs:
                                 st.write(f"• {log}")
 
-                    # Excelダウンロードボタン
+                    # CSVダウンロードボタン
                     st.download_button(
                         label=f"📥 {output_filename} をダウンロード",
-                        data=excel_bytes,
+                        data=csv_bytes,
                         file_name=output_filename,
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        mime="text/csv",
                         key="autocall_history_download",
                         type="primary"
                     )
