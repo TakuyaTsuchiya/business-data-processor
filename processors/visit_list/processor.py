@@ -162,15 +162,14 @@ def filter_records(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     """
     フィルタリング処理
 
-    8つのフィルタ条件:
+    7つのフィルタ条件:
     1. 回収ランク: 「交渉困難」「死亡決定」「弁護士介入」を除外
     2. 入金予定日: 当日以前または空白
     3. 入金予定金額: 2, 3, 5を除外
     4. 委託先法人ID: 5と空白のみ
-    5. 現住所1: 空白を除外
-    6. 滞納残債: 1円以上
-    7. クライアントCD: 9268を除外
-    8. 受託状況: 「契約中」「契約中(口振停止)」
+    5. 滞納残債: 1円以上
+    6. クライアントCD: 9268を除外
+    7. 受託状況: 「契約中」「契約中(口振停止)」
 
     Args:
         df: ContractList DataFrame
@@ -219,14 +218,7 @@ def filter_records(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     excluded_count = before_count - len(df_filtered)
     logs.append(f"委託先法人IDフィルタ: {excluded_count}件除外 → {len(df_filtered)}件残存")
 
-    # 5. 現住所1フィルタ（契約者の住所があるもののみ）
-    before_count = len(df_filtered)
-    mask_address = df_filtered.iloc[:, ContractListColumns.CONTRACTOR_ADDRESS1].notna() & (df_filtered.iloc[:, ContractListColumns.CONTRACTOR_ADDRESS1] != '')
-    df_filtered = df_filtered[mask_address].copy()
-    excluded_count = before_count - len(df_filtered)
-    logs.append(f"現住所1フィルタ: {excluded_count}件除外 → {len(df_filtered)}件残存")
-
-    # 6. 滞納残債フィルタ（1円以上）
+    # 5. 滞納残債フィルタ（1円以上）
     before_count = len(df_filtered)
     debt_amount = pd.to_numeric(
         df_filtered.iloc[:, ContractListColumns.ARREARS_BALANCE].astype(str).str.replace(',', ''),
@@ -237,7 +229,7 @@ def filter_records(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     excluded_count = before_count - len(df_filtered)
     logs.append(f"滞納残債1円以上フィルタ: {excluded_count}件除外 → {len(df_filtered)}件残存")
 
-    # 7. クライアントCDフィルタ（9268を除外）
+    # 6. クライアントCDフィルタ（9268を除外）
     before_count = len(df_filtered)
     client_cd = pd.to_numeric(df_filtered.iloc[:, ContractListColumns.CLIENT_CD], errors='coerce')
     mask_client = client_cd != 9268
@@ -245,7 +237,7 @@ def filter_records(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     excluded_count = before_count - len(df_filtered)
     logs.append(f"クライアントCD9268除外: {excluded_count}件除外 → {len(df_filtered)}件残存")
 
-    # 8. 受託状況フィルタ（「契約中」「契約中(口振停止)」）
+    # 7. 受託状況フィルタ（「契約中」「契約中(口振停止)」）
     before_count = len(df_filtered)
     status_values = df_filtered.iloc[:, ContractListColumns.ENTRUSTED_STATUS].astype(str).str.strip()
     mask_status = status_values.isin(["契約中", "契約中(口振停止)"])
