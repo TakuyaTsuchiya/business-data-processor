@@ -21,8 +21,8 @@ class TestAutocallHistoryProcessor:
         result_df = processor.process(sample_autocall_history_data)
 
         # 元データで3行目（10003）の最終架電日は空白だったが、処理後はフィルされている
-        # 期待: 2行目（10002は通話済で除外されているので、結果の2行目は10003）の日時が2行目の値を継承（スラッシュ区切り）
-        assert result_df.iloc[1]['交渉日時'] == '2025/10/31 10:15:01'
+        # 期待: 2行目（10002は通話済で除外されているので、結果の2行目は10003）の日時が2行目の値を継承（スラッシュ区切り、秒なし）
+        assert result_df.iloc[1]['交渉日時'] == '2025/10/31 10:15'
 
     def test_filter_通話済を除外(self, sample_autocall_history_data):
         """「架電結果」が「通話済」のレコードが除外されることを確認"""
