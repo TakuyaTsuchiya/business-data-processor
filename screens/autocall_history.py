@@ -64,7 +64,7 @@ def render_autocall_history():
                     processor = AutocallHistoryProcessor(target_person=target_person)
                     result_df = processor.process(df_input)
                     csv_bytes, logs = processor.generate_csv(result_df)
-                    output_filename = processor.generate_output_filename(extension='csv')
+                    output_filename = processor.generate_output_filename()
 
                     # 成功メッセージ
                     st.success(f"✅ 処理完了: {len(result_df)}件のデータを生成しました")

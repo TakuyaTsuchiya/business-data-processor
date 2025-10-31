@@ -107,10 +107,9 @@ class AutocallHistoryProcessor:
         logs = []
 
         # CSVファイルを作成（CP932エンコーディング）
-        csv_buffer = io.StringIO()
+        csv_buffer = io.BytesIO()
         df.to_csv(csv_buffer, index=False, encoding='cp932')
         logs.append(f"オートコール履歴: {len(df)}件")
 
-        # バイト列に変換
-        csv_bytes = csv_buffer.getvalue().encode('cp932')
-        return csv_bytes, logs
+        csv_buffer.seek(0)
+        return csv_buffer.getvalue(), logs

@@ -214,3 +214,22 @@ class TestCSVGeneration:
         assert '管理番号' in csv_content
         assert '交渉日時' in csv_content
         assert '10001' in csv_content  # サンプルデータの管理番号
+
+    def test_generate_csv_エンコーディング検証(self, sample_autocall_history_data):
+        """CP932エンコーディングが正しく適用されることを確認"""
+        from processors.autocall_history import AutocallHistoryProcessor
+
+        processor = AutocallHistoryProcessor(target_person="契約者")
+        result_df = processor.process(sample_autocall_history_data)
+        csv_bytes, logs = processor.generate_csv(result_df)
+
+        # CP932でデコードできることを確認
+        try:
+            csv_content = csv_bytes.decode('cp932')
+            assert '管理番号' in csv_content
+            assert '交渉日時' in csv_content
+        except UnicodeDecodeError:
+            pytest.fail("CP932エンコーディングでデコード失敗")
+
+        # 日本語が含まれることを確認
+        assert '契約者' in csv_content or '保証人' in csv_content or '連絡人' in csv_content
