@@ -71,6 +71,26 @@ Z002,75000"""
     return pd.read_csv(StringIO(data))
 
 
+@pytest.fixture
+def sample_autocall_history_data():
+    """オートコール履歴テスト用サンプルデータ（list_export形式）"""
+    fixture_path = os.path.join(
+        os.path.dirname(__file__),
+        'fixtures', 'autocall_history', 'list_export_sample.csv'
+    )
+    return pd.read_csv(fixture_path)
+
+
+@pytest.fixture
+def expected_autocall_history_output():
+    """オートコール履歴の期待される出力データ"""
+    fixture_path = os.path.join(
+        os.path.dirname(__file__),
+        'fixtures', 'autocall_history', 'expected_output.csv'
+    )
+    return pd.read_csv(fixture_path, keep_default_na=False)
+
+
 class MockUploadedFile:
     """Streamlit UploadedFileのモッククラス"""
     

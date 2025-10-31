@@ -421,8 +421,14 @@ def generate_excel(
             for row in ws.iter_rows(min_row=2):
                 for col_idx in numeric_cols:
                     cell = row[col_idx - 1]
-                    if cell.value is not None and isinstance(cell.value, (int, float)):
-                        cell.number_format = '#,##0'
+                    # NaNチェック: pd.isna()で判定し、NaNの場合は空文字に置き換え
+                    if cell.value is not None:
+                        if isinstance(cell.value, (int, float)):
+                            import math
+                            if math.isnan(cell.value):
+                                cell.value = ''
+                            else:
+                                cell.number_format = '#,##0'
 
     excel_buffer.seek(0)
     return excel_buffer.getvalue(), logs
