@@ -68,20 +68,20 @@ class TestAutocallHistoryProcessor:
         assert all(result_df['予定金額'] == '')
 
     def test_mapping_交渉備考の文字列結合(self, sample_autocall_history_data):
-        """交渉備考が「{架電番号}オートコール　残債{残債}円」形式で結合されることを確認"""
+        """交渉備考が「{架電番号}オートコール{架電結果}　残債：{残債}円」形式で結合されることを確認"""
         from processors.autocall_history import AutocallHistoryProcessor
 
         processor = AutocallHistoryProcessor(target_person="契約者")
         result_df = processor.process(sample_autocall_history_data)
 
-        # 1行目の確認（カンマ区切り）
+        # 1行目の確認（架電結果「その他」、カンマ区切り）
         first_row = result_df.iloc[0]
-        expected_remark = "090-1234-5678オートコール　残債10,000円"
+        expected_remark = "090-1234-5678オートコールその他　残債：10,000円"
         assert first_row['交渉備考'] == expected_remark
 
-        # 2行目の確認（管理番号10003、カンマ区切り）
+        # 2行目の確認（管理番号10003、架電結果空白、カンマ区切り）
         second_row = result_df.iloc[1]
-        expected_remark2 = "090-3333-4444オートコール　残債20,000円"
+        expected_remark2 = "090-3333-4444オートコール　残債：20,000円"
         assert second_row['交渉備考'] == expected_remark2
 
     def test_complete_processing(self, sample_autocall_history_data, expected_autocall_history_output):
@@ -169,7 +169,7 @@ class TestEdgeCases:
 
         # 交渉備考に「不明」が含まれることを確認
         assert "不明" in result_df.iloc[0]['交渉備考']
-        assert result_df.iloc[0]['交渉備考'] == "090-1234-5678オートコール　残債不明円"
+        assert result_df.iloc[0]['交渉備考'] == "090-1234-5678オートコールその他　残債：不明円"
 
     def test_架電番号が空白の場合(self):
         """架電番号が空白でも正常に処理されることを確認"""
