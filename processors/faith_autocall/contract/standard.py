@@ -168,16 +168,16 @@ def create_faith_contract_output(df_filtered: pd.DataFrame) -> Tuple[pd.DataFram
     df_output = pd.DataFrame(index=range(len(df_filtered)), columns=AUTOCALL_OUTPUT_COLUMNS)
     df_output = df_output.fillna("")
     
-    # 出力用のマッピング（残債マッピングを削除）
+    # 出力用のマッピング
     mapping_rules = {
         "電話番号": "TEL携帯",
-        "架電番号": "TEL携帯", 
+        "架電番号": "TEL携帯",
         "入居ステータス": "入居ステータス",
         "滞納ステータス": "滞納ステータス",
         "管理番号": "管理番号",
         "契約者名（カナ）": "契約者カナ",
-        "物件名": "物件名"
-        # 「残債」列は空白で統一
+        "物件名": "物件名",
+        "残債": "滞納残債"
     }
     
     # データをマッピング
