@@ -28,16 +28,20 @@ def build_sidebar_menu():
             if st.button("🏢 ミライル", key="tab_mirail", use_container_width=True,
                         type="primary" if st.session_state.selected_tab == "ミライル" else "secondary"):
                 st.session_state.selected_tab = "ミライル"
+                st.rerun()
             if st.button("🏪 プラザ", key="tab_plaza", use_container_width=True,
                         type="primary" if st.session_state.selected_tab == "プラザ" else "secondary"):
                 st.session_state.selected_tab = "プラザ"
+                st.rerun()
         with col2:
             if st.button("📱 フェイス", key="tab_faith", use_container_width=True,
                         type="primary" if st.session_state.selected_tab == "フェイス" else "secondary"):
                 st.session_state.selected_tab = "フェイス"
+                st.rerun()
             if st.button("⚙️ その他", key="tab_others", use_container_width=True,
                         type="primary" if st.session_state.selected_tab == "その他" else "secondary"):
                 st.session_state.selected_tab = "その他"
+                st.rerun()
 
         st.markdown("---")
 
