@@ -131,12 +131,20 @@ def determine_billing_rows(row: pd.Series, is_takahashi: bool, selected_month: s
 
         # 高橋裕次郎の特例（該当する調査回の中で適用）
         if is_takahashi:
-            # 3回目が含まれている場合、1〜3回目全てを請求
+            # 3回目が含まれている場合
             if 3 in matching_times:
-                return [1, 2, 3]
-            # 2回目が含まれている場合、1〜2回目を請求
+                # 2回目提出済みなら3回目のみ（重複回避）
+                if pd.notna(row.get('2回目提出日')):
+                    return [3]
+                else:
+                    return [1, 2, 3]
+            # 2回目が含まれている場合
             elif 2 in matching_times:
-                return [1, 2]
+                # 1回目提出済みなら2回目のみ（重複回避）
+                if pd.notna(row.get('1回目提出日')):
+                    return [2]
+                else:
+                    return [1, 2]
             # 1回目のみ
             elif 1 in matching_times:
                 return [1]
