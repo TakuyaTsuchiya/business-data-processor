@@ -3,6 +3,9 @@ __pycache__/
 serena/
 .serena/
 
+# macOS system files
+.DS_Store
+
 # Debug files
 debug*.log
 debug*.csv
