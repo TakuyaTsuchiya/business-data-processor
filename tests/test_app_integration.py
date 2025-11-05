@@ -16,8 +16,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import app
 from processors.ark_late_payment_update import process_ark_late_payment_data
 from processors.ark_registration import process_ark_data
-from processors.mirail_autocall.contract.without10k_refactored import process_mirail_contract_without10k_data
-from processors.mirail_autocall.contract.with10k_refactored import process_mirail_contract_with10k_data
+from processors.mirail_autocall.unified_wrapper import (
+    process_mirail_contract_without10k_data,
+    process_mirail_contract_with10k_data
+)
 
 
 class TestAppIntegration:
@@ -73,14 +75,8 @@ class TestAppIntegration:
         result = process_ark_late_payment_data(ark_file, contract_file)
         
         if result is not None:
-            # Mirail processors return 4 values
-            if len(result) == 4:
-                df_filtered, output_df, logs, filename = result
-                assert isinstance(df_filtered, pd.DataFrame), "フィルタリング済みDFがDataFrameではない"
-                assert isinstance(logs, list), "ログがリストではない"
-            else:
-                # Ark processors return 2 values
-                output_df, filename = result
+            # Ark processors return 2 values
+            output_df, filename = result
             
             # 統合処理結果の検証
             assert isinstance(output_df, pd.DataFrame), "統合処理の出力がDataFrameではない"
@@ -106,9 +102,8 @@ class TestAppIntegration:
         results = [result_without, result_with]
         for result in results:
             if result is not None:
-                # Mirail processors return 4 values
-                df_filtered, output_df, logs, filename = result
-                assert isinstance(df_filtered, pd.DataFrame), "フィルタリング済みDFがDataFrameではない"
+                # Mirail processors return 3 values (統合版)
+                output_df, logs, filename = result
                 assert isinstance(output_df, pd.DataFrame), "統合処理の出力がDataFrameではない"
                 assert isinstance(logs, list), "ログがリストではない"
                 assert isinstance(filename, str), "ファイル名が文字列ではない"
@@ -164,9 +159,9 @@ class TestAppIntegration:
         
         # データ一貫性の確認
         if result_without is not None and result_with is not None:
-            # Mirail processors return 4 values
-            _, df_without, _, _ = result_without
-            _, df_with, _, _ = result_with
+            # Mirail processors return 3 values (統合版)
+            df_without, _, _ = result_without
+            df_with, _, _ = result_with
             
             # 基本的なデータ構造の一貫性確認
             assert isinstance(df_without, pd.DataFrame), "without10k出力がDataFrameではない"

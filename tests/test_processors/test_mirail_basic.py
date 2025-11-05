@@ -12,13 +12,15 @@ import os
 # プロジェクトルートをパスに追加
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-# ミライルオートコール関連のインポート
-from processors.mirail_autocall.contract.without10k_refactored import process_mirail_contract_without10k_data
-from processors.mirail_autocall.contract.with10k_refactored import process_mirail_contract_with10k_data
-from processors.mirail_autocall.guarantor.without10k_refactored import process_mirail_guarantor_without10k_data
-from processors.mirail_autocall.guarantor.with10k_refactored import process_mirail_guarantor_with10k_data
-from processors.mirail_autocall.emergency_contact.without10k_refactored import process_mirail_emergency_contact_without10k_data as process_mirail_emergencycontact_without10k_data
-from processors.mirail_autocall.emergency_contact.with10k_refactored import process_mirail_emergency_contact_with10k_data as process_mirail_emergencycontact_with10k_data
+# ミライルオートコール関連のインポート（統合版ラッパー使用）
+from processors.mirail_autocall.unified_wrapper import (
+    process_mirail_contract_without10k_data,
+    process_mirail_contract_with10k_data,
+    process_mirail_guarantor_without10k_data,
+    process_mirail_guarantor_with10k_data,
+    process_mirail_emergency_contact_without10k_data as process_mirail_emergencycontact_without10k_data,
+    process_mirail_emergency_contact_with10k_data as process_mirail_emergencycontact_with10k_data
+)
 
 
 class TestMirailBasic:
@@ -35,9 +37,8 @@ class TestMirailBasic:
             # 結果の型確認
             if result is not None:
                 assert isinstance(result, tuple), "戻り値がタプルではない"
-                assert len(result) == 4, "戻り値のタプル要素数が4ではない"
-                df_filtered, output_df, logs, filename = result
-                assert isinstance(df_filtered, pd.DataFrame), "フィルタリング済みDFがDataFrameではない"
+                assert len(result) == 3, "戻り値のタプル要素数が3ではない"
+                output_df, logs, filename = result
                 assert isinstance(output_df, pd.DataFrame), "出力がDataFrameではない"
                 assert isinstance(logs, list), "ログがリストではない"
                 assert isinstance(filename, str), "ファイル名が文字列ではない"
@@ -54,7 +55,7 @@ class TestMirailBasic:
             result = process_mirail_contract_with10k_data(mirail_file)
             if result is not None:
                 assert isinstance(result, tuple), "戻り値がタプルではない"
-                assert len(result) == 4, "戻り値のタプル要素数が4ではない"
+                assert len(result) == 3, "戻り値のタプル要素数が3ではない"
             assert True, "関数が正常に実行された"
         except Exception as e:
             pytest.fail(f"関数実行でエラーが発生: {str(e)}")
@@ -69,7 +70,7 @@ class TestMirailBasic:
             result = process_mirail_guarantor_without10k_data(mirail_file)
             if result is not None:
                 assert isinstance(result, tuple), "戻り値がタプルではない"
-                assert len(result) == 4, "戻り値のタプル要素数が4ではない"
+                assert len(result) == 3, "戻り値のタプル要素数が3ではない"
             assert True, "関数が正常に実行された"
         except Exception as e:
             pytest.fail(f"関数実行でエラーが発生: {str(e)}")
@@ -84,7 +85,7 @@ class TestMirailBasic:
             result = process_mirail_guarantor_with10k_data(mirail_file)
             if result is not None:
                 assert isinstance(result, tuple), "戻り値がタプルではない"
-                assert len(result) == 4, "戻り値のタプル要素数が4ではない"
+                assert len(result) == 3, "戻り値のタプル要素数が3ではない"
             assert True, "関数が正常に実行された"
         except Exception as e:
             pytest.fail(f"関数実行でエラーが発生: {str(e)}")
@@ -99,7 +100,7 @@ class TestMirailBasic:
             result = process_mirail_emergencycontact_without10k_data(mirail_file)
             if result is not None:
                 assert isinstance(result, tuple), "戻り値がタプルではない"
-                assert len(result) == 4, "戻り値のタプル要素数が4ではない"
+                assert len(result) == 3, "戻り値のタプル要素数が3ではない"
             assert True, "関数が正常に実行された"
         except Exception as e:
             pytest.fail(f"関数実行でエラーが発生: {str(e)}")
@@ -114,7 +115,7 @@ class TestMirailBasic:
             result = process_mirail_emergencycontact_with10k_data(mirail_file)
             if result is not None:
                 assert isinstance(result, tuple), "戻り値がタプルではない"
-                assert len(result) == 4, "戻り値のタプル要素数が4ではない"
+                assert len(result) == 3, "戻り値のタプル要素数が3ではない"
             assert True, "関数が正常に実行された"
         except Exception as e:
             pytest.fail(f"関数実行でエラーが発生: {str(e)}")

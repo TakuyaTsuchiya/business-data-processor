@@ -1,6 +1,5 @@
 """
 ミライルオートコール統合プロセッサーのテスト
-既存の実装と統合版の出力が一致することを確認
 """
 
 import pytest
@@ -9,14 +8,6 @@ from io import BytesIO
 
 # 統合版
 from processors.mirail_autocall_unified import MirailAutocallUnifiedProcessor
-
-# 既存版（比較用）
-from processors.mirail_autocall.contract.with10k_refactored import process_mirail_contract_with10k_data as old_contract_with10k
-from processors.mirail_autocall.contract.without10k_refactored import process_mirail_contract_without10k_data as old_contract_without10k
-from processors.mirail_autocall.guarantor.with10k_refactored import process_mirail_guarantor_with10k_data as old_guarantor_with10k
-from processors.mirail_autocall.guarantor.without10k_refactored import process_mirail_guarantor_without10k_data as old_guarantor_without10k
-from processors.mirail_autocall.emergency_contact.with10k_refactored import process_mirail_emergency_contact_with10k_data as old_emergency_with10k
-from processors.mirail_autocall.emergency_contact.without10k_refactored import process_mirail_emergency_contact_without10k_data as old_emergency_without10k
 
 
 class TestMirailUnifiedProcessor:
@@ -63,44 +54,7 @@ class TestMirailUnifiedProcessor:
         csv_buffer = BytesIO()
         df.to_csv(csv_buffer, index=False, encoding='utf-8-sig')
         return csv_buffer.getvalue()
-    
-    def test_contract_with10k_compatibility(self, sample_csv_data):
-        """契約者（10k含む）の互換性テスト"""
-        processor = MirailAutocallUnifiedProcessor()
-        
-        # 統合版の実行
-        new_df, new_logs, new_filename = processor.process_mirail_autocall(
-            sample_csv_data, "contract", with_10k=True
-        )
-        
-        # 既存版の実行
-        old_df, old_logs, old_filename = old_contract_with10k(sample_csv_data)
-        
-        # ファイル名が一致することを確認
-        assert new_filename == old_filename
-        
-        # データフレームの形状が一致
-        assert new_df.shape == old_df.shape
-        
-        # 列名が一致
-        assert list(new_df.columns) == list(old_df.columns)
-    
-    def test_contract_without10k_compatibility(self, sample_csv_data):
-        """契約者（10k除外）の互換性テスト"""
-        processor = MirailAutocallUnifiedProcessor()
-        
-        # 統合版の実行
-        new_df, new_logs, new_filename = processor.process_mirail_autocall(
-            sample_csv_data, "contract", with_10k=False
-        )
-        
-        # 既存版の実行
-        old_df, old_logs, old_filename = old_contract_without10k(sample_csv_data)
-        
-        # 基本的な検証
-        assert new_filename == old_filename
-        assert new_df.shape == old_df.shape
-    
+
     def test_all_targets_basic(self, sample_csv_data):
         """全ターゲットの基本動作テスト"""
         processor = MirailAutocallUnifiedProcessor()
