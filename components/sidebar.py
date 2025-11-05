@@ -55,7 +55,7 @@ def build_sidebar_menu():
 def _show_mirail_menu():
     """ミライルメニュー表示"""
     # オートコール
-    st.markdown('<div class="sidebar-category">📞 オートコール</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-category">📞 ミライル用オートコール</div>', unsafe_allow_html=True)
     if st.button("契約者（10,000円を除外するパターン）", key="mirail_contract_without10k", use_container_width=True):
         st.session_state.selected_processor = "mirail_contract_without10k"
     if st.button("契約者（10,000円を除外しないパターン）", key="mirail_contract_with10k", use_container_width=True):
@@ -70,7 +70,7 @@ def _show_mirail_menu():
         st.session_state.selected_processor = "mirail_emergency_with10k"
 
     # SMS
-    st.markdown('<div class="sidebar-category">📱 SMS送信用</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-category">📱 ミライル用SMS送信用</div>', unsafe_allow_html=True)
     if st.button("契約者", key="mirail_sms_contract", use_container_width=True):
         st.session_state.selected_processor = "mirail_sms_contract"
     if st.button("保証人", key="mirail_sms_guarantor", use_container_width=True):
@@ -79,7 +79,7 @@ def _show_mirail_menu():
         st.session_state.selected_processor = "mirail_sms_emergencycontact"
 
     # 催告書
-    st.markdown('<div class="sidebar-category">📝 催告書 差し込みリスト</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-category">📝 ミライル用催告書 差し込みリスト</div>', unsafe_allow_html=True)
     if st.button("契約者（1,4,5）", key="mirail_c_145", use_container_width=True):
         st.session_state.selected_processor = "mirail_c_145"
     if st.button("契約者（1,4,5,10,40以外）", key="mirail_c_not145", use_container_width=True):
@@ -97,7 +97,7 @@ def _show_mirail_menu():
 def _show_faith_menu():
     """フェイスメニュー表示"""
     # オートコール
-    st.markdown('<div class="sidebar-category">📞 オートコール</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-category">📞 フェイス用オートコール</div>', unsafe_allow_html=True)
     if st.button("契約者", key="faith_contract", use_container_width=True):
         st.session_state.selected_processor = "faith_contract"
     if st.button("保証人", key="faith_guarantor", use_container_width=True):
@@ -106,7 +106,7 @@ def _show_faith_menu():
         st.session_state.selected_processor = "faith_emergency"
 
     # SMS
-    st.markdown('<div class="sidebar-category">📱 SMS送信用</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-category">📱 フェイス用SMS送信用</div>', unsafe_allow_html=True)
     if st.button("契約者", key="faith_sms_vacated", use_container_width=True):
         st.session_state.selected_processor = "faith_sms_vacated"
     if st.button("保証人", key="faith_sms_guarantor", use_container_width=True):
@@ -115,7 +115,7 @@ def _show_faith_menu():
         st.session_state.selected_processor = "faith_sms_emergency_contact"
 
     # 催告書
-    st.markdown('<div class="sidebar-category">📝 催告書 差し込みリスト</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-category">📝 フェイス用催告書 差し込みリスト</div>', unsafe_allow_html=True)
     if st.button("契約者「入居中」「訴訟中」", key="faith_c_litigation", use_container_width=True):
         st.session_state.selected_processor = "faith_c_litigation"
     if st.button("契約者「入居中」「訴訟対象外」", key="faith_c_excluded", use_container_width=True):
@@ -139,7 +139,7 @@ def _show_faith_menu():
 def _show_plaza_menu():
     """プラザメニュー表示"""
     # オートコール
-    st.markdown('<div class="sidebar-category">📞 オートコール</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-category">📞 プラザ用オートコール</div>', unsafe_allow_html=True)
     if st.button("契約者", key="plaza_main", use_container_width=True):
         st.session_state.selected_processor = "plaza_main"
     if st.button("保証人", key="plaza_guarantor", use_container_width=True):
@@ -148,7 +148,7 @@ def _show_plaza_menu():
         st.session_state.selected_processor = "plaza_contact"
 
     # SMS
-    st.markdown('<div class="sidebar-category">📱 SMS送信用</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-category">📱 プラザ用SMS送信用</div>', unsafe_allow_html=True)
     if st.button("契約者", key="plaza_sms_contract", use_container_width=True):
         st.session_state.selected_processor = "plaza_sms_contract"
     if st.button("保証人", key="plaza_sms_guarantor", use_container_width=True):
@@ -157,12 +157,12 @@ def _show_plaza_menu():
         st.session_state.selected_processor = "plaza_sms_contact"
 
     # 新規登録
-    st.markdown('<div class="sidebar-category">📋 新規登録</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-category">📋 プラザ新規登録</div>', unsafe_allow_html=True)
     if st.button("プラザ新規登録", key="plaza_registration", use_container_width=True):
         st.session_state.selected_processor = "plaza_registration"
 
     # 残債更新
-    st.markdown('<div class="sidebar-category">💰 残債の更新</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-category">💰 プラザ残債の更新</div>', unsafe_allow_html=True)
     if st.button("プラザ残債の更新", key="plaza_debt_update", use_container_width=True):
         st.session_state.selected_processor = "plaza_debt_update"
 
