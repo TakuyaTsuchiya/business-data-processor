@@ -24,22 +24,27 @@ class ContractListColumns:
     EVICTION_ACTUAL_COST = 17
     SALES_REP = 19
     CONTRACTOR_NAME = 20
+    CONTRACTOR_POSTALCODE = 22
     CONTRACTOR_ADDRESS1 = 23
     CONTRACTOR_ADDRESS2 = 24
     CONTRACTOR_ADDRESS3 = 25
     GUARANTOR1_NAME = 41
+    GUARANTOR1_POSTALCODE = 42
     GUARANTOR1_ADDRESS1 = 43
     GUARANTOR1_ADDRESS2 = 44
     GUARANTOR1_ADDRESS3 = 45
     GUARANTOR2_NAME = 48
+    GUARANTOR2_POSTALCODE = 49
     GUARANTOR2_ADDRESS1 = 50
     GUARANTOR2_ADDRESS2 = 51
     GUARANTOR2_ADDRESS3 = 52
     CONTACT1_NAME = 55
+    CONTACT1_POSTALCODE = 56
     CONTACT1_ADDRESS1 = 58
     CONTACT1_ADDRESS2 = 59
     CONTACT1_ADDRESS3 = 60
     CONTACT2_NAME = 62
+    CONTACT2_POSTALCODE = 63
     CONTACT2_ADDRESS1 = 64
     CONTACT2_ADDRESS2 = 65
     CONTACT2_ADDRESS3 = 66
@@ -55,7 +60,7 @@ class ContractListColumns:
     TERMINATION_DATE = 120
 
 
-# 22列の出力構造定義（テスト用・ドキュメント用）
+# 23列の出力構造定義（テスト用・ドキュメント用）
 # 注: 実際の出力列は create_output_row_bulk() で動的に生成される
 # 氏名列と住所列は人物タイプ（契約者/保証人1/保証人2/連絡人1/連絡人2）により異なる
 OUTPUT_COLUMNS = [
@@ -68,19 +73,20 @@ OUTPUT_COLUMNS = [
     "営業担当者",          # 7
     "[人物]氏名",          # 8 - 各シートで変わる（契約者氏名、保証人１氏名、etc）
     "",                   # 9 - 結合住所（空白ヘッダー）
-    "現住所1",            # 10 - 各シートで変わる（人物別の住所）
-    "現住所2",            # 11
-    "現住所3",            # 12
-    "滞納残債",            # 13
-    "入金予定日",          # 14
-    "入金予定金額",         # 15
-    "月額賃料合計",         # 16
-    "回収ランク",          # 17
-    "クライアントCD",       # 18
-    "クライアント名",       # 19
-    "委託先法人ID",        # 20
-    "委託先法人名",         # 21
-    "解約日",             # 22
+    "郵便番号",            # 10 - 参照用（ソートには使用しない）
+    "現住所1",            # 11 - 各シートで変わる（人物別の住所）
+    "現住所2",            # 12
+    "現住所3",            # 13
+    "滞納残債",            # 14
+    "入金予定日",          # 15
+    "入金予定金額",         # 16
+    "月額賃料合計",         # 17
+    "回収ランク",          # 18
+    "クライアントCD",       # 19
+    "クライアント名",       # 20
+    "委託先法人ID",        # 21
+    "委託先法人名",         # 22
+    "解約日",             # 23
 ]
 
 
@@ -94,6 +100,7 @@ class VisitListConfig:
             "sheet_name": "契約者",
             "output_name_col": "契約者氏名",
             "name_col": ContractListColumns.CONTRACTOR_NAME,
+            "postal_code_col": ContractListColumns.CONTRACTOR_POSTALCODE,
             "address1_col": ContractListColumns.CONTRACTOR_ADDRESS1,
             "address2_col": ContractListColumns.CONTRACTOR_ADDRESS2,
             "address3_col": ContractListColumns.CONTRACTOR_ADDRESS3,
@@ -103,6 +110,7 @@ class VisitListConfig:
             "sheet_name": "保証人1",
             "output_name_col": "保証人１氏名",
             "name_col": ContractListColumns.GUARANTOR1_NAME,
+            "postal_code_col": ContractListColumns.GUARANTOR1_POSTALCODE,
             "address1_col": ContractListColumns.GUARANTOR1_ADDRESS1,
             "address2_col": ContractListColumns.GUARANTOR1_ADDRESS2,
             "address3_col": ContractListColumns.GUARANTOR1_ADDRESS3,
@@ -112,6 +120,7 @@ class VisitListConfig:
             "sheet_name": "保証人2",
             "output_name_col": "保証人２氏名",
             "name_col": ContractListColumns.GUARANTOR2_NAME,
+            "postal_code_col": ContractListColumns.GUARANTOR2_POSTALCODE,
             "address1_col": ContractListColumns.GUARANTOR2_ADDRESS1,
             "address2_col": ContractListColumns.GUARANTOR2_ADDRESS2,
             "address3_col": ContractListColumns.GUARANTOR2_ADDRESS3,
@@ -121,6 +130,7 @@ class VisitListConfig:
             "sheet_name": "連絡人1",
             "output_name_col": "緊急連絡人１氏名",
             "name_col": ContractListColumns.CONTACT1_NAME,
+            "postal_code_col": ContractListColumns.CONTACT1_POSTALCODE,
             "address1_col": ContractListColumns.CONTACT1_ADDRESS1,
             "address2_col": ContractListColumns.CONTACT1_ADDRESS2,
             "address3_col": ContractListColumns.CONTACT1_ADDRESS3,
@@ -130,6 +140,7 @@ class VisitListConfig:
             "sheet_name": "連絡人2",
             "output_name_col": "緊急連絡人２氏名",
             "name_col": ContractListColumns.CONTACT2_NAME,
+            "postal_code_col": ContractListColumns.CONTACT2_POSTALCODE,
             "address1_col": ContractListColumns.CONTACT2_ADDRESS1,
             "address2_col": ContractListColumns.CONTACT2_ADDRESS2,
             "address3_col": ContractListColumns.CONTACT2_ADDRESS3,
@@ -276,10 +287,11 @@ def create_output_row_bulk(df_person: pd.DataFrame, person_type: str, config: Di
         config: 人物別の列定義
 
     Returns:
-        pd.DataFrame: 22列の出力DataFrame
+        pd.DataFrame: 23列の出力DataFrame（郵便番号を含む）
     """
     # 人物情報の列番号
     name_col = config["name_col"]
+    postal_code_col = config["postal_code_col"]
     addr1_col = config["address1_col"]
     addr2_col = config["address2_col"]
     addr3_col = config["address3_col"]
@@ -304,6 +316,7 @@ def create_output_row_bulk(df_person: pd.DataFrame, person_type: str, config: Di
         "営業担当者": df_person.iloc[:, ContractListColumns.SALES_REP].values,
         config["output_name_col"]: df_person.iloc[:, name_col].values,
         "": combined_addresses.values,
+        "郵便番号": df_person.iloc[:, postal_code_col].values,
         "現住所1": df_person.iloc[:, addr1_col].values,
         "現住所2": df_person.iloc[:, addr2_col].values,
         "現住所3": df_person.iloc[:, addr3_col].values,
@@ -330,10 +343,10 @@ def create_output_row_bulk(df_person: pd.DataFrame, person_type: str, config: Di
 
 def sort_by_prefecture(df: pd.DataFrame) -> pd.DataFrame:
     """
-    都道府県順（北→南）でソート（ベクトル化版）
+    都道府県順（北→南）→現住所2順でソート（ベクトル化版）
 
     Args:
-        df: 22列形式のDataFrame
+        df: 23列形式のDataFrame（郵便番号を含む）
 
     Returns:
         pd.DataFrame: ソート後のDataFrame
@@ -354,8 +367,8 @@ def sort_by_prefecture(df: pd.DataFrame) -> pd.DataFrame:
     # 都道府県名を順序番号にマッピング（見つからない場合は999）
     df['prefecture_order'] = extracted_prefectures.map(prefecture_map).fillna(999).astype(int)
 
-    # 都道府県順でソート
-    df_sorted = df.sort_values('prefecture_order').drop(columns=['prefecture_order'])
+    # 都道府県順 → 現住所2順の2段階ソート
+    df_sorted = df.sort_values(['prefecture_order', '現住所2']).drop(columns=['prefecture_order'])
 
     return df_sorted
 
