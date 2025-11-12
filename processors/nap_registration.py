@@ -225,7 +225,8 @@ class FileReader:
                 io.BytesIO(content),
                 skiprows=skiprows,
                 dtype=str,  # 全列を文字列として扱い数値の精度問題を回避
-                engine='openpyxl'  # .xlsxファイル用のエンジンを明示的に指定
+                engine='openpyxl',  # .xlsxファイル用のエンジンを明示的に指定
+                engine_kwargs={'read_only': True, 'data_only': True}  # 高速化: ストリーミング読み込み
             )
 
             self.logger.info(f"Excel file loaded: {df.shape[0]} rows, {df.shape[1]} columns")
