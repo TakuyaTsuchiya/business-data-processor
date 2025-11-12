@@ -387,9 +387,12 @@ def generate_excel(
             # 数値列にカンマ区切り書式を適用
             headers = [cell.value for cell in ws[1]]
             numeric_cols = []
+            decimal_cols = []
             for idx, header in enumerate(headers, start=1):
                 if header in ["退去手続き（実費）", "滞納残債", "入金予定金額", "月額賃料合計"]:
                     numeric_cols.append(idx)
+                elif header == "滞納月数":
+                    decimal_cols.append(idx)
 
             # 2行目以降の数値列にカンマ書式
             for row in ws.iter_rows(min_row=2):
@@ -403,6 +406,17 @@ def generate_excel(
                                 cell.value = ''
                             else:
                                 cell.number_format = '#,##0'
+
+                # 小数点列に小数点第1位フォーマット
+                for col_idx in decimal_cols:
+                    cell = row[col_idx - 1]
+                    if cell.value is not None:
+                        if isinstance(cell.value, (int, float)):
+                            import math
+                            if math.isnan(cell.value):
+                                cell.value = ''
+                            else:
+                                cell.number_format = '0.0'
 
     excel_buffer.seek(0)
     return excel_buffer.getvalue(), logs
