@@ -19,7 +19,9 @@
 - 引継情報: "●入居日" + 日割家賃発生日 (例: ●入居日2024/3/15)
 - 契約者生年月日: 契約者生年月日列から直接マッピング
 - 契約者現住所郵便番号: 契約者郵便番号
+- 契約者現住所3: 契約者１住所３ + 契約者住所アパート等（結合）
 - 物件住所郵便番号: 物件郵便番号
+- 物件住所3: 物件住所３ + 物件名 + 部屋番号（結合）
 - 契約者カナ/保証人１カナ/緊急連絡人１カナ: ひらがな→カタカナ自動変換
 - 契約者TEL携帯: 契約者携帯1を優先、空白時は契約者電話を使用
 - 保証人１契約者との関係: 値がある場合は全て「他」に変更
@@ -446,8 +448,11 @@ class DataMapper:
             output_df["契約者現住所1"] = excel_df["契約者１住所１"]
         if "契約者１住所２" in excel_df.columns:
             output_df["契約者現住所2"] = excel_df["契約者１住所２"]
-        if "契約者１住所３" in excel_df.columns:
-            output_df["契約者現住所3"] = excel_df["契約者１住所３"]
+
+        # 契約者現住所3 = 契約者１住所３ + 契約者住所アパート等
+        addr3 = excel_df["契約者１住所３"].fillna("") if "契約者１住所３" in excel_df.columns else ""
+        apt = excel_df["契約者住所アパート等"].fillna("") if "契約者住所アパート等" in excel_df.columns else ""
+        output_df["契約者現住所3"] = addr3 + apt
 
         # 勤務先情報
         if "契約者勤務先名" in excel_df.columns:
@@ -480,8 +485,12 @@ class DataMapper:
             output_df["物件住所1"] = excel_df["物件住所１"]
         if "物件住所２" in excel_df.columns:
             output_df["物件住所2"] = excel_df["物件住所２"]
-        if "物件住所３" in excel_df.columns:
-            output_df["物件住所3"] = excel_df["物件住所３"]
+
+        # 物件住所3 = 物件住所３ + 物件名 + 部屋番号
+        addr3 = excel_df["物件住所３"].fillna("") if "物件住所３" in excel_df.columns else ""
+        prop_name = excel_df["物件名"].fillna("") if "物件名" in excel_df.columns else ""
+        room = excel_df["部屋番号"].fillna("") if "部屋番号" in excel_df.columns else ""
+        output_df["物件住所3"] = addr3 + prop_name + room
 
         # 賃料関連
         if "賃料合計額" in excel_df.columns:

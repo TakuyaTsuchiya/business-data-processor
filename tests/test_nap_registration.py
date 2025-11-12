@@ -319,6 +319,10 @@ class TestDataMapper:
             "契約者郵便番号": ["100-0001"],
             "契約者１住所１": ["東京都千代田区"],
             "契約者１住所２": ["丸の内1-1"],
+            "契約者１住所３": ["丸ビル"],
+            "契約者住所アパート等": ["203号室"],
+            "物件名": ["テストマンション"],
+            "部屋番号": ["101"],
             "物件郵便番号": ["200-0001"],
             "物件住所１": ["神奈川県横浜市"],
             "物件住所２": ["みなとみらい1-1"],
@@ -379,6 +383,7 @@ class TestDataMapper:
         assert output_df["契約者現住所郵便番号"].iloc[0] == "100-0001"
         assert output_df["契約者現住所1"].iloc[0] == "東京都千代田区"
         assert output_df["契約者現住所2"].iloc[0] == "丸の内1-1"
+        assert output_df["契約者現住所3"].iloc[0] == "丸ビル203号室"  # 結合
 
     def test_map_property_info(self, data_mapper, sample_excel_df):
         """物件情報マッピングテスト"""
@@ -386,10 +391,12 @@ class TestDataMapper:
         data_mapper.map_property_info(output_df, sample_excel_df)
 
         # 実装側でマッピングされている列のみチェック
+        assert output_df["物件名"].iloc[0] == "テストマンション"
+        assert output_df["部屋番号"].iloc[0] == "101"
         assert output_df["物件住所郵便番号"].iloc[0] == "200-0001"
         assert output_df["物件住所1"].iloc[0] == "神奈川県横浜市"
         assert output_df["物件住所2"].iloc[0] == "みなとみらい1-1"
-        assert output_df["物件住所3"].iloc[0] == "タワー101"
+        assert output_df["物件住所3"].iloc[0] == "タワー101テストマンション101"  # 結合
         assert output_df["月額賃料"].iloc[0] == "100000"
         assert output_df["退去手続き（実費）"].iloc[0] == "85000"
         assert output_df["管理費"].iloc[0] == "10000"
