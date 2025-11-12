@@ -41,7 +41,7 @@ def show_nap_registration():
         file_count=2,
         info_message="📂 必要ファイル: ミライル様Excelファイル + ContractList（2ファイル処理）",
         processing_time_message="⏱️ **処理時間**: 処理には1分ほどかかる場合があります。お待ちください。",
-        file_labels=["ファイル1: ミライル様　XX月分依頼データ.xlsx", "ファイル2: ContractList"],
+        file_labels=["ファイル1: XX月分依頼データ.xlsx", "ファイル2: ContractList"],
         title_icon="📋",
         no_data_message="✅ 処理完了: 全てのデータが既に登録済みです。新規登録対象はありません。"
     )
