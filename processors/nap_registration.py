@@ -117,9 +117,6 @@ class NapConfig:
         "更新契約手数料": "",
         "退去手続き（実費）": "",
 
-        # 引継情報（空白）
-        "引継情報": "",
-
         # 支店関連（空白）
         "回収口座支店CD": "",
         "回収口座支店名": "",
@@ -379,9 +376,11 @@ class DataMapper:
             output_df: 出力DataFrame（in-place更新）
             excel_df: 入力Excel DataFrame
         """
-        # 引継番号（承認番号）
+        # 引継番号（承認番号の下6桁）
         if "承認番号" in excel_df.columns:
-            output_df["引継番号"] = excel_df["承認番号"].astype(str).str.replace('.0', '', regex=False)
+            # 承認番号を文字列化し、.0を除去後、下6桁を抽出
+            approval_numbers = excel_df["承認番号"].astype(str).str.replace('.0', '', regex=False)
+            output_df["引継番号"] = approval_numbers.str[-6:]
 
         # 契約者氏名・カナ
         if "契約者氏名" in excel_df.columns:
@@ -450,6 +449,13 @@ class DataMapper:
         # 管理会社
         if "加盟店: 加盟店名" in excel_df.columns:
             output_df["管理会社"] = excel_df["加盟店: 加盟店名"]
+
+        # 引継情報（●入居日 + 日割家賃発生日）
+        if "日割家賃発生日" in excel_df.columns:
+            # 日付フォーマットを変換: 2024/03/15 → 2024/3/15
+            dates = pd.to_datetime(excel_df["日割家賃発生日"], errors='coerce')
+            formatted_dates = dates.dt.strftime('%Y/%-m/%-d')  # ゼロ埋めなし
+            output_df["引継情報"] = "●入居日" + formatted_dates.fillna("")
 
     def map_guarantor_info(
         self,
