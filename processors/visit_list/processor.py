@@ -264,6 +264,18 @@ def create_output_row_bulk(df_person: pd.DataFrame, person_type: str, config: Di
         df_person.iloc[:, addr3_col].fillna('').astype(str)
     )
 
+    # 数値列を一括変換
+    arrears_balance = pd.to_numeric(
+        df_person.iloc[:, ContractListColumns.ARREARS_BALANCE].astype(str).str.replace(',', ''), errors='coerce'
+    )
+    monthly_rent = pd.to_numeric(
+        df_person.iloc[:, ContractListColumns.MONTHLY_RENT_TOTAL].astype(str).str.replace(',', ''), errors='coerce'
+    )
+
+    # 滞納月数を計算（滞納残債 ÷ 月額賃料合計、小数点第1位まで）
+    # 月額賃料が0またはNaNの場合はNaNを返す
+    arrears_months = (arrears_balance / monthly_rent).round(1)
+
     # 全列を一括取得（ベクトル化）
     df_output = pd.DataFrame({
         "管理番号": df_person.iloc[:, ContractListColumns.MANAGEMENT_NUMBER].values,
@@ -280,16 +292,13 @@ def create_output_row_bulk(df_person: pd.DataFrame, person_type: str, config: Di
         "現住所1": df_person.iloc[:, addr1_col].values,
         "現住所2": df_person.iloc[:, addr2_col].values,
         "現住所3": df_person.iloc[:, addr3_col].values,
-        "滞納残債": pd.to_numeric(
-            df_person.iloc[:, ContractListColumns.ARREARS_BALANCE].astype(str).str.replace(',', ''), errors='coerce'
-        ),
+        "滞納残債": arrears_balance,
         "入金予定日": df_person.iloc[:, ContractListColumns.PAYMENT_DUE_DATE].values,
         "入金予定金額": pd.to_numeric(
             df_person.iloc[:, ContractListColumns.PAYMENT_DUE_AMOUNT].astype(str).str.replace(',', ''), errors='coerce'
         ),
-        "月額賃料合計": pd.to_numeric(
-            df_person.iloc[:, ContractListColumns.MONTHLY_RENT_TOTAL].astype(str).str.replace(',', ''), errors='coerce'
-        ),
+        "滞納月数": arrears_months,
+        "月額賃料合計": monthly_rent,
         "回収ランク": df_person.iloc[:, ContractListColumns.COLLECTION_RANK].values,
         "クライアントCD": df_person.iloc[:, ContractListColumns.CLIENT_CD].values,
         "クライアント名": df_person.iloc[:, ContractListColumns.CLIENT_NAME].values,
@@ -378,9 +387,12 @@ def generate_excel(
             # 数値列にカンマ区切り書式を適用
             headers = [cell.value for cell in ws[1]]
             numeric_cols = []
+            decimal_cols = []
             for idx, header in enumerate(headers, start=1):
                 if header in ["退去手続き（実費）", "滞納残債", "入金予定金額", "月額賃料合計"]:
                     numeric_cols.append(idx)
+                elif header == "滞納月数":
+                    decimal_cols.append(idx)
 
             # 2行目以降の数値列にカンマ書式
             for row in ws.iter_rows(min_row=2):
@@ -394,6 +406,17 @@ def generate_excel(
                                 cell.value = ''
                             else:
                                 cell.number_format = '#,##0'
+
+                # 小数点列に小数点第1位フォーマット
+                for col_idx in decimal_cols:
+                    cell = row[col_idx - 1]
+                    if cell.value is not None:
+                        if isinstance(cell.value, (int, float)):
+                            import math
+                            if math.isnan(cell.value):
+                                cell.value = ''
+                            else:
+                                cell.number_format = '0.0'
 
     excel_buffer.seek(0)
     return excel_buffer.getvalue(), logs
