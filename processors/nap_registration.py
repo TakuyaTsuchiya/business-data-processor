@@ -115,7 +115,6 @@ class NapConfig:
         "礼金": "",
         "その他費用2": "",
         "更新契約手数料": "",
-        "退去手続き（実費）": "",
 
         # 支店関連（空白）
         "回収口座支店CD": "",
@@ -442,6 +441,8 @@ class DataMapper:
         # 賃料関連
         if "賃料合計額" in excel_df.columns:
             output_df["月額賃料"] = excel_df["賃料合計額"]
+            # 退去手続き（実費）にも月額賃料をコピー
+            output_df["退去手続き（実費）"] = excel_df["賃料合計額"]
         if "管理費公益費" in excel_df.columns:
             output_df["管理費"] = excel_df["管理費公益費"]
         if "水道代" in excel_df.columns:
