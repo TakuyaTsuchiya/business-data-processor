@@ -385,6 +385,25 @@ class TestDataMapper:
         assert output_df["契約者現住所2"].iloc[0] == "丸の内1-1"
         assert output_df["契約者現住所3"].iloc[0] == "丸ビル203号室"  # 結合
 
+    def test_map_contractor_info_phone_fallback(self, data_mapper):
+        """契約者情報マッピングテスト（携帯1が空白で電話のみの場合）"""
+        # 携帯1が空白で契約者電話のみ存在するケース
+        excel_df = pd.DataFrame({
+            "承認番号": ["NAP002"],
+            "契約者氏名": ["田中花子"],
+            "契約者氏名かな": ["タナカハナコ"],
+            "契約者生年月日": ["1985/05/15"],
+            "契約者電話": ["03-9999-8888"],
+            "契約者携帯1": [""],  # 空白
+        })
+
+        output_df = data_mapper.create_output_dataframe(excel_df)
+        data_mapper.map_contractor_info(output_df, excel_df)
+
+        # 携帯1が空白なので、電話を携帯に使用し、自宅は空白
+        assert output_df["契約者TEL携帯"].iloc[0] == "03-9999-8888"
+        assert output_df["契約者TEL自宅"].iloc[0] == ""
+
     def test_map_property_info(self, data_mapper, sample_excel_df):
         """物件情報マッピングテスト"""
         output_df = data_mapper.create_output_dataframe(sample_excel_df)

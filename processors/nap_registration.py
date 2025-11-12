@@ -24,6 +24,7 @@
 - 物件住所3: 物件住所３ + 物件名 + 部屋番号（結合）
 - 契約者カナ/保証人１カナ/緊急連絡人１カナ: ひらがな→カタカナ自動変換
 - 契約者TEL携帯: 契約者携帯1を優先、空白時は契約者電話を使用
+- 契約者TEL自宅: 契約者携帯1がある場合のみ契約者電話をマッピング（携帯1が空白で電話を携帯に使用した場合は空白）
 - 保証人１契約者との関係: 値がある場合は全て「他」に変更
 - 緊急連絡人１契約者との関係: 値がある場合は全て「他」に変更
 
@@ -427,19 +428,21 @@ class DataMapper:
             output_df["契約者生年月日"] = excel_df["契約者生年月日"]
 
         # 電話番号
-        if "契約者電話" in excel_df.columns:
-            output_df["契約者TEL自宅"] = excel_df["契約者電話"]
-
-        # 契約者TEL携帯: 契約者携帯1を優先、空白なら契約者電話を使用
+        # ルール: 携帯1がある → TEL携帯=携帯1、TEL自宅=電話
+        #        携帯1が空白で電話がある → TEL携帯=電話、TEL自宅=空白（同じ番号を2箇所に入れない）
         if "契約者携帯1" in excel_df.columns and "契約者電話" in excel_df.columns:
-            # 携帯1が空白の場合は契約者電話で埋める
             mobile = excel_df["契約者携帯1"].fillna("").astype(str)
             phone = excel_df["契約者電話"].fillna("").astype(str)
+            # 携帯1を優先、空白なら電話を使用
             output_df["契約者TEL携帯"] = mobile.where(mobile != "", phone)
+            # 携帯1がある行のみ、自宅に電話番号を入れる（携帯1が空白の行は自宅も空白）
+            output_df["契約者TEL自宅"] = phone.where(mobile != "", "")
         elif "契約者携帯1" in excel_df.columns:
             output_df["契約者TEL携帯"] = excel_df["契約者携帯1"]
+            if "契約者電話" in excel_df.columns:
+                output_df["契約者TEL自宅"] = excel_df["契約者電話"]
         elif "契約者電話" in excel_df.columns:
-            # 携帯1列がない場合は電話を使用
+            # 携帯1列がない場合は電話を携帯に使用、自宅は空白
             output_df["契約者TEL携帯"] = excel_df["契約者電話"]
 
         # 現住所
