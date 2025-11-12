@@ -441,8 +441,9 @@ class DataMapper:
         # 賃料関連
         if "賃料合計額" in excel_df.columns:
             output_df["月額賃料"] = excel_df["賃料合計額"]
-            # 退去手続き（実費）にも月額賃料をコピー
-            output_df["退去手続き（実費）"] = excel_df["賃料合計額"]
+        # 退去手続き（実費）には「賃料」列を使用
+        if "賃料" in excel_df.columns:
+            output_df["退去手続き（実費）"] = excel_df["賃料"]
         if "管理費公益費" in excel_df.columns:
             output_df["管理費"] = excel_df["管理費公益費"]
         if "水道代" in excel_df.columns:
