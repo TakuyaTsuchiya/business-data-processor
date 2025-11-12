@@ -197,7 +197,7 @@ class FileReader:
             df = pd.read_excel(
                 io.BytesIO(content),
                 skiprows=skiprows,
-                dtype=str
+                dtype=str  # 全列を文字列として扱い数値の精度問題を回避
             )
 
             self.logger.info(f"Excel file loaded: {df.shape[0]} rows, {df.shape[1]} columns")
@@ -371,7 +371,13 @@ class DataMapper:
         output_df: pd.DataFrame,
         excel_df: pd.DataFrame
     ) -> None:
-        """契約者情報をマッピング（in-place）"""
+        """
+        契約者情報をマッピング（in-place）
+
+        Args:
+            output_df: 出力DataFrame（in-place更新）
+            excel_df: 入力Excel DataFrame
+        """
         # 引継番号（承認番号）
         if "承認番号" in excel_df.columns:
             output_df["引継番号"] = excel_df["承認番号"].astype(str).str.replace('.0', '', regex=False)
@@ -407,7 +413,13 @@ class DataMapper:
         output_df: pd.DataFrame,
         excel_df: pd.DataFrame
     ) -> None:
-        """物件情報をマッピング（in-place）"""
+        """
+        物件情報をマッピング（in-place）
+
+        Args:
+            output_df: 出力DataFrame（in-place更新）
+            excel_df: 入力Excel DataFrame
+        """
         # 物件名・部屋番号
         if "物件名" in excel_df.columns:
             output_df["物件名"] = excel_df["物件名"]
@@ -443,9 +455,15 @@ class DataMapper:
         output_df: pd.DataFrame,
         excel_df: pd.DataFrame
     ) -> None:
-        """保証人情報をマッピング（in-place）
+        """
+        保証人情報をマッピング（in-place）
 
-        注: 入力の「連帯保証人」を出力の「保証人１」にマッピング
+        Args:
+            output_df: 出力DataFrame（in-place更新）
+            excel_df: 入力Excel DataFrame
+
+        Note:
+            入力の「連帯保証人」を出力の「保証人１」にマッピング
         """
         # 連帯保証人 → 保証人１
         if "連保人1氏名" in excel_df.columns:
@@ -474,7 +492,13 @@ class DataMapper:
         output_df: pd.DataFrame,
         excel_df: pd.DataFrame
     ) -> None:
-        """緊急連絡人情報をマッピング（in-place）"""
+        """
+        緊急連絡人情報をマッピング（in-place）
+
+        Args:
+            output_df: 出力DataFrame（in-place更新）
+            excel_df: 入力Excel DataFrame
+        """
         # 緊急連絡人１
         if "緊急連絡人氏名" in excel_df.columns:
             output_df["緊急連絡人１氏名"] = excel_df["緊急連絡人氏名"]
@@ -499,7 +523,12 @@ class DataMapper:
         self,
         output_df: pd.DataFrame
     ) -> None:
-        """固定値を適用（in-place）"""
+        """
+        固定値を適用（in-place）
+
+        Args:
+            output_df: 出力DataFrame（in-place更新）
+        """
         # 管理受託日（処理実行日）
         today = datetime.now().strftime("%Y/%m/%d")
         output_df["管理受託日"] = today
