@@ -18,6 +18,7 @@
 - 引継番号: 承認番号の下6桁を抽出
 - 引継情報: "●入居日" + 日割家賃発生日 (例: ●入居日2024/3/15)
 - 契約者カナ/保証人１カナ/緊急連絡人１カナ: ひらがな→カタカナ自動変換
+- 契約者TEL携帯: 契約者携帯1を優先、空白時は契約者電話を使用
 
 【賃料・費用】
 - 月額賃料: 賃料合計額
@@ -421,8 +422,18 @@ class DataMapper:
         # 電話番号
         if "契約者電話" in excel_df.columns:
             output_df["契約者TEL自宅"] = excel_df["契約者電話"]
-        if "契約者携帯1" in excel_df.columns:
+
+        # 契約者TEL携帯: 契約者携帯1を優先、空白なら契約者電話を使用
+        if "契約者携帯1" in excel_df.columns and "契約者電話" in excel_df.columns:
+            # 携帯1が空白の場合は契約者電話で埋める
+            mobile = excel_df["契約者携帯1"].fillna("").astype(str)
+            phone = excel_df["契約者電話"].fillna("").astype(str)
+            output_df["契約者TEL携帯"] = mobile.where(mobile != "", phone)
+        elif "契約者携帯1" in excel_df.columns:
             output_df["契約者TEL携帯"] = excel_df["契約者携帯1"]
+        elif "契約者電話" in excel_df.columns:
+            # 携帯1列がない場合は電話を使用
+            output_df["契約者TEL携帯"] = excel_df["契約者電話"]
 
         # 現住所
         if "契約者１住所１" in excel_df.columns:
