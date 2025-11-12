@@ -256,8 +256,9 @@ class FileReader:
         else:
             content = file_content
 
-        # エンコーディング検出
-        detected = chardet.detect(content)
+        # エンコーディング検出（最初の10KBのみで高速化）
+        sample_size = min(10240, len(content))
+        detected = chardet.detect(content[:sample_size])
         encoding = detected['encoding']
 
         # エンコーディング順リスト
