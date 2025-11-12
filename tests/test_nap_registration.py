@@ -376,6 +376,7 @@ class TestDataMapper:
         # 実装側でマッピングされている列のみチェック
         assert output_df["契約者TEL自宅"].iloc[0] == "03-1234-5678"
         assert output_df["契約者TEL携帯"].iloc[0] == "090-1234-5678"
+        assert output_df["契約者現住所郵便番号"].iloc[0] == "100-0001"
         assert output_df["契約者現住所1"].iloc[0] == "東京都千代田区"
         assert output_df["契約者現住所2"].iloc[0] == "丸の内1-1"
 
@@ -385,6 +386,7 @@ class TestDataMapper:
         data_mapper.map_property_info(output_df, sample_excel_df)
 
         # 実装側でマッピングされている列のみチェック
+        assert output_df["物件住所郵便番号"].iloc[0] == "200-0001"
         assert output_df["物件住所1"].iloc[0] == "神奈川県横浜市"
         assert output_df["物件住所2"].iloc[0] == "みなとみらい1-1"
         assert output_df["物件住所3"].iloc[0] == "タワー101"
