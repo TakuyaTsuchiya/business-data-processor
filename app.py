@@ -83,6 +83,9 @@ from screens.registration.plaza import (
 from screens.registration.iog import (
     show_jid_registration
 )
+from screens.registration.nap import (
+    show_nap_registration
+)
 from screens.debt_update.ark_late_payment import (
     show_ark_late_payment
 )
@@ -171,6 +174,7 @@ def main():
         "capco_registration": show_capco_registration,
         "plaza_registration": show_plaza_registration,
         "jid_registration": show_jid_registration,
+        "nap_registration": show_nap_registration,
         "ark_late_payment": show_ark_late_payment,
         "capco_debt_update": show_capco_debt_update,
         "plaza_debt_update": show_plaza_debt_update,
