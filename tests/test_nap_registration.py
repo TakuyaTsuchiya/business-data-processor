@@ -402,7 +402,7 @@ class TestDataMapper:
 
         assert output_df["保証人１氏名"].iloc[0] == "山田花子"
         assert output_df["保証人１カナ"].iloc[0] == "ヤマダハナコ"
-        assert output_df["保証人１契約者との関係"].iloc[0] == "配偶者"
+        assert output_df["保証人１契約者との関係"].iloc[0] == "他"  # 値がある場合は全て「他」
         assert output_df["保証人１生年月日"].iloc[0] == "1992/02/02"
         assert output_df["保証人１郵便番号"].iloc[0] == "200-0001"
         assert output_df["保証人１住所1"].iloc[0] == "東京都立川市"
@@ -418,7 +418,7 @@ class TestDataMapper:
 
         assert output_df["緊急連絡人１氏名"].iloc[0] == "佐藤次郎"
         assert output_df["緊急連絡人１カナ"].iloc[0] == "サトウジロウ"
-        assert output_df["緊急連絡人１契約者との関係"].iloc[0] == "友人"
+        assert output_df["緊急連絡人１契約者との関係"].iloc[0] == "他"  # 値がある場合は全て「他」
         assert output_df["緊急連絡人１郵便番号"].iloc[0] == "300-0001"
         assert output_df["緊急連絡人１現住所1"].iloc[0] == "茨城県土浦市"
         assert output_df["緊急連絡人１現住所2"].iloc[0] == "中央1-1-1"
