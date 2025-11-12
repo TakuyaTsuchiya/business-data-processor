@@ -189,6 +189,8 @@ def _show_others_menu():
         st.session_state.selected_processor = "capco_registration"
     if st.button("IOG新規登録", key="iog_registration", use_container_width=True):
         st.session_state.selected_processor = "jid_registration"
+    if st.button("ナップ新規登録", key="nap_registration", use_container_width=True):
+        st.session_state.selected_processor = "nap_registration"
 
     # 残債の更新
     st.markdown('<div class="sidebar-category">💰 残債の更新</div>', unsafe_allow_html=True)

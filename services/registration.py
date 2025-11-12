@@ -16,6 +16,9 @@ from processors.plaza_registration import process_plaza_data
 # IOG系
 from processors.iog_registration import process_jid_data
 
+# ナップ系
+from processors.nap_registration import process_nap_data
+
 # 公開する関数を明示
 __all__ = [
     # アーク系
@@ -27,4 +30,6 @@ __all__ = [
     'process_plaza_data',
     # IOG系
     'process_jid_data',
+    # ナップ系
+    'process_nap_data',
 ]
