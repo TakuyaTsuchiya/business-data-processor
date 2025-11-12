@@ -386,7 +386,12 @@ class DataMapper:
         if "契約者氏名" in excel_df.columns:
             output_df["契約者氏名"] = excel_df["契約者氏名"]
         if "契約者氏名かな" in excel_df.columns:
-            output_df["契約者カナ"] = excel_df["契約者氏名かな"]
+            # ひらがなをカタカナに変換
+            kana = excel_df["契約者氏名かな"].fillna("")
+            output_df["契約者カナ"] = kana.str.translate(
+                str.maketrans("ぁあぃいぅうぇえぉおかがきぎくぐけげこごさざしじすずせぜそぞただちぢっつづてでとどなにぬねのはばぱひびぴふぶぷへべぺほぼぽまみむめもゃやゅゆょよらりるれろゎわゐゑをんゔゕゖ",
+                             "ァアィイゥウェエォオカガキギクグケゲコゴサザシジスズセゼソゾタダチヂッツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモャヤュユョヨラリルレロヮワヰヱヲンヴヵヶ")
+            )
 
         # 電話番号
         if "契約者電話" in excel_df.columns:
@@ -476,7 +481,12 @@ class DataMapper:
         if "連保人1氏名" in excel_df.columns:
             output_df["保証人１氏名"] = excel_df["連保人1氏名"]
         if "連保人1氏名かな" in excel_df.columns:
-            output_df["保証人１カナ"] = excel_df["連保人1氏名かな"]
+            # ひらがなをカタカナに変換
+            kana = excel_df["連保人1氏名かな"].fillna("")
+            output_df["保証人１カナ"] = kana.str.translate(
+                str.maketrans("ぁあぃいぅうぇえぉおかがきぎくぐけげこごさざしじすずせぜそぞただちぢっつづてでとどなにぬねのはばぱひびぴふぶぷへべぺほぼぽまみむめもゃやゅゆょよらりるれろゎわゐゑをんゔゕゖ",
+                             "ァアィイゥウェエォオカガキギクグケゲコゴサザシジスズセゼソゾタダチヂッツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモャヤュユョヨラリルレロヮワヰヱヲンヴヵヶ")
+            )
         if "連帯保証人関係" in excel_df.columns:
             output_df["保証人１契約者との関係"] = excel_df["連帯保証人関係"]
         if "連保人1生年月日" in excel_df.columns:
@@ -510,7 +520,12 @@ class DataMapper:
         if "緊急連絡人氏名" in excel_df.columns:
             output_df["緊急連絡人１氏名"] = excel_df["緊急連絡人氏名"]
         if "緊急連絡人氏名かな" in excel_df.columns:
-            output_df["緊急連絡人１カナ"] = excel_df["緊急連絡人氏名かな"]
+            # ひらがなをカタカナに変換
+            kana = excel_df["緊急連絡人氏名かな"].fillna("")
+            output_df["緊急連絡人１カナ"] = kana.str.translate(
+                str.maketrans("ぁあぃいぅうぇえぉおかがきぎくぐけげこごさざしじすずせぜそぞただちぢっつづてでとどなにぬねのはばぱひびぴふぶぷへべぺほぼぽまみむめもゃやゅゆょよらりるれろゎわゐゑをんゔゕゖ",
+                             "ァアィイゥウェエォオカガキギクグケゲコゴサザシジスズセゼソゾタダチヂッツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモャヤュユョヨラリルレロヮワヰヱヲンヴヵヶ")
+            )
         if "緊急連絡人関係" in excel_df.columns:
             output_df["緊急連絡人１契約者との関係"] = excel_df["緊急連絡人関係"]
         if "緊急連絡人郵便番号" in excel_df.columns:
