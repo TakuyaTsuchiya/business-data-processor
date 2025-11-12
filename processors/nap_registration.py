@@ -55,6 +55,7 @@ import chardet
 from datetime import datetime
 from typing import Tuple, List, Dict, Union
 import logging
+import time
 
 
 class NapConfig:
@@ -649,6 +650,7 @@ def process_nap_data(
 
     try:
         # 1. ファイル読み込み
+        phase_start = time.time()
         logger.info("=== Phase 1: ファイル読み込み ===")
         file_reader = FileReader()
 
@@ -658,7 +660,11 @@ def process_nap_data(
         contract_df = file_reader.read_csv_file(contract_file)
         logs.append(f"✓ ContractList読み込み: {len(contract_df)}件")
 
+        phase_time = time.time() - phase_start
+        logger.info(f"Phase 1 completed in {phase_time:.2f}s")
+
         # 2. ContractListフィルタリング
+        phase_start = time.time()
         logger.info("=== Phase 2: ContractListフィルタリング ===")
         checker = DuplicateChecker()
 
@@ -668,13 +674,20 @@ def process_nap_data(
         )
         logs.append(f"✓ ContractListフィルタ（委託先法人ID={config.TARGET_CORPORATION_ID}）: {len(filtered_contract_df)}件")
 
+        phase_time = time.time() - phase_start
+        logger.info(f"Phase 2 completed in {phase_time:.2f}s")
+
         # 3. 重複チェック
+        phase_start = time.time()
         logger.info("=== Phase 3: 重複チェック ===")
         new_data, existing_data, stats, check_logs = checker.check_duplicates(
             excel_df,
             filtered_contract_df
         )
         logs.extend(check_logs)
+
+        phase_time = time.time() - phase_start
+        logger.info(f"Phase 3 completed in {phase_time:.2f}s")
 
         # 新規データがない場合
         if len(new_data) == 0:
@@ -686,12 +699,41 @@ def process_nap_data(
         logger.info("=== Phase 4: データマッピング ===")
         mapper = DataMapper(config)
 
+        # 4-1. DataFrame作成
+        phase_start = time.time()
         output_df = mapper.create_output_dataframe(new_data)
+        phase_time = time.time() - phase_start
+        logger.info(f"Phase 4-1 (create_output_dataframe) completed in {phase_time:.2f}s")
+
+        # 4-2. 契約者情報マッピング
+        phase_start = time.time()
         mapper.map_contractor_info(output_df, new_data)
+        phase_time = time.time() - phase_start
+        logger.info(f"Phase 4-2 (map_contractor_info) completed in {phase_time:.2f}s")
+
+        # 4-3. 物件情報マッピング
+        phase_start = time.time()
         mapper.map_property_info(output_df, new_data)
+        phase_time = time.time() - phase_start
+        logger.info(f"Phase 4-3 (map_property_info) completed in {phase_time:.2f}s")
+
+        # 4-4. 保証人情報マッピング
+        phase_start = time.time()
         mapper.map_guarantor_info(output_df, new_data)
+        phase_time = time.time() - phase_start
+        logger.info(f"Phase 4-4 (map_guarantor_info) completed in {phase_time:.2f}s")
+
+        # 4-5. 緊急連絡人情報マッピング
+        phase_start = time.time()
         mapper.map_emergency_contact_info(output_df, new_data)
+        phase_time = time.time() - phase_start
+        logger.info(f"Phase 4-5 (map_emergency_contact_info) completed in {phase_time:.2f}s")
+
+        # 4-6. 固定値適用
+        phase_start = time.time()
         mapper.apply_fixed_values(output_df)
+        phase_time = time.time() - phase_start
+        logger.info(f"Phase 4-6 (apply_fixed_values) completed in {phase_time:.2f}s")
 
         logs.append(f"✓ データマッピング完了: {len(output_df)}件")
 
