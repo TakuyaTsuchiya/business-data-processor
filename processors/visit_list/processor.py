@@ -264,6 +264,18 @@ def create_output_row_bulk(df_person: pd.DataFrame, person_type: str, config: Di
         df_person.iloc[:, addr3_col].fillna('').astype(str)
     )
 
+    # 数値列を一括変換
+    arrears_balance = pd.to_numeric(
+        df_person.iloc[:, ContractListColumns.ARREARS_BALANCE].astype(str).str.replace(',', ''), errors='coerce'
+    )
+    monthly_rent = pd.to_numeric(
+        df_person.iloc[:, ContractListColumns.MONTHLY_RENT_TOTAL].astype(str).str.replace(',', ''), errors='coerce'
+    )
+
+    # 滞納月数を計算（滞納残債 ÷ 月額賃料合計、小数点第1位まで）
+    # 月額賃料が0またはNaNの場合はNaNを返す
+    arrears_months = (arrears_balance / monthly_rent).round(1)
+
     # 全列を一括取得（ベクトル化）
     df_output = pd.DataFrame({
         "管理番号": df_person.iloc[:, ContractListColumns.MANAGEMENT_NUMBER].values,
@@ -280,16 +292,13 @@ def create_output_row_bulk(df_person: pd.DataFrame, person_type: str, config: Di
         "現住所1": df_person.iloc[:, addr1_col].values,
         "現住所2": df_person.iloc[:, addr2_col].values,
         "現住所3": df_person.iloc[:, addr3_col].values,
-        "滞納残債": pd.to_numeric(
-            df_person.iloc[:, ContractListColumns.ARREARS_BALANCE].astype(str).str.replace(',', ''), errors='coerce'
-        ),
+        "滞納残債": arrears_balance,
         "入金予定日": df_person.iloc[:, ContractListColumns.PAYMENT_DUE_DATE].values,
         "入金予定金額": pd.to_numeric(
             df_person.iloc[:, ContractListColumns.PAYMENT_DUE_AMOUNT].astype(str).str.replace(',', ''), errors='coerce'
         ),
-        "月額賃料合計": pd.to_numeric(
-            df_person.iloc[:, ContractListColumns.MONTHLY_RENT_TOTAL].astype(str).str.replace(',', ''), errors='coerce'
-        ),
+        "滞納月数": arrears_months,
+        "月額賃料合計": monthly_rent,
         "回収ランク": df_person.iloc[:, ContractListColumns.COLLECTION_RANK].values,
         "クライアントCD": df_person.iloc[:, ContractListColumns.CLIENT_CD].values,
         "クライアント名": df_person.iloc[:, ContractListColumns.CLIENT_NAME].values,
