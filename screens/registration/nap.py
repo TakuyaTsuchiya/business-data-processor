@@ -31,11 +31,8 @@ def show_nap_registration():
         title="新規登録CSV加工",
         subtitle="ナップ新規登録",
         filter_conditions=[
-            "重複チェック → 承認番号（ミライル様Excel）↔引継番号（ContractList）",
-            "フィルタ条件 → ContractListの委託先法人ID=5のデータのみ対象",
-            "新規データ → 重複除外後のミライル様Excelデータのみ処理",
-            "クライアントCD → 9268",
-            "委託先法人ID → 5（ミライル社）"
+            "重複チェック → 承認番号（依頼データ）↔引継番号（ContractList）",
+            "委託先法人ID=5"
         ],
         process_function=process_with_message,
         file_count=2,
