@@ -41,7 +41,6 @@ class TestNapConfig:
             "回収口座金融機関CD",
             "回収口座金融機関名",
             "回収口座種類",
-            "回収口座番号",
             "回収口座名義"
         ]
         for key in required_keys:
@@ -52,8 +51,8 @@ class TestNapConfig:
         assert NapConfig.FIXED_VALUES["クライアントCD"] == "9268"
         assert NapConfig.FIXED_VALUES["委託先法人ID"] == "5"
         assert NapConfig.FIXED_VALUES["回収口座金融機関名"] == "みずほ銀行"
-        assert NapConfig.FIXED_VALUES["回収口座番号"] == "4389306"
         assert NapConfig.FIXED_VALUES["回収口座名義"] == "ナップ賃貸保証株式会社"
+        assert NapConfig.FIXED_VALUES["その他費用2"] == "0"
 
     def test_target_corporation_id(self):
         """TARGET_CORPORATION_IDが5であることを確認"""
@@ -323,8 +322,10 @@ class TestDataMapper:
             "物件住所１": ["神奈川県横浜市"],
             "物件住所２": ["みなとみらい1-1"],
             "物件住所３": ["タワー101"],
+            "賃料": ["85000"],
             "賃料合計額": ["100000"],
             "管理費公益費": ["10000"],
+            "バーチャル口座: 名称": ["4389306"],
             "水道代": ["3000"],
             "駐車場": ["15000"],
             "その他費用": ["2000"],
@@ -386,11 +387,13 @@ class TestDataMapper:
         assert output_df["物件住所2"].iloc[0] == "みなとみらい1-1"
         assert output_df["物件住所3"].iloc[0] == "タワー101"
         assert output_df["月額賃料"].iloc[0] == "100000"
+        assert output_df["退去手続き（実費）"].iloc[0] == "85000"
         assert output_df["管理費"].iloc[0] == "10000"
         assert output_df["水道代"].iloc[0] == "3000"
         assert output_df["駐車場代"].iloc[0] == "15000"
         assert output_df["その他費用1"].iloc[0] == "2000"
         assert output_df["管理会社"].iloc[0] == "株式会社テスト不動産"
+        assert output_df["回収口座番号"].iloc[0] == "4389306"
 
     def test_map_guarantor_info(self, data_mapper, sample_excel_df):
         """保証人情報マッピングテスト"""
@@ -441,8 +444,8 @@ class TestDataMapper:
         assert output_df["回収口座金融機関CD"].iloc[0] == "1"
         assert output_df["回収口座金融機関名"].iloc[0] == "みずほ銀行"
         assert output_df["回収口座種類"].iloc[0] == "普通"
-        assert output_df["回収口座番号"].iloc[0] == "4389306"
         assert output_df["回収口座名義"].iloc[0] == "ナップ賃貸保証株式会社"
+        assert output_df["その他費用2"].iloc[0] == "0"
 
     def test_map_all_info_integration(self, data_mapper, sample_excel_df):
         """全マッピングメソッドの統合テスト"""
