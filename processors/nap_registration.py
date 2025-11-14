@@ -92,6 +92,12 @@ def format_zipcode(zipcode: str) -> str:
     return str(zipcode)
 
 
+# 電話番号フォーマット用定数
+MOBILE_FIRST_DIGITS = {'7', '8', '9'}  # 070/080/090の携帯番号（先頭0欠損時）
+TWO_DIGIT_AREA_CODES = {'03', '06'}  # 2桁市外局番（東京23区・大阪）
+TOLL_FREE_PREFIXES = {'0120', '0800'}  # フリーダイヤル
+
+
 def format_phone(phone: str) -> str:
     """
     電話番号にハイフンを挿入
@@ -123,7 +129,7 @@ def format_phone(phone: str) -> str:
 
     # 先頭の0が欠けている携帯番号を補完（Excelの数値型変換による欠損対策）
     # 10桁で7/8/9始まり → 携帯番号（070/080/090）の可能性が高い
-    if len(digits) == 10 and digits[0] in ['7', '8', '9']:
+    if len(digits) == 10 and digits[0] in MOBILE_FIRST_DIGITS:
         digits = '0' + digits
 
     if len(digits) == 11:
@@ -131,10 +137,10 @@ def format_phone(phone: str) -> str:
         return f"{digits[:3]}-{digits[3:7]}-{digits[7:]}"
     elif len(digits) == 10:
         # 2桁市外局番（東京23区・大阪のみ）
-        if digits[:2] in ['03', '06']:
+        if digits[:2] in TWO_DIGIT_AREA_CODES:
             return f"{digits[:2]}-{digits[2:6]}-{digits[6:]}"
-        # 0120, 0800などの特番
-        elif digits[:4] in ['0120', '0800']:
+        # フリーダイヤルなどの特番
+        elif digits[:4] in TOLL_FREE_PREFIXES:
             return f"{digits[:4]}-{digits[4:7]}-{digits[7:]}"
         # それ以外は3桁市外局番: 3-3-4形式
         else:
