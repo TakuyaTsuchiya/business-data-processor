@@ -7,6 +7,7 @@ import pytest
 import pandas as pd
 import io
 from datetime import datetime
+from unittest.mock import patch, Mock
 from processors.nap_registration import (
     NapConfig,
     FileReader,
@@ -14,7 +15,8 @@ from processors.nap_registration import (
     DataMapper,
     process_nap_data,
     format_zipcode,
-    format_phone
+    format_phone,
+    lookup_zipcode_from_address
 )
 
 
@@ -137,6 +139,92 @@ class TestFormatFunctions:
         assert format_phone("9037978313") == "090-3797-8313"
         assert format_phone("8012345678") == "080-1234-5678"
         assert format_phone("7012345678") == "070-1234-5678"
+
+
+class TestLookupZipcode:
+    """郵便番号ルックアップ関数のテスト"""
+
+    @patch('processors.nap_registration.requests.get')
+    def test_lookup_zipcode_success(self, mock_get):
+        """郵便番号検索成功テスト"""
+        # モックレスポンスの設定
+        mock_response = Mock()
+        mock_response.ok = True
+        mock_response.json.return_value = {
+            "results": [
+                {"zipcode": "1000001"}
+            ]
+        }
+        mock_get.return_value = mock_response
+
+        # テスト実行
+        result = lookup_zipcode_from_address("東京都", "千代田区丸の内1-1")
+
+        # 検証
+        assert result == "1000001"
+        mock_get.assert_called_once()
+        assert "address" in mock_get.call_args.kwargs["params"]
+
+    @patch('processors.nap_registration.requests.get')
+    def test_lookup_zipcode_no_results(self, mock_get):
+        """郵便番号検索結果なしテスト"""
+        # モックレスポンスの設定（結果なし）
+        mock_response = Mock()
+        mock_response.ok = True
+        mock_response.json.return_value = {"results": None}
+        mock_get.return_value = mock_response
+
+        # テスト実行
+        result = lookup_zipcode_from_address("存在しない住所", "テスト")
+
+        # 検証
+        assert result == ""
+
+    @patch('processors.nap_registration.requests.get')
+    def test_lookup_zipcode_api_error(self, mock_get):
+        """郵便番号API HTTPエラーテスト"""
+        # モックレスポンスの設定（HTTPエラー）
+        mock_response = Mock()
+        mock_response.ok = False
+        mock_response.status_code = 500
+        mock_get.return_value = mock_response
+
+        # テスト実行
+        result = lookup_zipcode_from_address("東京都", "千代田区")
+
+        # 検証
+        assert result == ""
+
+    @patch('processors.nap_registration.requests.get')
+    def test_lookup_zipcode_timeout(self, mock_get):
+        """郵便番号APIタイムアウトテスト"""
+        import requests
+        # モックでタイムアウトを発生させる
+        mock_get.side_effect = requests.Timeout()
+
+        # テスト実行
+        result = lookup_zipcode_from_address("東京都", "千代田区")
+
+        # 検証
+        assert result == ""
+
+    @patch('processors.nap_registration.requests.get')
+    def test_lookup_zipcode_exception(self, mock_get):
+        """郵便番号API例外テスト"""
+        # モックで例外を発生させる
+        mock_get.side_effect = Exception("Network error")
+
+        # テスト実行
+        result = lookup_zipcode_from_address("東京都", "千代田区")
+
+        # 検証
+        assert result == ""
+
+    def test_lookup_zipcode_empty_address(self):
+        """空住所のテスト"""
+        # APIを呼ばずに空文字列を返すべき
+        result = lookup_zipcode_from_address("", "", "")
+        assert result == ""
 
 
 class TestFileReader:
