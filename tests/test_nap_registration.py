@@ -226,6 +226,16 @@ class TestLookupZipcode:
         result = lookup_zipcode_from_address("", "", "")
         assert result == ""
 
+    def test_lookup_zipcode_nan_address(self):
+        """NaN住所のテスト（pd.NA対応）"""
+        # pd.NAやnanを渡してもAPIを呼ばずに空文字列を返すべき
+        result = lookup_zipcode_from_address(pd.NA, pd.NA, pd.NA)
+        assert result == ""
+
+        # 一部がnanの場合でも、有効な住所部分のみで検索しない（全てnanなら空文字列）
+        result = lookup_zipcode_from_address(pd.NA, "", pd.NA)
+        assert result == ""
+
 
 class TestFileReader:
     """FileReaderクラスのテスト"""

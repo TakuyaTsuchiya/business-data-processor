@@ -170,8 +170,14 @@ def lookup_zipcode_from_address(address1: str, address2: str, address3: str = ""
     """
     logger = logging.getLogger(__name__)
 
+    # pd.NA/NaN/Noneを空文字列に変換するヘルパー
+    def safe_str(val):
+        if pd.isna(val):
+            return ""
+        return str(val).strip()
+
     # 住所を結合
-    full_address = str(address1).strip() + str(address2).strip() + str(address3).strip()
+    full_address = safe_str(address1) + safe_str(address2) + safe_str(address3)
     if not full_address:
         return ""
 
