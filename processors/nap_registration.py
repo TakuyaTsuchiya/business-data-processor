@@ -518,19 +518,19 @@ class DataMapper:
         # ルール: 携帯1がある → TEL携帯=携帯1、TEL自宅=電話
         #        携帯1が空白で電話がある → TEL携帯=電話、TEL自宅=空白（同じ番号を2箇所に入れない）
         if "契約者携帯1" in excel_df.columns and "契約者電話" in excel_df.columns:
-            mobile = excel_df["契約者携帯1"].fillna("").astype(str)
-            phone = excel_df["契約者電話"].fillna("").astype(str)
+            mobile = excel_df["契約者携帯1"].fillna("").astype(str).apply(format_phone)
+            phone = excel_df["契約者電話"].fillna("").astype(str).apply(format_phone)
             # 携帯1を優先、空白なら電話を使用
             output_df["契約者TEL携帯"] = mobile.where(mobile != "", phone)
             # 携帯1がある行のみ、自宅に電話番号を入れる（携帯1が空白の行は自宅も空白）
             output_df["契約者TEL自宅"] = phone.where(mobile != "", "")
         elif "契約者携帯1" in excel_df.columns:
-            output_df["契約者TEL携帯"] = excel_df["契約者携帯1"]
+            output_df["契約者TEL携帯"] = excel_df["契約者携帯1"].apply(format_phone)
             if "契約者電話" in excel_df.columns:
-                output_df["契約者TEL自宅"] = excel_df["契約者電話"]
+                output_df["契約者TEL自宅"] = excel_df["契約者電話"].apply(format_phone)
         elif "契約者電話" in excel_df.columns:
             # 携帯1列がない場合は電話を携帯に使用、自宅は空白
-            output_df["契約者TEL携帯"] = excel_df["契約者電話"]
+            output_df["契約者TEL携帯"] = excel_df["契約者電話"].apply(format_phone)
 
         # 現住所
         if "契約者郵便番号" in excel_df.columns:
@@ -692,9 +692,9 @@ class DataMapper:
         if "緊急連絡人住所３" in excel_df.columns:
             output_df["緊急連絡人１現住所3"] = excel_df["緊急連絡人住所３"]
         if "緊急連絡人電話" in excel_df.columns:
-            output_df["緊急連絡人１TEL自宅"] = excel_df["緊急連絡人電話"]
+            output_df["緊急連絡人１TEL自宅"] = excel_df["緊急連絡人電話"].apply(format_phone)
         if "緊急連絡人携帯１" in excel_df.columns:
-            output_df["緊急連絡人１TEL携帯"] = excel_df["緊急連絡人携帯１"]
+            output_df["緊急連絡人１TEL携帯"] = excel_df["緊急連絡人携帯１"].apply(format_phone)
 
     def apply_fixed_values(
         self,
