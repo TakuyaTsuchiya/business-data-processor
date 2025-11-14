@@ -111,6 +111,8 @@ def format_phone(phone: str) -> str:
         "0120-123-456"
         >>> format_phone("0421112222")
         "042-111-2222"
+        >>> format_phone("9037978313")  # 先頭0欠損（Excel数値化）
+        "090-3797-8313"
     """
     # pd.isna()を先にチェック（pd.NAのambiguousエラー回避）
     if pd.isna(phone) or not phone:
@@ -118,6 +120,11 @@ def format_phone(phone: str) -> str:
 
     # 数字のみを抽出
     digits = ''.join(filter(str.isdigit, str(phone)))
+
+    # 先頭の0が欠けている携帯番号を補完（Excelの数値型変換による欠損対策）
+    # 10桁で7/8/9始まり → 携帯番号（070/080/090）の可能性が高い
+    if len(digits) == 10 and digits[0] in ['7', '8', '9']:
+        digits = '0' + digits
 
     if len(digits) == 11:
         # 携帯電話・IP電話: 3-4-4形式

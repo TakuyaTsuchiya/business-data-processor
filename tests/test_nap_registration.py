@@ -131,6 +131,13 @@ class TestFormatFunctions:
         assert format_phone("123") == "123"
         assert format_phone("123456789") == "123456789"
 
+    def test_format_phone_missing_leading_zero(self):
+        """先頭0欠損（Excel数値化）の電話番号テスト"""
+        # 10桁で9始まり → 携帯番号と判定して先頭に0を追加
+        assert format_phone("9037978313") == "090-3797-8313"
+        assert format_phone("8012345678") == "080-1234-5678"
+        assert format_phone("7012345678") == "070-1234-5678"
+
 
 class TestFileReader:
     """FileReaderクラスのテスト"""
