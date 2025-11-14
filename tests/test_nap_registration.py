@@ -12,7 +12,9 @@ from processors.nap_registration import (
     FileReader,
     DuplicateChecker,
     DataMapper,
-    process_nap_data
+    process_nap_data,
+    format_zipcode,
+    format_phone
 )
 
 
@@ -61,6 +63,73 @@ class TestNapConfig:
     def test_excel_skiprows(self):
         """EXCEL_SKIPROWSが13であることを確認"""
         assert NapConfig.EXCEL_SKIPROWS == 13
+
+
+class TestFormatFunctions:
+    """フォーマット関数のテスト"""
+
+    def test_format_zipcode_7digits(self):
+        """7桁郵便番号のフォーマットテスト"""
+        assert format_zipcode("1000001") == "100-0001"
+        assert format_zipcode("1500044") == "150-0044"
+        assert format_zipcode("2000001") == "200-0001"
+
+    def test_format_zipcode_already_formatted(self):
+        """既にフォーマット済みの郵便番号テスト"""
+        assert format_zipcode("100-0001") == "100-0001"
+        assert format_zipcode("150-0044") == "150-0044"
+
+    def test_format_zipcode_empty(self):
+        """空の郵便番号テスト"""
+        assert format_zipcode("") == ""
+        assert format_zipcode(None) == ""
+        assert format_zipcode(pd.NA) == ""
+
+    def test_format_zipcode_invalid_length(self):
+        """7桁以外の郵便番号テスト"""
+        assert format_zipcode("123") == "123"
+        assert format_zipcode("12345") == "12345"
+
+    def test_format_phone_11digits_mobile(self):
+        """11桁携帯電話番号のフォーマットテスト"""
+        assert format_phone("09012345678") == "090-1234-5678"
+        assert format_phone("08012345678") == "080-1234-5678"
+        assert format_phone("07012345678") == "070-1234-5678"
+        assert format_phone("05031774629") == "050-3177-4629"
+
+    def test_format_phone_10digits_03_06(self):
+        """10桁固定電話（03/06市外局番）のフォーマットテスト"""
+        assert format_phone("0312345678") == "03-1234-5678"
+        assert format_phone("0359088055") == "03-5908-8055"
+        assert format_phone("0612345678") == "06-1234-5678"
+
+    def test_format_phone_10digits_3digit_area(self):
+        """10桁固定電話（3桁市外局番）のフォーマットテスト"""
+        assert format_phone("0421112222") == "042-111-2222"
+        assert format_phone("0451234567") == "045-123-4567"
+        assert format_phone("0521234567") == "052-123-4567"
+
+    def test_format_phone_toll_free(self):
+        """フリーダイヤルのフォーマットテスト"""
+        assert format_phone("0120123456") == "0120-123-456"
+        assert format_phone("0800123456") == "0800-123-456"
+
+    def test_format_phone_already_formatted(self):
+        """既にフォーマット済みの電話番号テスト"""
+        assert format_phone("090-1234-5678") == "090-1234-5678"
+        assert format_phone("03-1234-5678") == "03-1234-5678"
+        assert format_phone("042-111-2222") == "042-111-2222"
+
+    def test_format_phone_empty(self):
+        """空の電話番号テスト"""
+        assert format_phone("") == ""
+        assert format_phone(None) == ""
+        assert format_phone(pd.NA) == ""
+
+    def test_format_phone_invalid_length(self):
+        """10/11桁以外の電話番号テスト"""
+        assert format_phone("123") == "123"
+        assert format_phone("123456789") == "123456789"
 
 
 class TestFileReader:
@@ -416,7 +485,7 @@ class TestDataMapper:
         assert output_df["物件住所1"].iloc[0] == "神奈川県横浜市"
         assert output_df["物件住所2"].iloc[0] == "みなとみらい1-1"
         assert output_df["物件住所3"].iloc[0] == "タワー101テストマンション101"  # 結合
-        assert output_df["月額賃料"].iloc[0] == "100000"
+        assert output_df["月額賃料"].iloc[0] == "85000"  # 賃料列を使用
         assert output_df["退去手続き（実費）"].iloc[0] == "85000"
         assert output_df["管理費"].iloc[0] == "10000"
         assert output_df["水道代"].iloc[0] == "3000"
