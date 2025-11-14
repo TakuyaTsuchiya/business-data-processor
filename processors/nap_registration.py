@@ -621,9 +621,9 @@ class DataMapper:
                     if not (addr1_safe or addr2_safe or addr3_safe):
                         return ""
 
-                    # 住所があればAPI検索
+                    # 住所があればAPI検索（建物名は除外して精度向上）
                     logger.info(f"行{row_idx} - 契約者現住所郵便番号を検索中: {addr1_safe}{addr2_safe}")
-                    zipcode = lookup_zipcode_from_address(addr1, addr2, addr3)
+                    zipcode = lookup_zipcode_from_address(addr1, addr2, "")
 
                     if zipcode:
                         logger.info(f"行{row_idx} - 契約者現住所郵便番号を補完: {zipcode}")
@@ -693,9 +693,9 @@ class DataMapper:
                     if not (addr1_safe or addr2_safe or addr3_safe):
                         return ""
 
-                    # 住所があればAPI検索
+                    # 住所があればAPI検索（建物名は除外して精度向上）
                     logger.info(f"行{row_idx} - 物件住所郵便番号を検索中: {addr1_safe}{addr2_safe}")
-                    zipcode = lookup_zipcode_from_address(addr1, addr2, addr3)
+                    zipcode = lookup_zipcode_from_address(addr1, addr2, "")
 
                     if zipcode:
                         logger.info(f"行{row_idx} - 物件住所郵便番号を補完: {zipcode}")
@@ -800,9 +800,9 @@ class DataMapper:
                     if not (addr1_safe or addr2_safe or addr3_safe):
                         return ""
 
-                    # 住所があればAPI検索
+                    # 住所があればAPI検索（建物名は除外して精度向上）
                     logger.info(f"行{row_idx} - 保証人１郵便番号を検索中: {addr1_safe}{addr2_safe}")
-                    zipcode = lookup_zipcode_from_address(addr1, addr2, addr3)
+                    zipcode = lookup_zipcode_from_address(addr1, addr2, "")
 
                     if zipcode:
                         logger.info(f"行{row_idx} - 保証人１郵便番号を補完: {zipcode}")
@@ -876,9 +876,9 @@ class DataMapper:
                     if not (addr1_safe or addr2_safe or addr3_safe):
                         return ""
 
-                    # 住所があればAPI検索
+                    # 住所があればAPI検索（建物名は除外して精度向上）
                     logger.info(f"行{row_idx} - 緊急連絡人１郵便番号を検索中: {addr1_safe}{addr2_safe}")
-                    zipcode = lookup_zipcode_from_address(addr1, addr2, addr3)
+                    zipcode = lookup_zipcode_from_address(addr1, addr2, "")
 
                     if zipcode:
                         logger.info(f"行{row_idx} - 緊急連絡人１郵便番号を補完: {zipcode}")
