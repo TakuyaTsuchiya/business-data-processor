@@ -236,6 +236,27 @@ class TestLookupZipcode:
         result = lookup_zipcode_from_address(pd.NA, "", pd.NA)
         assert result == ""
 
+    @patch('processors.nap_registration.requests.get')
+    def test_lookup_zipcode_address_cleaning(self, mock_get):
+        """住所クリーニング機能のテスト"""
+        mock_response = Mock()
+        mock_response.ok = True
+        mock_response.json.return_value = {"results": [{"zipcode": "3320021"}]}
+        mock_get.return_value = mock_response
+
+        # 番地・建物名・半角カタカナを含む住所
+        result = lookup_zipcode_from_address("埼玉県", "川口市川口2-7-15ｻﾝｺｰﾎﾟ川口402")
+
+        # API呼び出しで住所がクリーニングされているか確認
+        mock_get.assert_called_once()
+        call_args = mock_get.call_args
+        # "埼玉県川口市川口" のみで検索されるべき（番地・建物名・半角カタカナ除去）
+        assert "2-7-15" not in call_args.kwargs["params"]["address"]
+        assert "ｻﾝｺｰﾎﾟ" not in call_args.kwargs["params"]["address"]
+        assert "川口市川口" in call_args.kwargs["params"]["address"]
+
+        assert result == "3320021"
+
 
 class TestFileReader:
     """FileReaderクラスのテスト"""

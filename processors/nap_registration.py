@@ -58,6 +58,7 @@ from typing import Tuple, List, Dict, Union
 import logging
 import time
 import requests
+import re
 
 
 def format_zipcode(zipcode: str) -> str:
@@ -176,8 +177,18 @@ def lookup_zipcode_from_address(address1: str, address2: str, address3: str = ""
             return ""
         return str(val).strip()
 
-    # 住所を結合
-    full_address = safe_str(address1) + safe_str(address2) + safe_str(address3)
+    # 住所をクリーニング
+    addr1_clean = safe_str(address1)
+    addr2_clean = safe_str(address2)
+
+    # 住所2から番地以降を削除して町名まで抽出（検索精度向上）
+    # 数字+ハイフンで始まる部分以降を削除（番地・建物名除去）
+    addr2_clean = re.sub(r'[0-9０-９]+[-－].*', '', addr2_clean).strip()
+    # 半角カタカナを削除
+    addr2_clean = re.sub(r'[ｦ-ﾟ]+', '', addr2_clean).strip()
+
+    # 住所を結合（addr3は除外済み）
+    full_address = addr1_clean + addr2_clean
     if not full_address:
         return ""
 
