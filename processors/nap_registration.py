@@ -29,7 +29,7 @@
 - 緊急連絡人１契約者との関係: 緊急連絡人氏名に値がある場合は「他」に設定
 
 【賃料・費用】
-- 月額賃料: 賃料合計額
+- 月額賃料: 賃料
 - 退去手続き（実費）: 賃料
 - 共益費: 0 (固定)
 - その他費用2: 0 (固定)
@@ -57,6 +57,84 @@ from datetime import datetime
 from typing import Tuple, List, Dict, Union
 import logging
 import time
+
+
+def format_zipcode(zipcode: str) -> str:
+    """
+    郵便番号にハイフンを挿入（7桁の場合のみ）
+
+    Args:
+        zipcode: 郵便番号文字列
+
+    Returns:
+        フォーマット済み郵便番号（7桁の場合はXXX-XXXX形式）
+
+    Examples:
+        >>> format_zipcode("1000001")
+        "100-0001"
+        >>> format_zipcode("100-0001")
+        "100-0001"
+        >>> format_zipcode("")
+        ""
+    """
+    # pd.isna()を先にチェック（pd.NAのambiguousエラー回避）
+    if pd.isna(zipcode) or not zipcode:
+        return ""
+
+    # 数字のみを抽出
+    digits = ''.join(filter(str.isdigit, str(zipcode)))
+
+    # 7桁の場合のみフォーマット
+    if len(digits) == 7:
+        return f"{digits[:3]}-{digits[3:]}"
+
+    # それ以外はそのまま返す
+    return str(zipcode)
+
+
+def format_phone(phone: str) -> str:
+    """
+    電話番号にハイフンを挿入
+
+    Args:
+        phone: 電話番号文字列
+
+    Returns:
+        フォーマット済み電話番号
+
+    Examples:
+        >>> format_phone("09012345678")
+        "090-1234-5678"
+        >>> format_phone("0312345678")
+        "03-1234-5678"
+        >>> format_phone("0120123456")
+        "0120-123-456"
+        >>> format_phone("0421112222")
+        "042-111-2222"
+    """
+    # pd.isna()を先にチェック（pd.NAのambiguousエラー回避）
+    if pd.isna(phone) or not phone:
+        return ""
+
+    # 数字のみを抽出
+    digits = ''.join(filter(str.isdigit, str(phone)))
+
+    if len(digits) == 11:
+        # 携帯電話・IP電話: 3-4-4形式
+        return f"{digits[:3]}-{digits[3:7]}-{digits[7:]}"
+    elif len(digits) == 10:
+        # 2桁市外局番（東京23区・大阪のみ）
+        if digits[:2] in ['03', '06']:
+            return f"{digits[:2]}-{digits[2:6]}-{digits[6:]}"
+        # 0120, 0800などの特番
+        elif digits[:4] in ['0120', '0800']:
+            return f"{digits[:4]}-{digits[4:7]}-{digits[7:]}"
+        # それ以外は3桁市外局番: 3-3-4形式
+        else:
+            return f"{digits[:3]}-{digits[3:6]}-{digits[6:]}"
+
+    # それ以外はそのまま返す
+    return str(phone)
 
 
 class NapConfig:
@@ -449,7 +527,7 @@ class DataMapper:
 
         # 現住所
         if "契約者郵便番号" in excel_df.columns:
-            output_df["契約者現住所郵便番号"] = excel_df["契約者郵便番号"]
+            output_df["契約者現住所郵便番号"] = excel_df["契約者郵便番号"].apply(format_zipcode)
         if "契約者１住所１" in excel_df.columns:
             output_df["契約者現住所1"] = excel_df["契約者１住所１"]
         if "契約者１住所２" in excel_df.columns:
@@ -464,7 +542,7 @@ class DataMapper:
         if "契約者勤務先名" in excel_df.columns:
             output_df["契約者勤務先名"] = excel_df["契約者勤務先名"]
         if "契約者勤務先電話" in excel_df.columns:
-            output_df["契約者勤務先TEL"] = excel_df["契約者勤務先電話"]
+            output_df["契約者勤務先TEL"] = excel_df["契約者勤務先電話"].apply(format_phone)
 
     def map_property_info(
         self,
@@ -486,7 +564,7 @@ class DataMapper:
 
         # 物件住所
         if "物件郵便番号" in excel_df.columns:
-            output_df["物件住所郵便番号"] = excel_df["物件郵便番号"]
+            output_df["物件住所郵便番号"] = excel_df["物件郵便番号"].apply(format_zipcode)
         if "物件住所１" in excel_df.columns:
             output_df["物件住所1"] = excel_df["物件住所１"]
         if "物件住所２" in excel_df.columns:
@@ -499,10 +577,9 @@ class DataMapper:
         output_df["物件住所3"] = addr3 + prop_name + room
 
         # 賃料関連
-        if "賃料合計額" in excel_df.columns:
-            output_df["月額賃料"] = excel_df["賃料合計額"]
-        # 退去手続き（実費）には「賃料」列を使用
         if "賃料" in excel_df.columns:
+            output_df["月額賃料"] = excel_df["賃料"]
+            # 退去手続き（実費）にも「賃料」列を使用
             output_df["退去手続き（実費）"] = excel_df["賃料"]
         if "管理費公益費" in excel_df.columns:
             output_df["管理費"] = excel_df["管理費公益費"]
@@ -559,17 +636,20 @@ class DataMapper:
         if "連保人1生年月日" in excel_df.columns:
             output_df["保証人１生年月日"] = excel_df["連保人1生年月日"]
         if "連保人1郵便番号" in excel_df.columns:
-            output_df["保証人１郵便番号"] = excel_df["連保人1郵便番号"]
+            output_df["保証人１郵便番号"] = excel_df["連保人1郵便番号"].apply(format_zipcode)
         if "連保人1住所１" in excel_df.columns:
             output_df["保証人１住所1"] = excel_df["連保人1住所１"]
         if "連保人1住所２" in excel_df.columns:
             output_df["保証人１住所2"] = excel_df["連保人1住所２"]
-        if "連保人1住所３" in excel_df.columns:
-            output_df["保証人１住所3"] = excel_df["連保人1住所３"]
+
+        # 保証人住所3 = 連保人1住所３ + 連保人住所アパート等（該当列がある場合）
+        addr3 = excel_df["連保人1住所３"].fillna("") if "連保人1住所３" in excel_df.columns else ""
+        apt = excel_df["連保人住所アパート等"].fillna("") if "連保人住所アパート等" in excel_df.columns else ""
+        output_df["保証人１住所3"] = addr3 + apt
         if "連保人1電話" in excel_df.columns:
-            output_df["保証人１TEL自宅"] = excel_df["連保人1電話"]
+            output_df["保証人１TEL自宅"] = excel_df["連保人1電話"].apply(format_phone)
         if "連保人1携帯番号" in excel_df.columns:
-            output_df["保証人１TEL携帯"] = excel_df["連保人1携帯番号"]
+            output_df["保証人１TEL携帯"] = excel_df["連保人1携帯番号"].apply(format_phone)
 
     def map_emergency_contact_info(
         self,
@@ -597,7 +677,7 @@ class DataMapper:
                              "ァアィイゥウェエォオカガキギクグケゲコゴサザシジスズセゼソゾタダチヂッツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモャヤュユョヨラリルレロヮワヰヱヲンヴヵヶ")
             )
         if "緊急連絡人郵便番号" in excel_df.columns:
-            output_df["緊急連絡人１郵便番号"] = excel_df["緊急連絡人郵便番号"]
+            output_df["緊急連絡人１郵便番号"] = excel_df["緊急連絡人郵便番号"].apply(format_zipcode)
         if "緊急連絡人住所１" in excel_df.columns:
             output_df["緊急連絡人１現住所1"] = excel_df["緊急連絡人住所１"]
         if "緊急連絡人住所２" in excel_df.columns:
