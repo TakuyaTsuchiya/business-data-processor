@@ -95,7 +95,7 @@ def format_zipcode(zipcode: str) -> str:
 # 電話番号フォーマット用定数
 MOBILE_FIRST_DIGITS = {'7', '8', '9'}  # 070/080/090の携帯番号（先頭0欠損時）
 TWO_DIGIT_AREA_CODES = {'03', '06'}  # 2桁市外局番（東京23区・大阪）
-TOLL_FREE_PREFIXES = {'0120', '0800'}  # フリーダイヤル
+TOLL_FREE_PREFIXES = {'0120', '0570', '0800'}  # フリーダイヤル・ナビダイヤル
 
 
 def format_phone(phone: str) -> str:

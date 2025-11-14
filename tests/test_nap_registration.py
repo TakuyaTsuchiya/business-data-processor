@@ -111,8 +111,9 @@ class TestFormatFunctions:
         assert format_phone("0521234567") == "052-123-4567"
 
     def test_format_phone_toll_free(self):
-        """フリーダイヤルのフォーマットテスト"""
+        """フリーダイヤル・ナビダイヤルのフォーマットテスト"""
         assert format_phone("0120123456") == "0120-123-456"
+        assert format_phone("0570123456") == "0570-123-456"
         assert format_phone("0800123456") == "0800-123-456"
 
     def test_format_phone_already_formatted(self):
