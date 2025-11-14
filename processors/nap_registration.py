@@ -601,10 +601,15 @@ class DataMapper:
             def get_contractor_zipcode(row):
                 zipcode = row.get("契約者郵便番号", "")
                 if pd.isna(zipcode) or not str(zipcode).strip():
-                    # 住所からルックアップ
                     addr1 = row.get("契約者１住所１", "")
                     addr2 = row.get("契約者１住所２", "")
                     addr3 = row.get("契約者１住所３", "")
+
+                    # 住所が全て空白なら何もしない
+                    if not (addr1 or addr2 or addr3):
+                        return ""
+
+                    # 住所があればAPI検索
                     zipcode = lookup_zipcode_from_address(addr1, addr2, addr3)
                 return format_zipcode(zipcode)
 
@@ -649,10 +654,15 @@ class DataMapper:
             def get_property_zipcode(row):
                 zipcode = row.get("物件郵便番号", "")
                 if pd.isna(zipcode) or not str(zipcode).strip():
-                    # 住所からルックアップ
                     addr1 = row.get("物件住所１", "")
                     addr2 = row.get("物件住所２", "")
                     addr3 = row.get("物件住所３", "")
+
+                    # 住所が全て空白なら何もしない
+                    if not (addr1 or addr2 or addr3):
+                        return ""
+
+                    # 住所があればAPI検索
                     zipcode = lookup_zipcode_from_address(addr1, addr2, addr3)
                 return format_zipcode(zipcode)
 
@@ -732,10 +742,15 @@ class DataMapper:
             def get_guarantor_zipcode(row):
                 zipcode = row.get("連保人1郵便番号", "")
                 if pd.isna(zipcode) or not str(zipcode).strip():
-                    # 住所からルックアップ
                     addr1 = row.get("連保人1住所１", "")
                     addr2 = row.get("連保人1住所２", "")
                     addr3 = row.get("連保人1住所３", "")
+
+                    # 住所が全て空白なら何もしない
+                    if not (addr1 or addr2 or addr3):
+                        return ""
+
+                    # 住所があればAPI検索
                     zipcode = lookup_zipcode_from_address(addr1, addr2, addr3)
                 return format_zipcode(zipcode)
 
@@ -784,10 +799,15 @@ class DataMapper:
             def get_emergency_contact_zipcode(row):
                 zipcode = row.get("緊急連絡人郵便番号", "")
                 if pd.isna(zipcode) or not str(zipcode).strip():
-                    # 住所からルックアップ
                     addr1 = row.get("緊急連絡人住所１", "")
                     addr2 = row.get("緊急連絡人住所２", "")
                     addr3 = row.get("緊急連絡人住所３", "")
+
+                    # 住所が全て空白なら何もしない
+                    if not (addr1 or addr2 or addr3):
+                        return ""
+
+                    # 住所があればAPI検索
                     zipcode = lookup_zipcode_from_address(addr1, addr2, addr3)
                 return format_zipcode(zipcode)
 
