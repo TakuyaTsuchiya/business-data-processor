@@ -57,8 +57,6 @@ from datetime import datetime
 from typing import Tuple, List, Dict, Union
 import logging
 import time
-import requests
-import re
 
 
 def format_zipcode(zipcode: str) -> str:
@@ -144,78 +142,6 @@ def format_phone(phone: str) -> str:
 
     # それ以外はそのまま返す
     return str(phone)
-
-
-def lookup_zipcode_from_address(address1: str, address2: str, address3: str = "") -> str:
-    """
-    住所から郵便番号を検索（zipcloud API使用）
-
-    Args:
-        address1: 住所1（都道府県・市区町村）
-        address2: 住所2（町名・番地）
-        address3: 住所3（建物名など、オプション）
-
-    Returns:
-        郵便番号（7桁、ハイフンなし）。取得失敗時は空文字列
-
-    Examples:
-        >>> lookup_zipcode_from_address("東京都", "千代田区丸の内1-1")
-        "1000001"
-        >>> lookup_zipcode_from_address("", "", "")
-        ""
-
-    Note:
-        - zipcloud API (https://zipcloud.ibsnet.co.jp/api/search) を使用
-        - API失敗時は空文字列を返す（エラーにしない）
-        - タイムアウト: 5秒
-    """
-    logger = logging.getLogger(__name__)
-
-    # pd.NA/NaN/Noneを空文字列に変換するヘルパー
-    def safe_str(val):
-        if pd.isna(val):
-            return ""
-        return str(val).strip()
-
-    # 住所をクリーニング
-    addr1_clean = safe_str(address1)
-    addr2_clean = safe_str(address2)
-
-    # 住所2から番地以降を削除して町名まで抽出（検索精度向上）
-    # 数字+ハイフンで始まる部分以降を削除（番地・建物名除去）
-    addr2_clean = re.sub(r'[0-9０-９]+[-－].*', '', addr2_clean).strip()
-    # 半角カタカナを削除
-    addr2_clean = re.sub(r'[ｦ-ﾟ]+', '', addr2_clean).strip()
-
-    # 住所を結合（addr3は除外済み）
-    full_address = addr1_clean + addr2_clean
-    if not full_address:
-        return ""
-
-    try:
-        response = requests.get(
-            "https://zipcloud.ibsnet.co.jp/api/search",
-            params={"address": full_address},
-            timeout=5
-        )
-
-        if response.ok:
-            data = response.json()
-            if data.get("results") and len(data["results"]) > 0:
-                zipcode = data["results"][0].get("zipcode", "")
-                logger.info(f"郵便番号検索成功: {full_address[:20]}... → {zipcode}")
-                return zipcode
-            else:
-                logger.warning(f"郵便番号検索結果なし: {full_address[:30]}...")
-        else:
-            logger.warning(f"郵便番号API HTTPエラー {response.status_code}: {full_address[:30]}...")
-
-    except requests.Timeout:
-        logger.warning(f"郵便番号API タイムアウト: {full_address[:30]}...")
-    except Exception as e:
-        logger.warning(f"郵便番号検索エラー: {full_address[:30]}... - {type(e).__name__}: {str(e)}")
-
-    return ""
 
 
 class NapConfig:
@@ -608,42 +534,7 @@ class DataMapper:
 
         # 現住所
         if "契約者郵便番号" in excel_df.columns:
-            logger = logging.getLogger(__name__)
-
-            # 郵便番号が空白の場合、住所からルックアップを試みる
-            def get_contractor_zipcode(row):
-                row_idx = row.name
-                zipcode = row.get("契約者郵便番号", "")
-
-                if pd.isna(zipcode) or not str(zipcode).strip():
-                    addr1 = row.get("契約者１住所１", "")
-                    addr2 = row.get("契約者１住所２", "")
-                    addr3 = row.get("契約者１住所３", "")
-
-                    # pd.NAを安全に処理
-                    def safe_val(val):
-                        return "" if pd.isna(val) else str(val).strip()
-
-                    addr1_safe = safe_val(addr1)
-                    addr2_safe = safe_val(addr2)
-                    addr3_safe = safe_val(addr3)
-
-                    # 住所が全て空白なら何もしない
-                    if not (addr1_safe or addr2_safe or addr3_safe):
-                        return ""
-
-                    # 住所があればAPI検索（建物名は除外して精度向上）
-                    logger.info(f"行{row_idx} - 契約者現住所郵便番号を検索中: {addr1_safe}{addr2_safe}")
-                    zipcode = lookup_zipcode_from_address(addr1, addr2, "")
-
-                    if zipcode:
-                        logger.info(f"行{row_idx} - 契約者現住所郵便番号を補完: {zipcode}")
-                    else:
-                        logger.warning(f"行{row_idx} - 契約者現住所郵便番号: 検索結果なし ({addr1_safe}{addr2_safe})")
-
-                return format_zipcode(zipcode)
-
-            output_df["契約者現住所郵便番号"] = excel_df.apply(get_contractor_zipcode, axis=1)
+            output_df["契約者現住所郵便番号"] = excel_df["契約者郵便番号"].apply(format_zipcode)
         if "契約者１住所１" in excel_df.columns:
             output_df["契約者現住所1"] = excel_df["契約者１住所１"]
         if "契約者１住所２" in excel_df.columns:
@@ -680,42 +571,7 @@ class DataMapper:
 
         # 物件住所
         if "物件郵便番号" in excel_df.columns:
-            logger = logging.getLogger(__name__)
-
-            # 郵便番号が空白の場合、住所からルックアップを試みる
-            def get_property_zipcode(row):
-                row_idx = row.name
-                zipcode = row.get("物件郵便番号", "")
-
-                if pd.isna(zipcode) or not str(zipcode).strip():
-                    addr1 = row.get("物件住所１", "")
-                    addr2 = row.get("物件住所２", "")
-                    addr3 = row.get("物件住所３", "")
-
-                    # pd.NAを安全に処理
-                    def safe_val(val):
-                        return "" if pd.isna(val) else str(val).strip()
-
-                    addr1_safe = safe_val(addr1)
-                    addr2_safe = safe_val(addr2)
-                    addr3_safe = safe_val(addr3)
-
-                    # 住所が全て空白なら何もしない
-                    if not (addr1_safe or addr2_safe or addr3_safe):
-                        return ""
-
-                    # 住所があればAPI検索（建物名は除外して精度向上）
-                    logger.info(f"行{row_idx} - 物件住所郵便番号を検索中: {addr1_safe}{addr2_safe}")
-                    zipcode = lookup_zipcode_from_address(addr1, addr2, "")
-
-                    if zipcode:
-                        logger.info(f"行{row_idx} - 物件住所郵便番号を補完: {zipcode}")
-                    else:
-                        logger.warning(f"行{row_idx} - 物件住所郵便番号: 検索結果なし ({addr1_safe}{addr2_safe})")
-
-                return format_zipcode(zipcode)
-
-            output_df["物件住所郵便番号"] = excel_df.apply(get_property_zipcode, axis=1)
+            output_df["物件住所郵便番号"] = excel_df["物件郵便番号"].apply(format_zipcode)
         if "物件住所１" in excel_df.columns:
             output_df["物件住所1"] = excel_df["物件住所１"]
         if "物件住所２" in excel_df.columns:
@@ -787,42 +643,7 @@ class DataMapper:
         if "連保人1生年月日" in excel_df.columns:
             output_df["保証人１生年月日"] = excel_df["連保人1生年月日"]
         if "連保人1郵便番号" in excel_df.columns:
-            logger = logging.getLogger(__name__)
-
-            # 郵便番号が空白の場合、住所からルックアップを試みる
-            def get_guarantor_zipcode(row):
-                row_idx = row.name
-                zipcode = row.get("連保人1郵便番号", "")
-
-                if pd.isna(zipcode) or not str(zipcode).strip():
-                    addr1 = row.get("連保人1住所１", "")
-                    addr2 = row.get("連保人1住所２", "")
-                    addr3 = row.get("連保人1住所３", "")
-
-                    # pd.NAを安全に処理
-                    def safe_val(val):
-                        return "" if pd.isna(val) else str(val).strip()
-
-                    addr1_safe = safe_val(addr1)
-                    addr2_safe = safe_val(addr2)
-                    addr3_safe = safe_val(addr3)
-
-                    # 住所が全て空白なら何もしない
-                    if not (addr1_safe or addr2_safe or addr3_safe):
-                        return ""
-
-                    # 住所があればAPI検索（建物名は除外して精度向上）
-                    logger.info(f"行{row_idx} - 保証人１郵便番号を検索中: {addr1_safe}{addr2_safe}")
-                    zipcode = lookup_zipcode_from_address(addr1, addr2, "")
-
-                    if zipcode:
-                        logger.info(f"行{row_idx} - 保証人１郵便番号を補完: {zipcode}")
-                    else:
-                        logger.warning(f"行{row_idx} - 保証人１郵便番号: 検索結果なし ({addr1_safe}{addr2_safe})")
-
-                return format_zipcode(zipcode)
-
-            output_df["保証人１郵便番号"] = excel_df.apply(get_guarantor_zipcode, axis=1)
+            output_df["保証人１郵便番号"] = excel_df["連保人1郵便番号"].apply(format_zipcode)
         if "連保人1住所１" in excel_df.columns:
             output_df["保証人１住所1"] = excel_df["連保人1住所１"]
         if "連保人1住所２" in excel_df.columns:
@@ -863,42 +684,7 @@ class DataMapper:
                              "ァアィイゥウェエォオカガキギクグケゲコゴサザシジスズセゼソゾタダチヂッツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモャヤュユョヨラリルレロヮワヰヱヲンヴヵヶ")
             )
         if "緊急連絡人郵便番号" in excel_df.columns:
-            logger = logging.getLogger(__name__)
-
-            # 郵便番号が空白の場合、住所からルックアップを試みる
-            def get_emergency_contact_zipcode(row):
-                row_idx = row.name
-                zipcode = row.get("緊急連絡人郵便番号", "")
-
-                if pd.isna(zipcode) or not str(zipcode).strip():
-                    addr1 = row.get("緊急連絡人住所１", "")
-                    addr2 = row.get("緊急連絡人住所２", "")
-                    addr3 = row.get("緊急連絡人住所３", "")
-
-                    # pd.NAを安全に処理
-                    def safe_val(val):
-                        return "" if pd.isna(val) else str(val).strip()
-
-                    addr1_safe = safe_val(addr1)
-                    addr2_safe = safe_val(addr2)
-                    addr3_safe = safe_val(addr3)
-
-                    # 住所が全て空白なら何もしない
-                    if not (addr1_safe or addr2_safe or addr3_safe):
-                        return ""
-
-                    # 住所があればAPI検索（建物名は除外して精度向上）
-                    logger.info(f"行{row_idx} - 緊急連絡人１郵便番号を検索中: {addr1_safe}{addr2_safe}")
-                    zipcode = lookup_zipcode_from_address(addr1, addr2, "")
-
-                    if zipcode:
-                        logger.info(f"行{row_idx} - 緊急連絡人１郵便番号を補完: {zipcode}")
-                    else:
-                        logger.warning(f"行{row_idx} - 緊急連絡人１郵便番号: 検索結果なし ({addr1_safe}{addr2_safe})")
-
-                return format_zipcode(zipcode)
-
-            output_df["緊急連絡人１郵便番号"] = excel_df.apply(get_emergency_contact_zipcode, axis=1)
+            output_df["緊急連絡人１郵便番号"] = excel_df["緊急連絡人郵便番号"].apply(format_zipcode)
         if "緊急連絡人住所１" in excel_df.columns:
             output_df["緊急連絡人１現住所1"] = excel_df["緊急連絡人住所１"]
         if "緊急連絡人住所２" in excel_df.columns:
