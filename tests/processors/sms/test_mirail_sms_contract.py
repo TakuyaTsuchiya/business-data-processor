@@ -119,9 +119,12 @@ class TestTrusteeIdFilter:
         # 2件中1件が除外され、1件残ることを確認
         assert len(result_df) == 1, f"期待: 1件, 実際: {len(result_df)}件"
 
-    def test_empty_trustee_id_passes(self, payment_deadline_date):
+    def test_empty_trustee_id_passes_with_blank_filter(self, payment_deadline_date):
         """
-        【テスト】委託先法人ID=空白 のデータは通過する
+        【テスト】委託先法人ID=空白 のデータは trustee_filter_type='blank' で通過する
+
+        【解説】trustee_filter_type パラメータ追加後のテスト
+        空白データを通過させるには明示的に 'blank' を指定する必要がある
         """
         yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y/%m/%d')
         rows = [{
@@ -145,7 +148,7 @@ class TestTrusteeIdFilter:
         csv_bytes = dataframe_to_csv_bytes(df)
 
         result_df, logs, filename, stats = process_mirail_sms_contract_data(
-            csv_bytes, payment_deadline_date
+            csv_bytes, payment_deadline_date, trustee_filter_type='blank'
         )
 
         assert len(result_df) == 1
@@ -695,23 +698,23 @@ class TestIntegration:
     複数のデータを処理して、正しい件数が出力されるかを確認
     """
 
-    def test_mixed_data_correct_count(self, mixed_data, payment_deadline_date):
+    def test_mixed_data_correct_count_with_id5_filter(self, mixed_data, payment_deadline_date):
         """
-        【テスト】混合データで正しい件数が出力される
+        【テスト】混合データで正しい件数が出力される（ID=5フィルター）
 
-        mixed_data には4件あり、うち2件が通過するはず:
-        - 1件目: 全て通過 → 出力
+        mixed_data には4件あり、trustee_filter_type='id5'では1件のみ通過:
+        - 1件目: ID=5, 全て通過 → 出力
         - 2件目: 委託先法人ID=999で除外
-        - 3件目: 委託先法人ID=空白で通過 → 出力
+        - 3件目: 委託先法人ID=空白で除外（id5フィルターでは空白は除外）
         - 4件目: 回収ランク=弁護士介入で除外
         """
         csv_bytes = dataframe_to_csv_bytes(mixed_data)
 
         result_df, logs, filename, stats = process_mirail_sms_contract_data(
-            csv_bytes, payment_deadline_date
+            csv_bytes, payment_deadline_date, trustee_filter_type='id5'
         )
 
-        assert len(result_df) == 2, f"期待: 2件, 実際: {len(result_df)}件"
+        assert len(result_df) == 1, f"期待: 1件, 実際: {len(result_df)}件"
 
     def test_all_excluded_raises_error(self, invalid_trustee_id_data, payment_deadline_date):
         """
@@ -745,31 +748,35 @@ class TestIntegration:
 
     def test_output_filename_format(self, valid_mirail_sms_data, payment_deadline_date):
         """
-        【テスト】出力ファイル名が正しい形式
+        【テスト】出力ファイル名が正しい形式（ID=5フィルター）
+
+        trustee_filter_type='id5' の場合、ファイル名に _ID5 が付く
         """
         csv_bytes = dataframe_to_csv_bytes(valid_mirail_sms_data)
 
         result_df, logs, filename, stats = process_mirail_sms_contract_data(
-            csv_bytes, payment_deadline_date
+            csv_bytes, payment_deadline_date, trustee_filter_type='id5'
         )
 
-        # MMDDミライルSMS契約者.csv の形式
-        assert 'ミライルSMS契約者.csv' in filename
+        # MMDDミライルSMS契約者_ID5.csv の形式
+        assert 'ミライルSMS契約者_ID5.csv' in filename
 
     def test_stats_contain_row_counts(self, mixed_data, payment_deadline_date):
         """
-        【テスト】統計情報に行数が含まれる
+        【テスト】統計情報に行数が含まれる（ID=5フィルター）
+
+        trustee_filter_type='id5' の場合、4件中1件のみ通過
         """
         csv_bytes = dataframe_to_csv_bytes(mixed_data)
 
         result_df, logs, filename, stats = process_mirail_sms_contract_data(
-            csv_bytes, payment_deadline_date
+            csv_bytes, payment_deadline_date, trustee_filter_type='id5'
         )
 
         assert 'initial_rows' in stats
         assert 'processed_rows' in stats
         assert stats['initial_rows'] == 4
-        assert stats['processed_rows'] == 2
+        assert stats['processed_rows'] == 1
 
 
 class TestErrorHandling:
