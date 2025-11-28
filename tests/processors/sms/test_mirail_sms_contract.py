@@ -812,3 +812,250 @@ class TestErrorHandling:
 
         with pytest.raises(Exception):
             process_mirail_sms_contract_data(csv_bytes, payment_deadline_date)
+
+
+# =============================================================================
+# 【新規】委託先法人IDフィルター分離テスト
+#
+# trustee_filter_type パラメータによるフィルタリング動作をテスト
+# =============================================================================
+
+class TestTrusteeIdFilterWithFilterType:
+    """
+    【解説】委託先法人IDフィルター（filter_type パラメータ版）
+
+    trustee_filter_type パラメータ:
+    - 'id5': 委託先法人ID=5 のみ通過
+    - 'blank': 委託先法人ID=空白 のみ通過
+    """
+
+    def test_filter_type_id5_only_passes_id5(self, payment_deadline_date):
+        """
+        【テスト】trustee_filter_type='id5' → ID=5のデータのみ通過
+        """
+        yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y/%m/%d')
+        rows = [
+            # ID=5（通過するべき）
+            {
+                'TEL携帯': '090-1111-1111',
+                '滞納残債': '10,000',
+                '入金予定日': yesterday,
+                '入金予定金額': '1',
+                '回収ランク': '通常',
+                '委託先法人ID': '5',
+                '契約者氏名': 'ID5太郎',
+                '物件名': 'テストマンション',
+                '物件番号': '101',
+                '管理番号': 'M001',
+                '回収口座銀行名': 'テスト銀行',
+                '回収口座支店名': 'テスト支店',
+                '回収口座種類': '普通',
+                '回収口座番号': '1234567',
+                '回収口座名義人': 'テスト名義',
+            },
+        ]
+        df = create_mirail_sms_dataframe(rows)
+        csv_bytes = dataframe_to_csv_bytes(df)
+
+        result_df, logs, filename, stats = process_mirail_sms_contract_data(
+            csv_bytes, payment_deadline_date, trustee_filter_type='id5'
+        )
+
+        assert len(result_df) == 1, "ID=5のデータが通過するべき"
+
+    def test_filter_type_id5_only_excludes_blank(self, payment_deadline_date):
+        """
+        【テスト】trustee_filter_type='id5' → 空白データは除外される
+        """
+        yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y/%m/%d')
+        rows = [
+            # ID=5（通過）
+            {
+                'TEL携帯': '090-1111-1111',
+                '滞納残債': '10,000',
+                '入金予定日': yesterday,
+                '入金予定金額': '1',
+                '回収ランク': '通常',
+                '委託先法人ID': '5',
+                '契約者氏名': 'ID5太郎',
+                '物件名': 'テストマンション',
+                '物件番号': '101',
+                '管理番号': 'M001',
+                '回収口座銀行名': 'テスト銀行',
+                '回収口座支店名': 'テスト支店',
+                '回収口座種類': '普通',
+                '回収口座番号': '1234567',
+                '回収口座名義人': 'テスト名義',
+            },
+            # ID=空白（除外されるべき）
+            {
+                'TEL携帯': '090-2222-2222',
+                '滞納残債': '10,000',
+                '入金予定日': yesterday,
+                '入金予定金額': '1',
+                '回収ランク': '通常',
+                '委託先法人ID': '',  # 空白
+                '契約者氏名': '空白二郎',
+                '物件名': 'テストマンション',
+                '物件番号': '102',
+                '管理番号': 'M002',
+                '回収口座銀行名': 'テスト銀行',
+                '回収口座支店名': 'テスト支店',
+                '回収口座種類': '普通',
+                '回収口座番号': '1234567',
+                '回収口座名義人': 'テスト名義',
+            },
+        ]
+        df = create_mirail_sms_dataframe(rows)
+        csv_bytes = dataframe_to_csv_bytes(df)
+
+        result_df, logs, filename, stats = process_mirail_sms_contract_data(
+            csv_bytes, payment_deadline_date, trustee_filter_type='id5'
+        )
+
+        assert len(result_df) == 1, "filter_type='id5'では空白データが除外されるべき"
+        assert result_df['(info1)契約者名'].iloc[0] == 'ID5太郎'
+
+    def test_filter_type_blank_only_passes_blank(self, payment_deadline_date):
+        """
+        【テスト】trustee_filter_type='blank' → 空白データのみ通過
+        """
+        yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y/%m/%d')
+        rows = [
+            # ID=空白（通過するべき）
+            {
+                'TEL携帯': '090-1111-1111',
+                '滞納残債': '10,000',
+                '入金予定日': yesterday,
+                '入金予定金額': '1',
+                '回収ランク': '通常',
+                '委託先法人ID': '',  # 空白
+                '契約者氏名': '空白太郎',
+                '物件名': 'テストマンション',
+                '物件番号': '101',
+                '管理番号': 'M001',
+                '回収口座銀行名': 'テスト銀行',
+                '回収口座支店名': 'テスト支店',
+                '回収口座種類': '普通',
+                '回収口座番号': '1234567',
+                '回収口座名義人': 'テスト名義',
+            },
+        ]
+        df = create_mirail_sms_dataframe(rows)
+        csv_bytes = dataframe_to_csv_bytes(df)
+
+        result_df, logs, filename, stats = process_mirail_sms_contract_data(
+            csv_bytes, payment_deadline_date, trustee_filter_type='blank'
+        )
+
+        assert len(result_df) == 1, "空白データが通過するべき"
+
+    def test_filter_type_blank_only_excludes_id5(self, payment_deadline_date):
+        """
+        【テスト】trustee_filter_type='blank' → ID=5データは除外される
+        """
+        yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y/%m/%d')
+        rows = [
+            # ID=空白（通過）
+            {
+                'TEL携帯': '090-1111-1111',
+                '滞納残債': '10,000',
+                '入金予定日': yesterday,
+                '入金予定金額': '1',
+                '回収ランク': '通常',
+                '委託先法人ID': '',  # 空白
+                '契約者氏名': '空白太郎',
+                '物件名': 'テストマンション',
+                '物件番号': '101',
+                '管理番号': 'M001',
+                '回収口座銀行名': 'テスト銀行',
+                '回収口座支店名': 'テスト支店',
+                '回収口座種類': '普通',
+                '回収口座番号': '1234567',
+                '回収口座名義人': 'テスト名義',
+            },
+            # ID=5（除外されるべき）
+            {
+                'TEL携帯': '090-2222-2222',
+                '滞納残債': '10,000',
+                '入金予定日': yesterday,
+                '入金予定金額': '1',
+                '回収ランク': '通常',
+                '委託先法人ID': '5',
+                '契約者氏名': 'ID5二郎',
+                '物件名': 'テストマンション',
+                '物件番号': '102',
+                '管理番号': 'M002',
+                '回収口座銀行名': 'テスト銀行',
+                '回収口座支店名': 'テスト支店',
+                '回収口座種類': '普通',
+                '回収口座番号': '1234567',
+                '回収口座名義人': 'テスト名義',
+            },
+        ]
+        df = create_mirail_sms_dataframe(rows)
+        csv_bytes = dataframe_to_csv_bytes(df)
+
+        result_df, logs, filename, stats = process_mirail_sms_contract_data(
+            csv_bytes, payment_deadline_date, trustee_filter_type='blank'
+        )
+
+        assert len(result_df) == 1, "filter_type='blank'ではID=5データが除外されるべき"
+        assert result_df['(info1)契約者名'].iloc[0] == '空白太郎'
+
+
+class TestOutputFilenameWithFilterType:
+    """
+    【解説】出力ファイル名のテスト（filter_type パラメータ版）
+
+    trustee_filter_type によってファイル名にサフィックスが付く:
+    - 'id5': _ID5
+    - 'blank': _空白
+    """
+
+    def test_filename_with_id5_suffix(self, valid_mirail_sms_data, payment_deadline_date):
+        """
+        【テスト】trustee_filter_type='id5' → ファイル名に_ID5が付く
+        """
+        csv_bytes = dataframe_to_csv_bytes(valid_mirail_sms_data)
+
+        result_df, logs, filename, stats = process_mirail_sms_contract_data(
+            csv_bytes, payment_deadline_date, trustee_filter_type='id5'
+        )
+
+        # MMDDミライルSMS契約者_ID5.csv の形式
+        assert '_ID5.csv' in filename, f"ファイル名に_ID5が含まれていない: {filename}"
+        assert 'ミライルSMS契約者' in filename
+
+    def test_filename_with_blank_suffix(self, payment_deadline_date):
+        """
+        【テスト】trustee_filter_type='blank' → ファイル名に_空白が付く
+        """
+        yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y/%m/%d')
+        rows = [{
+            'TEL携帯': '090-1234-5678',
+            '滞納残債': '10,000',
+            '入金予定日': yesterday,
+            '入金予定金額': '1',
+            '回収ランク': '通常',
+            '委託先法人ID': '',  # 空白
+            '契約者氏名': 'テスト太郎',
+            '物件名': 'テストマンション',
+            '物件番号': '101',
+            '管理番号': 'M001',
+            '回収口座銀行名': 'テスト銀行',
+            '回収口座支店名': 'テスト支店',
+            '回収口座種類': '普通',
+            '回収口座番号': '1234567',
+            '回収口座名義人': 'テスト名義',
+        }]
+        df = create_mirail_sms_dataframe(rows)
+        csv_bytes = dataframe_to_csv_bytes(df)
+
+        result_df, logs, filename, stats = process_mirail_sms_contract_data(
+            csv_bytes, payment_deadline_date, trustee_filter_type='blank'
+        )
+
+        # MMDDミライルSMS契約者_空白.csv の形式
+        assert '_空白.csv' in filename, f"ファイル名に_空白が含まれていない: {filename}"
+        assert 'ミライルSMS契約者' in filename
