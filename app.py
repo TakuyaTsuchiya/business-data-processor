@@ -56,9 +56,12 @@ from screens.sms.faith import (
     show_faith_sms_emergency_contact
 )
 from screens.sms.mirail import (
-    show_mirail_sms_contract,
-    show_mirail_sms_guarantor,
-    show_mirail_sms_emergencycontact
+    show_mirail_sms_contract_id5,
+    show_mirail_sms_contract_blank,
+    show_mirail_sms_guarantor_id5,
+    show_mirail_sms_guarantor_blank,
+    show_mirail_sms_emergencycontact_id5,
+    show_mirail_sms_emergencycontact_blank
 )
 from screens.sms.plaza import (
     show_plaza_sms_contract,
@@ -160,9 +163,12 @@ def main():
         "faith_sms_vacated": show_faith_sms_vacated,
         "faith_sms_guarantor": show_faith_sms_guarantor,
         "faith_sms_emergency_contact": show_faith_sms_emergency_contact,
-        "mirail_sms_guarantor": show_mirail_sms_guarantor,
-        "mirail_sms_emergencycontact": show_mirail_sms_emergencycontact,
-        "mirail_sms_contract": show_mirail_sms_contract,
+        "mirail_sms_contract_id5": show_mirail_sms_contract_id5,
+        "mirail_sms_contract_blank": show_mirail_sms_contract_blank,
+        "mirail_sms_guarantor_id5": show_mirail_sms_guarantor_id5,
+        "mirail_sms_guarantor_blank": show_mirail_sms_guarantor_blank,
+        "mirail_sms_emergencycontact_id5": show_mirail_sms_emergencycontact_id5,
+        "mirail_sms_emergencycontact_blank": show_mirail_sms_emergencycontact_blank,
         "plaza_sms_contract": show_plaza_sms_contract,
         "plaza_sms_guarantor": show_plaza_sms_guarantor,
         "plaza_sms_contact": show_plaza_sms_contact,

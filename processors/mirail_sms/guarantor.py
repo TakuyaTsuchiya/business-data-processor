@@ -14,17 +14,23 @@ from processors.common.detailed_logger import DetailedLogger
 
 
 
-def process_mirail_sms_guarantor_data(file_content: bytes, payment_deadline_date: date) -> Tuple[pd.DataFrame, List[str], str, dict]:
+def process_mirail_sms_guarantor_data(
+    file_content: bytes,
+    payment_deadline_date: date,
+    trustee_filter_type: str = 'id5'
+) -> Tuple[pd.DataFrame, List[str], str, dict]:
     """
     ミライルSMS保証人データ処理（Streamlit対応版）
-    
+
     フィルタ条件:
-    1. DO列　委託先法人ID: 5と空白セルのみ選択
+    1. DO列　委託先法人ID: trustee_filter_typeに応じて選択
+       - 'id5': 5のみ選択
+       - 'blank': 空白のみ選択
     2. CI列　回収ランク: 「弁護士介入」「訴訟中」のみ除外
     3. BU列　入金予定日: 前日以前が対象（当日は除外）
     4. BV列　入金予定金額: 2,3,5,12を除外
     5. AU列　TEL携帯: 090/080/070形式の携帯電話番号のみ
-    
+
     データマッピング:
     - 電話番号: AU列「TEL携帯」（列番号46）
     - (info1)契約者名: 契約者氏名
@@ -34,11 +40,12 @@ def process_mirail_sms_guarantor_data(file_content: bytes, payment_deadline_date
     - (info5)メモ: 管理番号
     - 保証人: 保証人１氏名
     - 支払期限: ユーザー指定日付（YYYY年MM月DD日形式）
-    
+
     Args:
         file_content: アップロードされたCSVファイルの内容（bytes）
         payment_deadline_date: 支払期限日付（dateオブジェクト）
-        
+        trustee_filter_type: 委託先法人IDフィルタータイプ ('id5' or 'blank')
+
     Returns:
         tuple: (変換済みDF, ログリスト, 出力ファイル名, 統計情報)
     """
@@ -52,18 +59,29 @@ def process_mirail_sms_guarantor_data(file_content: bytes, payment_deadline_date
         initial_rows = len(df)
         logs.append(DetailedLogger.log_initial_load(initial_rows))
         
-        # Filter 1: DO列　委託先法人ID (Keep only 5 and blank)
+        # Filter 1: DO列　委託先法人ID (Keep based on trustee_filter_type)
         # DO列は列番号118（0ベース）
         trustee_id_column = df.iloc[:, 118].astype(str).str.strip()
-        
-        # 5または空白（NaN含む）のみ保持
-        valid_trustee_mask = (trustee_id_column == '5') | (trustee_id_column == '') | (trustee_id_column == 'nan')
-        
+
+        # trustee_filter_typeに応じてフィルター条件を設定
+        if trustee_filter_type == 'id5':
+            # ID=5のみ保持
+            valid_trustee_mask = (trustee_id_column == '5')
+            filter_desc = '委託先法人ID（5のみ）'
+        elif trustee_filter_type == 'blank':
+            # 空白（NaN含む）のみ保持
+            valid_trustee_mask = (trustee_id_column == '') | (trustee_id_column == 'nan')
+            filter_desc = '委託先法人ID（空白のみ）'
+        else:
+            # デフォルト: 5または空白のみ保持
+            valid_trustee_mask = (trustee_id_column == '5') | (trustee_id_column == '') | (trustee_id_column == 'nan')
+            filter_desc = '委託先法人ID'
+
         # フィルター適用
         before_count = len(df)
         excluded_trustee = df[~valid_trustee_mask]
         df = df[valid_trustee_mask]
-        logs.append(DetailedLogger.log_filter_result(before_count, len(df), '委託先法人ID'))
+        logs.append(DetailedLogger.log_filter_result(before_count, len(df), filter_desc))
         
         # 除外データの詳細を記録
         if len(excluded_trustee) > 0:
@@ -250,9 +268,10 @@ def process_mirail_sms_guarantor_data(file_content: bytes, payment_deadline_date
         # Ensure correct column order
         output_df = output_df[temp_column_order]
         
-        # Create output filename
+        # Create output filename with suffix based on trustee_filter_type
         date_str = datetime.now().strftime("%m%d")
-        output_filename = f"{date_str}ミライルSMS保証人.csv"
+        suffix = '_ID5' if trustee_filter_type == 'id5' else '_空白'
+        output_filename = f"{date_str}ミライルSMS保証人{suffix}.csv"
         
         # Restore original column names from template (convert _empty_X back to blank)
         df_copy = output_df.copy()
