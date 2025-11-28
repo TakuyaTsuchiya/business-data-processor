@@ -75,17 +75,17 @@ def _show_mirail_menu():
 
     # SMS
     st.markdown('<div class="sidebar-category">📱 ミライル用SMS送信用</div>', unsafe_allow_html=True)
-    if st.button("契約者（ID=5）", key="mirail_sms_contract_id5", use_container_width=True):
+    if st.button("契約者　委託先法人ID→5", key="mirail_sms_contract_id5", use_container_width=True):
         st.session_state.selected_processor = "mirail_sms_contract_id5"
-    if st.button("契約者（空白）", key="mirail_sms_contract_blank", use_container_width=True):
+    if st.button("契約者　委託先法人ID→空白", key="mirail_sms_contract_blank", use_container_width=True):
         st.session_state.selected_processor = "mirail_sms_contract_blank"
-    if st.button("保証人（ID=5）", key="mirail_sms_guarantor_id5", use_container_width=True):
+    if st.button("保証人　委託先法人ID→5", key="mirail_sms_guarantor_id5", use_container_width=True):
         st.session_state.selected_processor = "mirail_sms_guarantor_id5"
-    if st.button("保証人（空白）", key="mirail_sms_guarantor_blank", use_container_width=True):
+    if st.button("保証人　委託先法人ID→空白", key="mirail_sms_guarantor_blank", use_container_width=True):
         st.session_state.selected_processor = "mirail_sms_guarantor_blank"
-    if st.button("連絡人（ID=5）", key="mirail_sms_emergencycontact_id5", use_container_width=True):
+    if st.button("連絡人　委託先法人ID→5", key="mirail_sms_emergencycontact_id5", use_container_width=True):
         st.session_state.selected_processor = "mirail_sms_emergencycontact_id5"
-    if st.button("連絡人（空白）", key="mirail_sms_emergencycontact_blank", use_container_width=True):
+    if st.button("連絡人　委託先法人ID→空白", key="mirail_sms_emergencycontact_blank", use_container_width=True):
         st.session_state.selected_processor = "mirail_sms_emergencycontact_blank"
 
     # 催告書
