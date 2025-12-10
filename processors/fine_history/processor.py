@@ -35,6 +35,9 @@ class FineHistoryProcessor:
         """
         self.target_person = target_person
 
+    # 必須カラム定義
+    REQUIRED_COLUMNS = ['管理番号', '架電先', '発信日', '発信時刻']
+
     def process(self, input_df: pd.DataFrame) -> pd.DataFrame:
         """
         携帯Mirail社納品データをファイン履歴形式に変換
@@ -44,7 +47,18 @@ class FineHistoryProcessor:
 
         Returns:
             NegotiatesInfoSample.csv形式のDataFrame
+
+        Raises:
+            ValueError: 必須カラムが存在しない場合
         """
+        # 必須カラムの存在確認
+        missing_columns = [col for col in self.REQUIRED_COLUMNS if col not in input_df.columns]
+        if missing_columns:
+            raise ValueError(
+                f"必須カラムが見つかりません: {', '.join(missing_columns)}\n"
+                f"入力ファイルは「携帯Mirail社納品データ_*.csv」を使用してください。"
+            )
+
         # 処理用にコピー
         df = input_df.copy()
 

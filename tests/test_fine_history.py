@@ -151,6 +151,23 @@ class TestOutputGeneration:
 class TestEdgeCases:
     """エッジケースのテスト"""
 
+    def test_必須カラムが存在しない場合(self):
+        """必須カラムが存在しない場合、ValueErrorが発生することを確認"""
+        from processors.fine_history import FineHistoryProcessor
+
+        # 必須カラムが存在しないデータ（出力ファイル形式）
+        data = """管理番号,交渉日時,担当,相手,手段,回収ランク,結果,入金予定日,予定金額,交渉備考
+12345,2025/12/9 15:52,,契約者,架電,,その他,,,090-1234-5678オートコール"""
+
+        df = pd.read_csv(StringIO(data))
+        processor = FineHistoryProcessor(target_person="契約者")
+
+        with pytest.raises(ValueError) as excinfo:
+            processor.process(df)
+
+        assert "必須カラムが見つかりません" in str(excinfo.value)
+        assert "携帯Mirail社納品データ" in str(excinfo.value)
+
     def test_全件空行の場合(self):
         """全レコードが空行の場合、空DataFrameが返されることを確認"""
         from processors.fine_history import FineHistoryProcessor
