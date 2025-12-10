@@ -139,7 +139,7 @@ def filter_records(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     1. 回収ランク: 「交渉困難」「死亡決定」「弁護士介入」を除外
     2. 入金予定日: 当日以前または空白
     3. 入金予定金額: 2, 3, 5を除外
-    4. 委託先法人ID: 5と空白のみ
+    4. 委託先法人ID: 3, 5と空白のみ
     5. 滞納残債: 1円以上
     6. クライアントCD: 9268を除外
     7. 受託状況: 「契約中」「契約中(口振停止)」
@@ -183,10 +183,10 @@ def filter_records(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     excluded_count = before_count - len(df_filtered)
     logs.append(f"入金予定金額フィルタ: {excluded_count}件除外 → {len(df_filtered)}件残存")
 
-    # 4. 委託先法人IDフィルタ（5と空白のみ）
+    # 4. 委託先法人IDフィルタ（3, 5と空白のみ）
     before_count = len(df_filtered)
     delegated_corp_id = df_filtered.iloc[:, ContractListColumns.DELEGATED_CORP_ID]
-    mask_corp_id = (delegated_corp_id == '5') | (delegated_corp_id == 5) | delegated_corp_id.isna() | (delegated_corp_id == '')
+    mask_corp_id = (delegated_corp_id == '3') | (delegated_corp_id == 3) | (delegated_corp_id == '5') | (delegated_corp_id == 5) | delegated_corp_id.isna() | (delegated_corp_id == '')
     df_filtered = df_filtered[mask_corp_id].copy()
     excluded_count = before_count - len(df_filtered)
     logs.append(f"委託先法人IDフィルタ: {excluded_count}件除外 → {len(df_filtered)}件残存")
