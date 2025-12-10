@@ -129,6 +129,9 @@ from screens.visit_list import (
 from screens.autocall_history import (
     render_autocall_history
 )
+from screens.fine_history import (
+    render_fine_history
+)
 
 # プロセッサーをインポート
 
@@ -204,7 +207,8 @@ def main():
         "mirail_e_not145": show_mirail_contact_not145,
         "residence_survey_billing": render_residence_survey_billing,
         "visit_list": render_visit_list,
-        "autocall_history": render_autocall_history
+        "autocall_history": render_autocall_history,
+        "fine_history": render_fine_history
     }
     
     # カスタムCSSを適用
