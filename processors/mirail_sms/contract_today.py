@@ -117,7 +117,7 @@ def process_mirail_sms_contract_today_data(
 
         # Filter 4: BV列　入金予定金額（13円以上）
         # BV列は列番号73（0ベース）
-        payment_amount_column = df.iloc[:, 73]
+        payment_amount_column = df.iloc[:, 73].astype(str).str.replace(',', '')
         payment_amount_numeric = pd.to_numeric(payment_amount_column, errors='coerce')
 
         # フィルター適用（13円以上を保持）
