@@ -91,6 +91,26 @@ def expected_autocall_history_output():
     return pd.read_csv(fixture_path, keep_default_na=False)
 
 
+@pytest.fixture
+def sample_fine_history_data():
+    """ファイン履歴テスト用サンプルデータ（携帯Mirail社納品データ形式）"""
+    fixture_path = os.path.join(
+        os.path.dirname(__file__),
+        'fixtures', 'fine_history', 'input_sample.csv'
+    )
+    return pd.read_csv(fixture_path)
+
+
+@pytest.fixture
+def expected_fine_history_output():
+    """ファイン履歴の期待される出力データ"""
+    fixture_path = os.path.join(
+        os.path.dirname(__file__),
+        'fixtures', 'fine_history', 'expected_output.csv'
+    )
+    return pd.read_csv(fixture_path, keep_default_na=False)
+
+
 class MockUploadedFile:
     """Streamlit UploadedFileのモッククラス"""
     
