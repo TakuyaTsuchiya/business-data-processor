@@ -14,7 +14,7 @@ def render_visit_list_backrent():
     """訪問リスト作成（バックレント用）画面"""
 
     st.title("訪問リスト作成（バックレント用）")
-    st.subheader("訪問リスト作成（バックレント用）")
+    st.subheader("ContractList.csvから訪問リスト（バックレント）を生成します")
 
     # 説明
     with st.expander("処理内容", expanded=True):
