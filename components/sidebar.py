@@ -75,6 +75,8 @@ def _show_mirail_menu():
 
     # SMS
     st.markdown('<div class="sidebar-category">📱 ミライル用SMS送信用</div>', unsafe_allow_html=True)
+    if st.button("当日SMS用　契約者　委託先法人ID→5", key="mirail_sms_contract_today", use_container_width=True):
+        st.session_state.selected_processor = "mirail_sms_contract_today"
     if st.button("契約者　委託先法人ID→5", key="mirail_sms_contract_id5", use_container_width=True):
         st.session_state.selected_processor = "mirail_sms_contract_id5"
     if st.button("契約者　委託先法人ID→空白", key="mirail_sms_contract_blank", use_container_width=True):
