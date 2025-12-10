@@ -58,6 +58,7 @@ from screens.sms.faith import (
 from screens.sms.mirail import (
     show_mirail_sms_contract_id5,
     show_mirail_sms_contract_blank,
+    show_mirail_sms_contract_today_blank,
     show_mirail_sms_guarantor_id5,
     show_mirail_sms_guarantor_blank,
     show_mirail_sms_emergencycontact_id5,
@@ -165,6 +166,7 @@ def main():
         "faith_sms_emergency_contact": show_faith_sms_emergency_contact,
         "mirail_sms_contract_id5": show_mirail_sms_contract_id5,
         "mirail_sms_contract_blank": show_mirail_sms_contract_blank,
+        "mirail_sms_contract_today_blank": show_mirail_sms_contract_today_blank,
         "mirail_sms_guarantor_id5": show_mirail_sms_guarantor_id5,
         "mirail_sms_guarantor_blank": show_mirail_sms_guarantor_blank,
         "mirail_sms_emergencycontact_id5": show_mirail_sms_emergencycontact_id5,
