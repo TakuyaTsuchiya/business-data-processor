@@ -202,6 +202,18 @@ def process_mirail_sms_contract_today_data(
             if detail:
                 logs.append(detail)
 
+        # フィルター後にデータが0件の場合は空の結果を返す
+        if len(df) == 0:
+            logs.append("フィルター後のデータが0件です。条件に一致するデータがありません。")
+            date_str = datetime.now().strftime("%m%d")
+            output_filename = f"{date_str}ミライルSMS契約者_当日ID5.csv"
+            empty_df = pd.DataFrame(columns=SMS_TEMPLATE_HEADERS)
+            stats = {
+                'initial_rows': initial_rows,
+                'processed_rows': 0
+            }
+            return empty_df, logs, output_filename, stats
+
         # Data mapping to output format - use predefined headers
         output_column_order = SMS_TEMPLATE_HEADERS
 
