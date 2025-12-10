@@ -216,6 +216,11 @@ def _show_others_menu():
         st.session_state.selected_processor = "visit_list"
 
     # オートコール履歴
-    st.markdown('<div class="sidebar-category">📋 オートコール履歴</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-category">オートコール履歴</div>', unsafe_allow_html=True)
     if st.button("オートコール履歴作成", key="autocall_history", use_container_width=True):
         st.session_state.selected_processor = "autocall_history"
+
+    # ファイン履歴
+    st.markdown('<div class="sidebar-category">ファイン履歴</div>', unsafe_allow_html=True)
+    if st.button("ファイン履歴作成", key="fine_history", use_container_width=True):
+        st.session_state.selected_processor = "fine_history"
