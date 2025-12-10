@@ -189,7 +189,12 @@ def filter_records(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     mask_corp_id = (delegated_corp_id == '3') | (delegated_corp_id == 3) | (delegated_corp_id == '5') | (delegated_corp_id == 5) | delegated_corp_id.isna() | (delegated_corp_id == '')
     df_filtered = df_filtered[mask_corp_id].copy()
     excluded_count = before_count - len(df_filtered)
-    logs.append(f"委託先法人IDフィルタ: {excluded_count}件除外 → {len(df_filtered)}件残存")
+    # 各IDの件数をカウント
+    filtered_corp_id = df_filtered.iloc[:, ContractListColumns.DELEGATED_CORP_ID]
+    count_3 = ((filtered_corp_id == '3') | (filtered_corp_id == 3)).sum()
+    count_5 = ((filtered_corp_id == '5') | (filtered_corp_id == 5)).sum()
+    count_blank = (filtered_corp_id.isna() | (filtered_corp_id == '')).sum()
+    logs.append(f"委託先法人IDフィルタ: {excluded_count}件除外 → {len(df_filtered)}件残存（ID=3: {count_3}件, ID=5: {count_5}件, 空白: {count_blank}件）")
 
     # 5. 滞納残債フィルタ（1円以上）
     before_count = len(df_filtered)
