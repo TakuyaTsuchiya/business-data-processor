@@ -136,6 +136,34 @@ class TestFiltering:
         assert len(filtered_df) == 1
         assert filtered_df.iloc[0, 0] == 3001
 
+    def test_filter_records_委託先法人ID_3も対象(self):
+        """委託先法人ID「3」も対象になることを確認"""
+        from processors.visit_list.processor import filter_records
+
+        today = datetime.now().date()
+
+        # 121列のダミーデータ作成（必要な列のみ実データ）
+        data = {i: [None] * 3 for i in range(121)}
+        data[0] = [4001, 4002, 4003]  # 管理番号
+        data[13] = ["契約中", "契約中", "契約中"]  # 受託状況
+        data[86] = ["追跡調査中", "追跡調査中", "追跡調査中"]  # 回収ランク
+        data[72] = [today - timedelta(days=1), today - timedelta(days=1), today - timedelta(days=1)]  # 入金予定日
+        data[73] = [10, 10, 10]  # 入金予定金額
+        data[118] = ['3', '5', '10']  # 委託先法人ID（3, 5, 10）
+        data[23] = ["東京都", "東京都", "東京都"]  # 現住所1
+        data[71] = ["10,000", "10,000", "10,000"]  # 滞納残債
+        data[97] = ["1000", "1000", "1000"]  # クライアントCD
+
+        df = pd.DataFrame(data)
+        filtered_df, logs = filter_records(df)
+
+        # 期待: 4001（ID=3）と4002（ID=5）が対象、4003（ID=10）は除外
+        assert len(filtered_df) == 2
+        result_ids = filtered_df.iloc[:, 0].tolist()
+        assert 4001 in result_ids  # 委託先法人ID=3
+        assert 4002 in result_ids  # 委託先法人ID=5
+        assert 4003 not in result_ids  # 委託先法人ID=10は除外
+
 
 class TestDataExtraction:
     """データ抽出と22列マッピングのテスト"""
