@@ -22,6 +22,7 @@ from components.result_display import display_error_result
 from components.screen_template import ScreenConfig, render_screen, create_payment_deadline_input
 from services.sms import (
     process_mirail_sms_contract_data,
+    process_mirail_sms_contract_today_data,
     process_mirail_sms_guarantor_data,
     process_mirail_sms_emergencycontact_data
 )
@@ -157,3 +158,26 @@ def show_mirail_sms_emergencycontact_blank():
         title_icon="📱"
     )
     render_screen(config, 'mirail_sms_emergencycontact_blank')
+
+
+# =============================================================================
+# 当日SMS用　契約者（ID=5）
+# =============================================================================
+def show_mirail_sms_contract_today():
+    config = ScreenConfig(
+        title="SMS送信用CSV加工",
+        subtitle="ミライル　当日SMS用　契約者　委託先法人ID→5",
+        filter_conditions=[
+            "DO列　委託先法人ID → 5のみ選択",
+            "CI列　回収ランク → 「訴訟中」「弁護士介入」を除外",
+            "BU列　入金予定日 → 当日のみ対象",
+            "BV列　入金予定金額 → 13円以上のみ対象",
+            "A列　クライアントCD → 10, 40, 9268を除外",
+            "BT列　滞納残債 → 1円以上",
+            "AB列　TEL携帯 → 090/080/070形式の携帯電話番号のみ"
+        ],
+        process_function=process_mirail_sms_contract_today_data,
+        payment_deadline_input=create_payment_deadline_input,
+        title_icon="📱"
+    )
+    render_screen(config, 'mirail_sms_contract_today')
