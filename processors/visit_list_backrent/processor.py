@@ -248,16 +248,20 @@ def filter_records(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     excluded_count = before_count - len(df_filtered)
     logs.append(f"滞納残債1円以上フィルタ: {excluded_count}件除外 → {len(df_filtered)}件残存")
 
-    # 7. クライアントCDフィルタ（7と9268を除外）
+    # 7. クライアントCDフィルタ（7、20、9094、9204、9268を除外）
     before_count = len(df_filtered)
     client_cd = pd.to_numeric(df_filtered.iloc[:, ContractListColumns.CLIENT_CD], errors='coerce')
     # 除外内訳をカウント
+    exclude_client_cds = [7, 20, 9094, 9204, 9268]
     count_cd_7 = (client_cd == 7).sum()
+    count_cd_20 = (client_cd == 20).sum()
+    count_cd_9094 = (client_cd == 9094).sum()
+    count_cd_9204 = (client_cd == 9204).sum()
     count_cd_9268 = (client_cd == 9268).sum()
-    mask_client = ~client_cd.isin([7, 9268])
+    mask_client = ~client_cd.isin(exclude_client_cds)
     df_filtered = df_filtered[mask_client].copy()
     excluded_count = before_count - len(df_filtered)
-    logs.append(f"クライアントCDフィルタ: {excluded_count}件除外 → {len(df_filtered)}件残存（7: {count_cd_7}件, 9268: {count_cd_9268}件 除外）")
+    logs.append(f"クライアントCDフィルタ: {excluded_count}件除外 → {len(df_filtered)}件残存（7: {count_cd_7}件, 20: {count_cd_20}件, 9094: {count_cd_9094}件, 9204: {count_cd_9204}件, 9268: {count_cd_9268}件 除外）")
 
     # 8. 受託状況フィルタ（「契約中」「契約中(口振停止)」）
     before_count = len(df_filtered)

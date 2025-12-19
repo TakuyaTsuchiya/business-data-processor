@@ -73,33 +73,36 @@ class TestFilteringBackrent:
         assert 2006 not in result_ids  # ID=6は除外
         assert 2007 in result_ids      # 空白は対象
 
-    def test_filter_records_クライアントCD_7と9268を除外(self):
-        """クライアントCD「7」「9268」が除外されることを確認"""
+    def test_filter_records_クライアントCD_7_20_9094_9204_9268を除外(self):
+        """クライアントCD「7」「20」「9094」「9204」「9268」が除外されることを確認"""
         from processors.visit_list_backrent.processor import filter_records
 
         today = datetime.now().date()
 
         # 121列のダミーデータ作成
-        data = {i: [None] * 4 for i in range(121)}
-        data[0] = [3001, 3002, 3003, 3004]  # 管理番号
-        data[13] = ["契約中"] * 4  # 受託状況
-        data[14] = ["入居中"] * 4  # 入居ステータス
-        data[86] = ["追跡調査中"] * 4  # 回収ランク
-        data[72] = [today - timedelta(days=1)] * 4  # 入金予定日
-        data[73] = [10] * 4  # 入金予定金額
-        data[118] = ['5'] * 4  # 委託先法人ID
-        data[71] = ["10,000"] * 4  # 滞納残債
-        data[97] = ["1000", "7", "9268", "8000"]  # クライアントCD
+        data = {i: [None] * 7 for i in range(121)}
+        data[0] = [3001, 3002, 3003, 3004, 3005, 3006, 3007]  # 管理番号
+        data[13] = ["契約中"] * 7  # 受託状況
+        data[14] = ["入居中"] * 7  # 入居ステータス
+        data[86] = ["追跡調査中"] * 7  # 回収ランク
+        data[72] = [today - timedelta(days=1)] * 7  # 入金予定日
+        data[73] = [10] * 7  # 入金予定金額
+        data[118] = ['5'] * 7  # 委託先法人ID
+        data[71] = ["10,000"] * 7  # 滞納残債
+        data[97] = ["1000", "7", "20", "9094", "9204", "9268", "8000"]  # クライアントCD
 
         df = pd.DataFrame(data)
         filtered_df, logs = filter_records(df)
 
-        # 期待: 3001（CD=1000）と3004（CD=8000）のみ
+        # 期待: 3001（CD=1000）と3007（CD=8000）のみ
         result_ids = filtered_df.iloc[:, 0].tolist()
         assert 3001 in result_ids      # CD=1000は対象
         assert 3002 not in result_ids  # CD=7は除外
-        assert 3003 not in result_ids  # CD=9268は除外
-        assert 3004 in result_ids      # CD=8000は対象
+        assert 3003 not in result_ids  # CD=20は除外
+        assert 3004 not in result_ids  # CD=9094は除外
+        assert 3005 not in result_ids  # CD=9204は除外
+        assert 3006 not in result_ids  # CD=9268は除外
+        assert 3007 in result_ids      # CD=8000は対象
 
     def test_filter_records_8条件統合(self):
         """8つのフィルタ条件を満たすレコードのみが残ることを確認"""
