@@ -24,7 +24,7 @@ def show_faith_contract():
         title="オートコール用CSV加工",
         subtitle="フェイス契約者",
         filter_conditions=[
-            "委託先法人ID → 1-4",
+            "委託先法人ID → 1-4,7",
             "入金予定日 → 前日以前とNaN",
             "回収ランク → 「死亡決定」「破産決定」「弁護士介入」除外",
             "滞納残債 → 1円以上のみ対象",

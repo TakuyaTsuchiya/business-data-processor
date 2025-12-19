@@ -37,7 +37,7 @@ def apply_faith_contract_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[s
     フェイス契約者フィルタリング処理
     
     📋 フィルタリング条件:
-    - 委託先法人ID: 1,2,3,4のみ（フェイス管理案件）
+    - 委託先法人ID: 1,2,3,4,7のみ（フェイス管理案件）
     - 入金予定日: 前日以前またはNaN（当日は除外）
     - 入金予定金額: 2,3,5を除外（手数料関連）
     - 回収ランク: 死亡決定、破産決定、弁護士介入を除外
@@ -48,11 +48,11 @@ def apply_faith_contract_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[s
     logs.append(DetailedLogger.log_initial_load(original_count))
     
     # 📊 フィルタリング条件の適用
-    # 1. 委託先法人IDのフィルタリング（1,2,3,4のみ）
+    # 1. 委託先法人IDのフィルタリング（1,2,3,4,7のみ）
     df["委託先法人ID"] = pd.to_numeric(df["委託先法人ID"], errors="coerce")
     before_filter = len(df)
     # 除外されるデータの詳細を記録
-    excluded_data = df[~df["委託先法人ID"].isin(CLIENT_IDS['faith'])]
+    excluded_data = df[~df["委託先法人ID"].isin(CLIENT_IDS['faith_contract'])]
     detail_log = DetailedLogger.log_exclusion_details(
         excluded_data, 
         df.columns.get_loc("委託先法人ID"),
@@ -62,7 +62,7 @@ def apply_faith_contract_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[s
     if detail_log:
         logs.append(detail_log)
     
-    df = df[df["委託先法人ID"].isin(CLIENT_IDS['faith'])]
+    df = df[df["委託先法人ID"].isin(CLIENT_IDS['faith_contract'])]
     logs.append(DetailedLogger.log_filter_result(before_filter, len(df), "委託先法人ID"))
     
     # 2. 入金予定日のフィルタリング（前日以前またはNaN、当日は除外）

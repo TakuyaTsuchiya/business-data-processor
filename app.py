@@ -58,6 +58,7 @@ from screens.sms.faith import (
 from screens.sms.mirail import (
     show_mirail_sms_contract_id5,
     show_mirail_sms_contract_blank,
+    show_mirail_sms_contract_today,
     show_mirail_sms_contract_today_blank,
     show_mirail_sms_guarantor_id5,
     show_mirail_sms_guarantor_blank,
@@ -130,6 +131,9 @@ from screens.visit_list import (
 from screens.autocall_history import (
     render_autocall_history
 )
+from screens.fine_history import (
+    render_fine_history
+)
 
 # プロセッサーをインポート
 
@@ -166,6 +170,7 @@ def main():
         "faith_sms_emergency_contact": show_faith_sms_emergency_contact,
         "mirail_sms_contract_id5": show_mirail_sms_contract_id5,
         "mirail_sms_contract_blank": show_mirail_sms_contract_blank,
+        "mirail_sms_contract_today": show_mirail_sms_contract_today,
         "mirail_sms_contract_today_blank": show_mirail_sms_contract_today_blank,
         "mirail_sms_guarantor_id5": show_mirail_sms_guarantor_id5,
         "mirail_sms_guarantor_blank": show_mirail_sms_guarantor_blank,
@@ -206,7 +211,8 @@ def main():
         "mirail_e_not145": show_mirail_contact_not145,
         "residence_survey_billing": render_residence_survey_billing,
         "visit_list": render_visit_list,
-        "autocall_history": render_autocall_history
+        "autocall_history": render_autocall_history,
+        "fine_history": render_fine_history
     }
     
     # カスタムCSSを適用
