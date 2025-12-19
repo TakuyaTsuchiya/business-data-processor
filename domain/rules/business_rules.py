@@ -8,6 +8,7 @@ Business Data Processor
 # 委託先法人ID定義
 CLIENT_IDS = {
     'faith': [1, 2, 3, 4],          # フェイス
+    'faith_contract': [1, 2, 3, 4, 7],  # フェイス契約者（オートコール用）
     'mirail': ['', '5'],            # ミライル（空白と5）
     'plaza': [6]                    # プラザ
 }

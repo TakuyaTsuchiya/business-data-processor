@@ -87,6 +87,10 @@ def _show_mirail_menu():
         st.session_state.selected_processor = "mirail_sms_emergencycontact_id5"
     if st.button("連絡人　委託先法人ID→空白", key="mirail_sms_emergencycontact_blank", use_container_width=True):
         st.session_state.selected_processor = "mirail_sms_emergencycontact_blank"
+    if st.button("当日SMS用　契約者　委託先法人ID→5", key="mirail_sms_contract_today", use_container_width=True):
+        st.session_state.selected_processor = "mirail_sms_contract_today"
+    if st.button("当日SMS用　契約者　委託先法人→空白", key="mirail_sms_contract_today_blank", use_container_width=True):
+        st.session_state.selected_processor = "mirail_sms_contract_today_blank"
 
     # 催告書
     st.markdown('<div class="sidebar-category">📝 ミライル用催告書 差し込みリスト</div>', unsafe_allow_html=True)
@@ -221,3 +225,8 @@ def _show_others_menu():
     st.markdown('<div class="sidebar-category">📋 オートコール履歴</div>', unsafe_allow_html=True)
     if st.button("オートコール履歴作成", key="autocall_history", use_container_width=True):
         st.session_state.selected_processor = "autocall_history"
+
+    # ファイン履歴
+    st.markdown('<div class="sidebar-category">📋 ファイン履歴</div>', unsafe_allow_html=True)
+    if st.button("ファイン履歴作成", key="fine_history", use_container_width=True):
+        st.session_state.selected_processor = "fine_history"
