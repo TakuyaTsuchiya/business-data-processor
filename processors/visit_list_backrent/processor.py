@@ -9,7 +9,6 @@ import pandas as pd
 import io
 from datetime import datetime
 from typing import Tuple, List, Dict
-from openpyxl import Workbook
 from openpyxl.styles import Font, Border
 from processors.common.prefecture_order import get_prefecture_order, extract_prefecture_from_address
 
@@ -140,9 +139,9 @@ def filter_records(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     2. 回収ランク: 「交渉困難」「死亡決定」「弁護士介入」を除外
     3. 入金予定日: 当日以前または空白
     4. 入金予定金額: 2, 3, 5を除外
-    5. 委託先法人ID: 1, 3, 6を除外
+    5. 委託先法人ID: 2, 3, 4, 5, 空白のみ対象
     6. 滞納残債: 1円以上
-    7. クライアントCD: 7と9268を除外
+    7. クライアントCD: 7, 20, 9094, 9204, 9268を除外
     8. 受託状況: 「契約中」「契約中(口振停止)」
 
     Args:
@@ -217,7 +216,7 @@ def filter_records(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     count_id_3 = ((delegated_corp_id == '3') | (delegated_corp_id == 3)).sum()
     count_id_4 = ((delegated_corp_id == '4') | (delegated_corp_id == 4)).sum()
     count_id_5 = ((delegated_corp_id == '5') | (delegated_corp_id == 5)).sum()
-    count_id_blank = delegated_corp_id.isna() | (delegated_corp_id == '')
+    count_id_blank = (delegated_corp_id.isna() | (delegated_corp_id == '')).sum()
     # ホワイトリスト方式: 2, 3, 4, 5, 空白のみを対象
     mask_corp_id = (
         (delegated_corp_id == '2') | (delegated_corp_id == 2) |
