@@ -23,7 +23,7 @@ def process_mirail_sms_contract_today_data(
     2. CI列　回収ランク: 「弁護士介入」「訴訟中」のみ除外
     3. BU列　入金予定日: 当日のみ対象
     4. BV列　入金予定金額: 13円以上
-    5. CR列　クライアントCD: 10, 40, 9268を除外
+    5. CT列　クライアントCD: 10, 40, 9268を除外
     6. BT列　滞納残債: 1円以上
     7. AB列　TEL携帯: 090/080/070形式の携帯電話番号のみ
 
@@ -73,8 +73,8 @@ def process_mirail_sms_contract_today_data(
             if detail:
                 logs.append(detail)
 
-        # Filter 2: CR列　クライアントCD除外（10, 40, 9268）
-        # クライアントCDは列番号97（0ベース、CR列）
+        # Filter 2: CT列　クライアントCD除外（10, 40, 9268）
+        # クライアントCDは列番号97（0ベース、CT列）
         client_cd_exclude = ['10', '40', '9268']
         client_cd_column = df.iloc[:, 97].astype(str).str.strip()
 
