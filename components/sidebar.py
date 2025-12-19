@@ -215,9 +215,11 @@ def _show_others_menu():
         st.session_state.selected_processor = "residence_survey_billing"
 
     # 訪問リスト作成
-    st.markdown('<div class="sidebar-category">📋 訪問リスト作成</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-category">訪問リスト作成</div>', unsafe_allow_html=True)
     if st.button("訪問リスト作成", key="visit_list", use_container_width=True):
         st.session_state.selected_processor = "visit_list"
+    if st.button("訪問リスト作成（バックレント用）", key="visit_list_backrent", use_container_width=True):
+        st.session_state.selected_processor = "visit_list_backrent"
 
     # オートコール履歴
     st.markdown('<div class="sidebar-category">📋 オートコール履歴</div>', unsafe_allow_html=True)

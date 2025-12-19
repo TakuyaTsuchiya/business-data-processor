@@ -128,6 +128,9 @@ from screens.billing.residence_survey import (
 from screens.visit_list import (
     render_visit_list
 )
+from screens.visit_list_backrent import (
+    render_visit_list_backrent
+)
 from screens.autocall_history import (
     render_autocall_history
 )
@@ -211,6 +214,7 @@ def main():
         "mirail_e_not145": show_mirail_contact_not145,
         "residence_survey_billing": render_residence_survey_billing,
         "visit_list": render_visit_list,
+        "visit_list_backrent": render_visit_list_backrent,
         "autocall_history": render_autocall_history,
         "fine_history": render_fine_history
     }
