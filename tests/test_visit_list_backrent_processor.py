@@ -42,8 +42,8 @@ class TestFilteringBackrent:
         assert 1003 not in result_ids  # 退去予定は除外
         assert 1004 not in result_ids  # 明渡済は除外
 
-    def test_filter_records_委託先法人ID_1と3と6を除外(self):
-        """委託先法人ID「1」「3」「6」が除外されることを確認"""
+    def test_filter_records_委託先法人ID_2_3_4_5_空白のみ対象(self):
+        """委託先法人ID「2」「3」「4」「5」「空白」のみが対象になることを確認"""
         from processors.visit_list_backrent.processor import filter_records
 
         today = datetime.now().date()
@@ -63,11 +63,11 @@ class TestFilteringBackrent:
         df = pd.DataFrame(data)
         filtered_df, logs = filter_records(df)
 
-        # 期待: 2002（ID=2）、2004（ID=4）、2005（ID=5）、2007（空白）のみ
+        # 期待: 2002（ID=2）、2003（ID=3）、2004（ID=4）、2005（ID=5）、2007（空白）のみ
         result_ids = filtered_df.iloc[:, 0].tolist()
         assert 2001 not in result_ids  # ID=1は除外
         assert 2002 in result_ids      # ID=2は対象
-        assert 2003 not in result_ids  # ID=3は除外
+        assert 2003 in result_ids      # ID=3は対象
         assert 2004 in result_ids      # ID=4は対象
         assert 2005 in result_ids      # ID=5は対象
         assert 2006 not in result_ids  # ID=6は除外
@@ -117,7 +117,7 @@ class TestFilteringBackrent:
                     today - timedelta(days=1), today + timedelta(days=5), today - timedelta(days=1),
                     today - timedelta(days=1), today - timedelta(days=1)]  # 入金予定日
         data[73] = [10, 10, 10, 10, 10, 2, 10, 10]  # 入金予定金額
-        data[118] = ['5', '5', '5', '5', '5', '5', '3', '5']  # 委託先法人ID
+        data[118] = ['5', '5', '5', '5', '5', '5', '1', '5']  # 委託先法人ID
         data[71] = ["10,000", "10,000", "10,000", "10,000", "10,000", "10,000", "10,000", "0"]  # 滞納残債
         data[97] = ["1000", "1000", "1000", "1000", "1000", "1000", "1000", "7"]  # クライアントCD
 
@@ -130,7 +130,7 @@ class TestFilteringBackrent:
         # 4004: 受託状況=解約で除外
         # 4005: 入金予定日が未来で除外
         # 4006: 入金予定金額=2で除外
-        # 4007: 委託先法人ID=3で除外
+        # 4007: 委託先法人ID=1で除外
         # 4008: クライアントCD=7で除外
         assert len(filtered_df) == 1
         assert filtered_df.iloc[0, 0] == 4001

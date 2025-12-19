@@ -209,28 +209,33 @@ def filter_records(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     excluded_count = before_count - len(df_filtered)
     logs.append(f"入金予定金額フィルタ: {excluded_count}件除外 → {len(df_filtered)}件残存（2: {count_2}件, 3: {count_3}件, 5: {count_5}件 除外）")
 
-    # 5. 委託先法人IDフィルタ（1, 3, 6を除外）
+    # 5. 委託先法人IDフィルタ（2, 3, 4, 5, 空白のみ対象）
     before_count = len(df_filtered)
     delegated_corp_id = df_filtered.iloc[:, ContractListColumns.DELEGATED_CORP_ID]
-    # 除外内訳をカウント（文字列と数値両対応）
-    count_id_1 = ((delegated_corp_id == '1') | (delegated_corp_id == 1)).sum()
+    # 対象内訳をカウント（文字列と数値両対応）
+    count_id_2 = ((delegated_corp_id == '2') | (delegated_corp_id == 2)).sum()
     count_id_3 = ((delegated_corp_id == '3') | (delegated_corp_id == 3)).sum()
-    count_id_6 = ((delegated_corp_id == '6') | (delegated_corp_id == 6)).sum()
-    mask_corp_id = ~(
-        (delegated_corp_id == '1') | (delegated_corp_id == 1) |
+    count_id_4 = ((delegated_corp_id == '4') | (delegated_corp_id == 4)).sum()
+    count_id_5 = ((delegated_corp_id == '5') | (delegated_corp_id == 5)).sum()
+    count_id_blank = delegated_corp_id.isna() | (delegated_corp_id == '')
+    # ホワイトリスト方式: 2, 3, 4, 5, 空白のみを対象
+    mask_corp_id = (
+        (delegated_corp_id == '2') | (delegated_corp_id == 2) |
         (delegated_corp_id == '3') | (delegated_corp_id == 3) |
-        (delegated_corp_id == '6') | (delegated_corp_id == 6)
+        (delegated_corp_id == '4') | (delegated_corp_id == 4) |
+        (delegated_corp_id == '5') | (delegated_corp_id == 5) |
+        delegated_corp_id.isna() | (delegated_corp_id == '')
     )
     df_filtered = df_filtered[mask_corp_id].copy()
     excluded_count = before_count - len(df_filtered)
     # 残存内訳をカウント
     filtered_corp_id = df_filtered.iloc[:, ContractListColumns.DELEGATED_CORP_ID]
-    count_id_2 = ((filtered_corp_id == '2') | (filtered_corp_id == 2)).sum()
-    count_id_4 = ((filtered_corp_id == '4') | (filtered_corp_id == 4)).sum()
-    count_id_5 = ((filtered_corp_id == '5') | (filtered_corp_id == 5)).sum()
-    count_id_blank = (filtered_corp_id.isna() | (filtered_corp_id == '')).sum()
-    count_id_other = len(df_filtered) - count_id_2 - count_id_4 - count_id_5 - count_id_blank
-    logs.append(f"委託先法人IDフィルタ: {excluded_count}件除外 → {len(df_filtered)}件残存（ID=1: {count_id_1}件, ID=3: {count_id_3}件, ID=6: {count_id_6}件 除外 / ID=2: {count_id_2}件, ID=4: {count_id_4}件, ID=5: {count_id_5}件, 空白: {count_id_blank}件, その他: {count_id_other}件 残存）")
+    count_id_2_remain = ((filtered_corp_id == '2') | (filtered_corp_id == 2)).sum()
+    count_id_3_remain = ((filtered_corp_id == '3') | (filtered_corp_id == 3)).sum()
+    count_id_4_remain = ((filtered_corp_id == '4') | (filtered_corp_id == 4)).sum()
+    count_id_5_remain = ((filtered_corp_id == '5') | (filtered_corp_id == 5)).sum()
+    count_id_blank_remain = (filtered_corp_id.isna() | (filtered_corp_id == '')).sum()
+    logs.append(f"委託先法人IDフィルタ: {excluded_count}件除外 → {len(df_filtered)}件残存（ID=2: {count_id_2_remain}件, ID=3: {count_id_3_remain}件, ID=4: {count_id_4_remain}件, ID=5: {count_id_5_remain}件, 空白: {count_id_blank_remain}件）")
 
     # 6. 滞納残債フィルタ（1円以上）
     before_count = len(df_filtered)
