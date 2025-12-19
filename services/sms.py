@@ -7,6 +7,7 @@ processors/配下のSMS処理を再エクスポートします。
 # ミライル系
 from processors.mirail_sms.contract import process_mirail_sms_contract_data
 from processors.mirail_sms.contract_today import process_mirail_sms_contract_today_data
+from processors.mirail_sms.contract_today_blank import process_mirail_sms_contract_today_blank_data
 from processors.mirail_sms.guarantor import process_mirail_sms_guarantor_data
 from processors.mirail_sms.emergency_contact import process_mirail_sms_emergencycontact_data
 
@@ -25,6 +26,7 @@ __all__ = [
     # ミライル系
     'process_mirail_sms_contract_data',
     'process_mirail_sms_contract_today_data',
+    'process_mirail_sms_contract_today_blank_data',
     'process_mirail_sms_guarantor_data',
     'process_mirail_sms_emergencycontact_data',
     # フェイス系
