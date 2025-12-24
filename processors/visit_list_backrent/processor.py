@@ -166,18 +166,19 @@ def filter_records(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
     count_moved_out = (filtered_occupancy == "退去済").sum()
     logs.append(f"入居ステータスフィルタ: {excluded_count}件除外 → {len(df_filtered)}件残存（入居中: {count_occupied}件, 退去済: {count_moved_out}件）")
 
-    # 2. 回収ランクフィルタ（「交渉困難」「死亡決定」「弁護士介入」を除外）
+    # 2. 回収ランクフィルタ（「交渉困難」「死亡決定」「弁護士介入」「破産決定」を除外）
     before_count = len(df_filtered)
     collection_rank = df_filtered.iloc[:, ContractListColumns.COLLECTION_RANK].astype(str).str.strip()
-    exclude_ranks = ["交渉困難", "死亡決定", "弁護士介入"]
+    exclude_ranks = ["交渉困難", "死亡決定", "弁護士介入", "破産決定"]
     # 除外内訳をカウント
     count_negotiation_difficult = (collection_rank == "交渉困難").sum()
     count_death = (collection_rank == "死亡決定").sum()
     count_lawyer = (collection_rank == "弁護士介入").sum()
+    count_bankruptcy = (collection_rank == "破産決定").sum()
     mask_rank = ~collection_rank.isin(exclude_ranks)
     df_filtered = df_filtered[mask_rank].copy()
     excluded_count = before_count - len(df_filtered)
-    logs.append(f"回収ランクフィルタ: {excluded_count}件除外 → {len(df_filtered)}件残存（交渉困難: {count_negotiation_difficult}件, 死亡決定: {count_death}件, 弁護士介入: {count_lawyer}件 除外）")
+    logs.append(f"回収ランクフィルタ: {excluded_count}件除外 → {len(df_filtered)}件残存（交渉困難: {count_negotiation_difficult}件, 死亡決定: {count_death}件, 弁護士介入: {count_lawyer}件, 破産決定: {count_bankruptcy}件 除外）")
 
     # 3. 入金予定日フィルタ（当日以前または空白）
     before_count = len(df_filtered)
