@@ -62,10 +62,14 @@ def _show_mirail_menu():
     st.markdown('<div class="sidebar-category">📞 ミライル用オートコール</div>', unsafe_allow_html=True)
     if st.button("契約者（10,000円を除外するパターン）", key="mirail_contract_without10k", use_container_width=True):
         st.session_state.selected_processor = "mirail_contract_without10k"
+    if st.button("契約者（10,000円を除外するパターン）当日約定込み", key="mirail_contract_without10k_today_included", use_container_width=True):
+        st.session_state.selected_processor = "mirail_contract_without10k_today_included"
     if st.button("契約者（10,000円を除外しないパターン）", key="mirail_contract_with10k", use_container_width=True):
         st.session_state.selected_processor = "mirail_contract_with10k"
     if st.button("保証人（10,000円を除外するパターン）", key="mirail_guarantor_without10k", use_container_width=True):
         st.session_state.selected_processor = "mirail_guarantor_without10k"
+    if st.button("保証人（10,000円を除外するパターン）当日約定込み", key="mirail_guarantor_without10k_today_included", use_container_width=True):
+        st.session_state.selected_processor = "mirail_guarantor_without10k_today_included"
     if st.button("保証人（10,000円を除外しないパターン）", key="mirail_guarantor_with10k", use_container_width=True):
         st.session_state.selected_processor = "mirail_guarantor_with10k"
     if st.button("緊急連絡人（10,000円を除外するパターン）", key="mirail_emergency_without10k", use_container_width=True):

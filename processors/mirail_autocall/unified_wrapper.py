@@ -23,6 +23,11 @@ def process_mirail_contract_with10k_data(file_content: bytes) -> Tuple[pd.DataFr
     return _processor.process_mirail_autocall(file_content, "contract", with_10k=True)
 
 
+def process_mirail_contract_without10k_today_included_data(file_content: bytes) -> Tuple[pd.DataFrame, List[str], str]:
+    """ミライル契約者（10,000円除外・当日約定込み）データ処理"""
+    return _processor.process_mirail_autocall(file_content, "contract", with_10k=False, include_today=True)
+
+
 # 保証人処理
 def process_mirail_guarantor_without10k_data(file_content: bytes) -> Tuple[pd.DataFrame, List[str], str]:
     """ミライル保証人（10,000円除外）データ処理"""
@@ -32,6 +37,11 @@ def process_mirail_guarantor_without10k_data(file_content: bytes) -> Tuple[pd.Da
 def process_mirail_guarantor_with10k_data(file_content: bytes) -> Tuple[pd.DataFrame, List[str], str]:
     """ミライル保証人（10,000円含む）データ処理"""
     return _processor.process_mirail_autocall(file_content, "guarantor", with_10k=True)
+
+
+def process_mirail_guarantor_without10k_today_included_data(file_content: bytes) -> Tuple[pd.DataFrame, List[str], str]:
+    """ミライル保証人（10,000円除外・当日約定込み）データ処理"""
+    return _processor.process_mirail_autocall(file_content, "guarantor", with_10k=False, include_today=True)
 
 
 # 緊急連絡先処理
