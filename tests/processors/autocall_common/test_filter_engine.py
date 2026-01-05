@@ -288,6 +288,101 @@ class TestFilterArrears:
         assert list(result_df['phone']) == ['090-1111-1111', '070-3333-3333']
 
 
+class TestFilterPaymentDateTodayIncluded:
+    """入金予定日フィルタ（当日約定込み）のテスト"""
+
+    def test_today_included_accepts_today(self):
+        """当日は処理対象に含まれる"""
+        today = pd.Timestamp.now().normalize()
+        df = pd.DataFrame({
+            'A': ['row1'],
+            'payment_date': [today]
+        })
+        config = {
+            "column": 1,
+            "type": "today_included",
+            "label": "入金予定日",
+            "top_n": 3
+        }
+
+        result_df, logs = FilterEngine._filter_payment_date(df, config)
+
+        assert len(result_df) == 1
+        assert any('入金予定日' in log for log in logs)
+
+    def test_today_included_accepts_past(self):
+        """過去日は処理対象"""
+        yesterday = pd.Timestamp.now().normalize() - pd.Timedelta(days=1)
+        week_ago = pd.Timestamp.now().normalize() - pd.Timedelta(days=7)
+        df = pd.DataFrame({
+            'A': ['row1', 'row2'],
+            'payment_date': [yesterday, week_ago]
+        })
+        config = {
+            "column": 1,
+            "type": "today_included",
+            "label": "入金予定日",
+            "top_n": 3
+        }
+
+        result_df, logs = FilterEngine._filter_payment_date(df, config)
+
+        assert len(result_df) == 2
+
+    def test_today_included_rejects_future(self):
+        """未来日は除外される"""
+        tomorrow = pd.Timestamp.now().normalize() + pd.Timedelta(days=1)
+        df = pd.DataFrame({
+            'A': ['row1'],
+            'payment_date': [tomorrow]
+        })
+        config = {
+            "column": 1,
+            "type": "today_included",
+            "label": "入金予定日",
+            "top_n": 3
+        }
+
+        result_df, logs = FilterEngine._filter_payment_date(df, config)
+
+        assert len(result_df) == 0
+
+    def test_today_included_accepts_nan(self):
+        """NaNは処理対象"""
+        df = pd.DataFrame({
+            'A': ['row1', 'row2'],
+            'payment_date': [pd.NaT, None]
+        })
+        config = {
+            "column": 1,
+            "type": "today_included",
+            "label": "入金予定日",
+            "top_n": 3
+        }
+
+        result_df, logs = FilterEngine._filter_payment_date(df, config)
+
+        assert len(result_df) == 2
+
+    def test_before_today_rejects_today(self):
+        """before_todayでは当日は除外される（既存動作の確認）"""
+        today = pd.Timestamp.now().normalize()
+        df = pd.DataFrame({
+            'A': ['row1'],
+            'payment_date': [today]
+        })
+        config = {
+            "column": 1,
+            "type": "before_today",
+            "label": "入金予定日",
+            "top_n": 3
+        }
+
+        result_df, logs = FilterEngine._filter_payment_date(df, config)
+
+        assert len(result_df) == 0
+
+
 class TestFilterEngineIntegration:
     """FilterEngine全体の統合テスト"""
 
