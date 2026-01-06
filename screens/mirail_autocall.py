@@ -15,8 +15,10 @@ from components.screen_template import ScreenConfig, render_screen  # 追加
 from services.autocall import process_mirail_contract_without10k_data
 from services.autocall import (
     process_mirail_contract_with10k_data,
+    process_mirail_contract_without10k_today_included_data,
     process_mirail_guarantor_without10k_data,
     process_mirail_guarantor_with10k_data,
+    process_mirail_guarantor_without10k_today_included_data,
     process_mirail_emergencycontact_without10k_data,
     process_mirail_emergencycontact_with10k_data
 )
@@ -168,3 +170,42 @@ def show_mirail_emergency_with10k():
         title_icon="📞"
     )
     render_screen(config, 'mirail_emergency_with10k')
+
+
+# 当日約定込み版
+def show_mirail_contract_without10k_today_included():
+    config = ScreenConfig(
+        title="オートコール用CSV加工",
+        subtitle="ミライル契約者（10,000円を除外するパターン）当日約定込み",
+        filter_conditions=[
+            "委託先法人ID → 空白&5",
+            "入金予定日 → 当日以前とNaN",
+            "回収ランク → 「弁護士介入」除外",
+            "滞納残債 → 1円以上のみ対象",
+            "残債除外 → CD=1,4かつ滞納残債10,000円・11,000円除外",
+            "入金予定金額 → 2,3,5,12除外",
+            "「TEL携帯」 → 空でない値のみ"
+        ],
+        process_function=process_mirail_contract_without10k_today_included_data,
+        title_icon="📞"
+    )
+    render_screen(config, 'mirail_contract_without10k_today_included')
+
+
+def show_mirail_guarantor_without10k_today_included():
+    config = ScreenConfig(
+        title="オートコール用CSV加工",
+        subtitle="ミライル保証人（10,000円を除外するパターン）当日約定込み",
+        filter_conditions=[
+            "委託先法人ID → 空白&5",
+            "入金予定日 → 当日以前とNaN",
+            "回収ランク → 「弁護士介入」除外",
+            "滞納残債 → 1円以上のみ対象",
+            "残債除外 → CD=1,4かつ滞納残債10,000円・11,000円除外",
+            "入金予定金額 → 2,3,5,12除外",
+            "「TEL携帯.1」 → 空でない値のみ"
+        ],
+        process_function=process_mirail_guarantor_without10k_today_included_data,
+        title_icon="📞"
+    )
+    render_screen(config, 'mirail_guarantor_without10k_today_included')

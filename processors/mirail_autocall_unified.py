@@ -52,14 +52,15 @@ class MirailAutocallUnifiedProcessor:
         """初期化"""
         self.logs = []
     
-    def get_base_filter_config(self, target: str, with_10k: bool) -> Dict[str, Any]:
+    def get_base_filter_config(self, target: str, with_10k: bool, include_today: bool = False) -> Dict[str, Any]:
         """
         ベースとなるフィルタ設定を取得
-        
+
         Args:
             target: 対象者タイプ
             with_10k: 10k含むかどうか
-        
+            include_today: 当日約定を含むかどうか（デフォルト: False = 前日以前のみ）
+
         Returns:
             フィルタ設定の辞書
         """
@@ -73,7 +74,7 @@ class MirailAutocallUnifiedProcessor:
             },
             "payment_date": {
                 "column": COL.PAYMENT_DATE,
-                "type": "before_today",
+                "type": "today_included" if include_today else "before_today",
                 "log_type": "date",
                 "label": "入金予定日",
                 "top_n": 3
@@ -185,16 +186,18 @@ class MirailAutocallUnifiedProcessor:
         self,
         file_content: bytes,
         target: str,
-        with_10k: bool = True
+        with_10k: bool = True,
+        include_today: bool = False
     ) -> Tuple[pd.DataFrame, List[str], str]:
         """
         ミライルオートコール処理のメイン関数
-        
+
         Args:
             file_content: ContractListのファイル内容（bytes）
             target: 対象者タイプ ("contract", "guarantor", "emergency_contact")
             with_10k: 10,000円・11,000円を含むかどうか
-            
+            include_today: 当日約定を含むかどうか（デフォルト: False）
+
         Returns:
             tuple: (出力DF, 処理ログ, 出力ファイル名)
         """
@@ -202,14 +205,14 @@ class MirailAutocallUnifiedProcessor:
             # パラメータ検証
             if target not in self.TARGET_CONFIG:
                 raise ValueError(f"無効な対象者タイプ: {target}")
-            
+
             # 1. CSVファイル読み込み
             self.logs = [f"📂 {self.TARGET_CONFIG[target]['display_name']}データ処理開始..."]
             df_input = self.read_csv_auto_encoding(file_content)
             self.logs.append(f"ファイル読み込み完了: {len(df_input)}件")
-            
+
             # 2. フィルタ設定を取得
-            filter_config = self.get_base_filter_config(target, with_10k)
+            filter_config = self.get_base_filter_config(target, with_10k, include_today)
             
             # 3. 共通フィルタリングエンジンを使用
             df_filtered, filter_logs = apply_filters(df_input, filter_config)
@@ -222,7 +225,8 @@ class MirailAutocallUnifiedProcessor:
             today_str = datetime.now().strftime("%m%d")
             suffix = self.TARGET_CONFIG[target]["name_suffix"]
             prefix = "with10k" if with_10k else "without10k"
-            output_filename = f"{today_str}ミライル_{prefix}_{suffix}.csv"
+            today_suffix = "_当日約定込み" if include_today else ""
+            output_filename = f"{today_str}ミライル_{prefix}_{suffix}{today_suffix}.csv"
             
             self.logs.append(f"✅ 処理完了: {len(df_output)}件出力")
             

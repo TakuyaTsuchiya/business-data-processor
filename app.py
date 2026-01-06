@@ -35,8 +35,10 @@ from components.welcome import show_welcome_screen
 from screens.mirail_autocall import (
     show_mirail_contract_without10k,
     show_mirail_contract_with10k,
+    show_mirail_contract_without10k_today_included,
     show_mirail_guarantor_without10k,
     show_mirail_guarantor_with10k,
+    show_mirail_guarantor_without10k_today_included,
     show_mirail_emergency_without10k,
     show_mirail_emergency_with10k
 )
@@ -157,8 +159,10 @@ def main():
     # プロセッサーのマッピング
     PROCESSOR_MAPPING = {
         "mirail_contract_without10k": show_mirail_contract_without10k,
+        "mirail_contract_without10k_today_included": show_mirail_contract_without10k_today_included,
         "mirail_contract_with10k": show_mirail_contract_with10k,
         "mirail_guarantor_without10k": show_mirail_guarantor_without10k,
+        "mirail_guarantor_without10k_today_included": show_mirail_guarantor_without10k_today_included,
         "mirail_guarantor_with10k": show_mirail_guarantor_with10k,
         "mirail_emergency_without10k": show_mirail_emergency_without10k,
         "mirail_emergency_with10k": show_mirail_emergency_with10k,

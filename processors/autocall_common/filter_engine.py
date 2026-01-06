@@ -126,11 +126,15 @@ class FilterEngine:
         # 基準日（デフォルトは今日）
         if config.get("type") == "before_today":
             reference_date = pd.Timestamp.now().normalize()
+            # 前日以前が対象（当日は除外）
+            mask = df.iloc[:, column_idx].isna() | (df.iloc[:, column_idx] < reference_date)
+        elif config.get("type") == "today_included":
+            reference_date = pd.Timestamp.now().normalize()
+            # 当日以前が対象（当日も含む）
+            mask = df.iloc[:, column_idx].isna() | (df.iloc[:, column_idx] <= reference_date)
         else:
             reference_date = pd.Timestamp(config.get("reference_date", datetime.now())).normalize()
-        
-        # 除外されるデータを記録
-        mask = df.iloc[:, column_idx].isna() | (df.iloc[:, column_idx] < reference_date)
+            mask = df.iloc[:, column_idx].isna() | (df.iloc[:, column_idx] < reference_date)
         excluded_data = df[~mask]
         
         if len(excluded_data) > 0:

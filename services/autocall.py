@@ -8,8 +8,10 @@ processors/配下のオートコール処理を再エクスポートします。
 from processors.mirail_autocall.unified_wrapper import (
     process_mirail_contract_without10k_data,
     process_mirail_contract_with10k_data,
+    process_mirail_contract_without10k_today_included_data,
     process_mirail_guarantor_without10k_data,
     process_mirail_guarantor_with10k_data,
+    process_mirail_guarantor_without10k_today_included_data,
     process_mirail_emergency_contact_without10k_data,
     process_mirail_emergency_contact_with10k_data
 )
@@ -33,8 +35,10 @@ __all__ = [
     # ミライル系
     'process_mirail_contract_without10k_data',
     'process_mirail_contract_with10k_data',
+    'process_mirail_contract_without10k_today_included_data',
     'process_mirail_guarantor_without10k_data',
     'process_mirail_guarantor_with10k_data',
+    'process_mirail_guarantor_without10k_today_included_data',
     'process_mirail_emergencycontact_without10k_data',
     'process_mirail_emergencycontact_with10k_data',
     # フェイス系
