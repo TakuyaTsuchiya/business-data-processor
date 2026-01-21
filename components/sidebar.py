@@ -153,6 +153,11 @@ def _show_faith_menu():
     if st.button("連絡人「退去済み」", key="faith_e_evicted", use_container_width=True):
         st.session_state.selected_processor = "faith_e_evicted"
 
+    # GB新規登録
+    st.markdown('<div class="sidebar-category">📋 GB新規登録</div>', unsafe_allow_html=True)
+    if st.button("GBガレージバンク新規登録", key="gb_registration", use_container_width=True):
+        st.session_state.selected_processor = "gb_registration"
+
 
 def _show_plaza_menu():
     """プラザメニュー表示"""
