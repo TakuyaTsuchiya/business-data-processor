@@ -514,11 +514,22 @@ class DataConverter:
         
         return {"home": home, "mobile": mobile}
     
-    def calculate_exit_procedure_fee(self, rent: str, management_fee: str, parking_fee: str, other_fee: str) -> int:
-        """退去手続き費用計算（最低70,000円）
-        
+    def calculate_exit_procedure_fee(self, rent: str, management_fee: str, parking_fee: str, other_fee: str, region_code: int = 1) -> int:
+        """退去手続き費用計算
+
         計算対象: 月額賃料 + 管理費 + 駐車場代 + その他料金
+        条件: 最低70,000円（北海道は40,000円）、上限100,000円
+
+        Args:
+            rent: 月額賃料
+            management_fee: 管理費
+            parking_fee: 駐車場代
+            other_fee: その他料金
+            region_code: 地域コード（1:東京, 2:大阪, 3:北海道, 4:北関東）
         """
+        # 北海道（region_code=3）は最低40,000円、それ以外は最低70,000円
+        min_fee = 40000 if region_code == 3 else 70000
+
         try:
             total = 0
             for fee in [rent, management_fee, parking_fee, other_fee]:
@@ -527,10 +538,11 @@ class DataConverter:
                     clean_fee = str(fee).replace(',', '').replace('￥', '').strip()
                     if clean_fee.isdigit():
                         total += int(clean_fee)
-            
-            return max(total, 70000)
+
+            # 上限100,000円
+            return min(max(total, min_fee), 100000)
         except:
-            return 70000
+            return min_fee
     
     def generate_takeover_info(self, move_in_date: str) -> str:
         """引継情報を生成"""
@@ -676,7 +688,7 @@ class DataConverter:
             
             # 7. 退去手続き費用計算（その他料金を含む）
             other_fee = self.safe_str_convert(row.get("その他料金", "0"))
-            exit_fee = self.calculate_exit_procedure_fee(rent, management_fee, parking_fee, other_fee)
+            exit_fee = self.calculate_exit_procedure_fee(rent, management_fee, parking_fee, other_fee, region_code)
             converted_row["退去手続き（実費）"] = str(exit_fee)
             
             # 8. その他情報
