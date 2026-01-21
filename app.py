@@ -72,6 +72,9 @@ from screens.sms.plaza import (
     show_plaza_sms_guarantor,
     show_plaza_sms_contact
 )
+from screens.sms.gb import (
+    show_gb_sms_contract
+)
 from screens.registration.ark import (
     show_ark_registration_tokyo,
     show_ark_registration_osaka,
@@ -203,6 +206,7 @@ def main():
         "nap_registration": show_nap_registration,
         "gb_registration": show_gb_registration,
         "gb_zansai": show_gb_zansai,
+        "gb_sms_contract": show_gb_sms_contract,
         "ark_late_payment": show_ark_late_payment,
         "capco_debt_update": show_capco_debt_update,
         "plaza_debt_update": show_plaza_debt_update,
