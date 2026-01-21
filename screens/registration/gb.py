@@ -28,7 +28,7 @@ def show_gb_registration():
 
     config = ScreenConfig(
         title="新規登録CSV加工",
-        subtitle="GBガレージバンク新規登録",
+        subtitle="ガレージバンク新規登録",
         filter_conditions=[
             "重複チェック → ユーザーID（依頼データ）↔引継番号（ContractList）",
             "委託先法人ID=7"
