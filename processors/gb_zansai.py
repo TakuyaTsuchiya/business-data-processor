@@ -32,17 +32,21 @@ class GBZansaiConfig:
     OUTPUT_FILENAME_FORMAT = "ガレージバンク管理前取込_{date}.csv"
 
 
-def read_contract_list(file) -> pd.DataFrame:
+def read_contract_list(file_or_bytes) -> pd.DataFrame:
     """
     ContractListを読み込む（cp932エンコーディング）
 
     Args:
-        file: アップロードされたCSVファイル
+        file_or_bytes: アップロードされたCSVファイルまたはbytes
 
     Returns:
         pd.DataFrame: ContractListのDataFrame
     """
-    content = file.read()
+    # bytesか、read()メソッドを持つファイルオブジェクトか判定
+    if isinstance(file_or_bytes, bytes):
+        content = file_or_bytes
+    else:
+        content = file_or_bytes.read()
 
     # cp932でデコード
     try:
@@ -59,17 +63,22 @@ def read_contract_list(file) -> pd.DataFrame:
     return df
 
 
-def read_seikyu_data(file) -> pd.DataFrame:
+def read_seikyu_data(file_or_bytes) -> pd.DataFrame:
     """
     請求データExcelを読み込む（01_請求データシート）
 
     Args:
-        file: アップロードされたExcelファイル
+        file_or_bytes: アップロードされたExcelファイルまたはbytes
 
     Returns:
         pd.DataFrame: 請求データのDataFrame
     """
-    content = file.read()
+    # bytesか、read()メソッドを持つファイルオブジェクトか判定
+    if isinstance(file_or_bytes, bytes):
+        content = file_or_bytes
+    else:
+        content = file_or_bytes.read()
+
     excel_buffer = io.BytesIO(content)
 
     df = pd.read_excel(
