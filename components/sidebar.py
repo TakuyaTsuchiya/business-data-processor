@@ -157,6 +157,8 @@ def _show_faith_menu():
     st.markdown('<div class="sidebar-category">ガレージバンク</div>', unsafe_allow_html=True)
     if st.button("ガレージバンク新規登録", key="gb_registration", use_container_width=True):
         st.session_state.selected_processor = "gb_registration"
+    if st.button("ガレージバンク残債の取り込み", key="gb_zansai", use_container_width=True):
+        st.session_state.selected_processor = "gb_zansai"
 
 
 def _show_plaza_menu():
