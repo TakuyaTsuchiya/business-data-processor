@@ -52,28 +52,28 @@ SMS共通テンプレート（59列）を使用。
 ## 6. 実装タスクリスト
 
 ### 6.1 ドメイン層
-- [ ] `domain/rules/business_rules.py` に GB用定数を追加
+- [x] `domain/rules/business_rules.py` に GB用定数を追加
   - CLIENT_IDS['gb'] = [7]
   - EXCLUDE_AMOUNTS['gb'] = [2, 3, 5]
 
 ### 6.2 プロセッサ層
-- [ ] `processors/gb_sms/__init__.py` を作成
-- [ ] `processors/gb_sms/contract.py` を作成
+- [x] `processors/gb_sms/__init__.py` を作成
+- [x] `processors/gb_sms/contract.py` を作成
   - process_gb_sms_contract_data() 関数を実装
 
 ### 6.3 サービス層
-- [ ] `services/sms.py` に GB SMS のインポートを追加
+- [x] `services/sms.py` に GB SMS のインポートを追加
 
 ### 6.4 画面層
-- [ ] `screens/sms/gb.py` を作成
+- [x] `screens/sms/gb.py` を作成
   - show_gb_sms_contract() 関数を実装
 
 ### 6.5 アプリケーション層
-- [ ] `components/sidebar.py` にボタンを追加
-- [ ] `app.py` の PROCESSOR_MAPPING に追加
+- [x] `components/sidebar.py` にボタンを追加
+- [x] `app.py` の PROCESSOR_MAPPING に追加
 
 ### 6.6 テスト
-- [ ] `tests/test_gb_sms_contract.py` を作成
+- [x] `tests/test_gb_sms_contract.py` を作成
   - フィルタ条件のテスト
   - 出力フォーマットのテスト
   - エッジケースのテスト
