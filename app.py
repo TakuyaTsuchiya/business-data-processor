@@ -96,6 +96,9 @@ from screens.registration.nap import (
 from screens.registration.gb import (
     show_gb_registration
 )
+from screens.registration.gb_zansai import (
+    show_gb_zansai
+)
 from screens.debt_update.ark_late_payment import (
     show_ark_late_payment
 )
@@ -199,6 +202,7 @@ def main():
         "jid_registration": show_jid_registration,
         "nap_registration": show_nap_registration,
         "gb_registration": show_gb_registration,
+        "gb_zansai": show_gb_zansai,
         "ark_late_payment": show_ark_late_payment,
         "capco_debt_update": show_capco_debt_update,
         "plaza_debt_update": show_plaza_debt_update,
