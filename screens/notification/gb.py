@@ -9,8 +9,8 @@ from processors.gb_notification import process_gb_notification
 
 
 def show_gb_notification():
-    """ガレージバンク催告書 契約者 画面"""
-    st.title("ガレージバンク催告書 契約者")
+    """ガレージバンク催告書 契約者 差し込みリスト 画面"""
+    st.title("ガレージバンク催告書 契約者 差し込みリスト")
     st.subheader("ガレージバンク向けの郵送用リストを作成します")
 
     # フィルタ条件表示
