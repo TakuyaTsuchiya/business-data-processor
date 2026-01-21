@@ -161,6 +161,8 @@ def _show_faith_menu():
         st.session_state.selected_processor = "gb_zansai"
     if st.button("ガレージバンク契約者SMS", key="gb_sms_contract", use_container_width=True):
         st.session_state.selected_processor = "gb_sms_contract"
+    if st.button("ガレージバンク催告書 契約者 差し込みリスト", key="gb_notification", use_container_width=True):
+        st.session_state.selected_processor = "gb_notification"
 
 
 def _show_plaza_menu():

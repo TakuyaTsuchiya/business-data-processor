@@ -133,6 +133,7 @@ from screens.notification.mirail import (
     show_mirail_contact_145,
     show_mirail_contact_not145
 )
+from screens.notification.gb import show_gb_notification
 from screens.billing.residence_survey import (
     render_residence_survey_billing
 )
@@ -207,6 +208,7 @@ def main():
         "gb_registration": show_gb_registration,
         "gb_zansai": show_gb_zansai,
         "gb_sms_contract": show_gb_sms_contract,
+        "gb_notification": show_gb_notification,
         "ark_late_payment": show_ark_late_payment,
         "capco_debt_update": show_capco_debt_update,
         "plaza_debt_update": show_plaza_debt_update,
