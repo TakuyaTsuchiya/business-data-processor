@@ -86,8 +86,10 @@ def apply_gb_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, list]:
         return df, logs
 
     # 委託先法人ID（118列目）= 7 でフィルタ
+    # 文字列・数値両方に対応
     before_count = len(df)
-    df = df[df.iloc[:, 118] == 7]
+    client_id = pd.to_numeric(df.iloc[:, 118], errors='coerce')
+    df = df[client_id == 7]
     log = DetailedLogger.log_filter_result(before_count, len(df), "委託先法人ID（=7）")
     logs.append(log)
 
