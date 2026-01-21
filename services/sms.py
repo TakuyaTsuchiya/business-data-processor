@@ -21,6 +21,9 @@ from processors.plaza_sms.contract import process_plaza_sms_contract_data
 from processors.plaza_sms.guarantor import process_plaza_sms_guarantor_data
 from processors.plaza_sms.contact import process_plaza_sms_contact_data
 
+# ガレージバンク系
+from processors.gb_sms.contract import process_gb_sms_contract_data
+
 # 公開する関数を明示
 __all__ = [
     # ミライル系
@@ -37,4 +40,6 @@ __all__ = [
     'process_plaza_sms_contract_data',
     'process_plaza_sms_guarantor_data',
     'process_plaza_sms_contact_data',
+    # ガレージバンク系
+    'process_gb_sms_contract_data',
 ]
