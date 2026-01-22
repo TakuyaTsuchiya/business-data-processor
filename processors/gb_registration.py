@@ -18,6 +18,7 @@ import io
 import re
 from datetime import datetime
 from typing import Tuple, List, Optional
+from .common.address_splitter import AddressSplitter
 
 
 class GBConfig:
@@ -226,28 +227,20 @@ def format_account_type(account_type: str) -> str:
 
 
 # =============================================================================
-# 住所分割関数
+# 住所分割関数（AddressSplitter使用）
 # =============================================================================
 
-# 政令指定都市のリスト
-DESIGNATED_CITIES = [
-    "札幌市", "仙台市", "さいたま市", "千葉市", "横浜市", "川崎市", "相模原市",
-    "新潟市", "静岡市", "浜松市", "名古屋市", "京都市", "大阪市", "堺市",
-    "神戸市", "岡山市", "広島市", "北九州市", "福岡市", "熊本市"
-]
-
-# 東京23区
-TOKYO_WARDS = [
-    "千代田区", "中央区", "港区", "新宿区", "文京区", "台東区", "墨田区",
-    "江東区", "品川区", "目黒区", "大田区", "世田谷区", "渋谷区", "中野区",
-    "杉並区", "豊島区", "北区", "荒川区", "板橋区", "練馬区", "足立区",
-    "葛飾区", "江戸川区"
-]
+# AddressSplitterインスタンス（辞書ベースの市区町村判定）
+_address_splitter = AddressSplitter()
 
 
-def split_address(address: str) -> Tuple[str, str]:
+def split_address(address: str, prefecture: str = "") -> Tuple[str, str]:
     """
-    住所を市区町村と残りに分割する
+    住所を市区町村と残りに分割する（辞書ベース）
+
+    Args:
+        address: 住所文字列（市区町村以降）
+        prefecture: 都道府県（指定がない場合は全都道府県で検索）
 
     Returns:
         Tuple[str, str]: (市区町村, 残りの住所)
@@ -257,45 +250,17 @@ def split_address(address: str) -> Tuple[str, str]:
 
     address = str(address).strip()
 
-    # 東京23区チェック
-    for ward in TOKYO_WARDS:
-        if address.startswith(ward):
-            return ward, address[len(ward):]
-
-    # 政令指定都市チェック（市+区）
-    for city in DESIGNATED_CITIES:
-        if address.startswith(city):
-            # 市の後の区を探す
-            rest = address[len(city):]
-            match = re.match(r'^([^市区町村]+?区)', rest)
-            if match:
-                ward = match.group(1)
-                return city + ward, rest[len(ward):]
+    # 都道府県が指定されている場合
+    if prefecture:
+        city, rest = _address_splitter.extract_municipality(prefecture, address)
+        if city:
             return city, rest
 
-    # 一般の市
-    match = re.match(r'^([^市区町村]+?市)', address)
-    if match:
-        city = match.group(1)
-        return city, address[len(city):]
-
-    # 町
-    match = re.match(r'^([^市区町村]+?町)', address)
-    if match:
-        town = match.group(1)
-        return town, address[len(town):]
-
-    # 村
-    match = re.match(r'^([^市区町村]+?村)', address)
-    if match:
-        village = match.group(1)
-        return village, address[len(village):]
-
-    # 郡
-    match = re.match(r'^([^市区町村]+?郡[^市区町村]+?[町村])', address)
-    if match:
-        area = match.group(1)
-        return area, address[len(area):]
+    # 都道府県が指定されていない場合、全都道府県で検索
+    for pref in _address_splitter.prefectures:
+        city, rest = _address_splitter.extract_municipality(pref, address)
+        if city:
+            return city, rest
 
     # 分割できない場合は全体を市区町村として扱う
     return address, ""
