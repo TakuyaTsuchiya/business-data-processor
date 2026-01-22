@@ -194,6 +194,27 @@ class TestAddressSplitter:
         assert city == "古賀市"
         assert rest == "谷山759-7"
 
+    def test_split_address_machida(self):
+        """町田市の住所分割テスト（「町」を含む市名）"""
+        from processors.gb_registration import split_address
+        city, rest = split_address("町田市成瀬が丘1-10-24")
+        assert city == "町田市"
+        assert rest == "成瀬が丘1-10-24"
+
+    def test_split_address_ichihara(self):
+        """市原市の住所分割テスト（「市」を含む市名）"""
+        from processors.gb_registration import split_address
+        city, rest = split_address("市原市姉崎1-2-3")
+        assert city == "市原市"
+        assert rest == "姉崎1-2-3"
+
+    def test_split_address_higashimurayama(self):
+        """東村山市の住所分割テスト（「村」を含む市名）"""
+        from processors.gb_registration import split_address
+        city, rest = split_address("東村山市本町1-2-3")
+        assert city == "東村山市"
+        assert rest == "本町1-2-3"
+
     def test_combine_address_with_building(self):
         """住所と建物名の結合テスト"""
         from processors.gb_registration import combine_address
