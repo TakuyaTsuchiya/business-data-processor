@@ -35,18 +35,18 @@ match = re.match(r'^([^市区町村]+?市)', address)
 ## 実装タスク
 
 ### 1. テスト追加 (RED)
-- [ ] 町田市の住所分割テストを追加
-- [ ] 市原市の住所分割テストを追加
-- [ ] 東村山市の住所分割テストを追加
+- [x] 町田市の住所分割テストを追加
+- [x] 市原市の住所分割テストを追加
+- [x] 東村山市の住所分割テストを追加
 
 ### 2. 実装修正 (GREEN)
-- [ ] `AddressSplitter`をインポート
-- [ ] `DataMapper`クラスで`AddressSplitter.extract_municipality()`を使用
+- [x] `AddressSplitter`をインポート
+- [x] `split_address`関数をAddressSplitterベースに変更
 
 ### 3. リファクタリング
-- [ ] 不要になった`DESIGNATED_CITIES`定数を削除
-- [ ] 不要になった`TOKYO_WARDS`定数を削除
-- [ ] 不要になった`split_address`関数を削除
+- [x] 不要になった`DESIGNATED_CITIES`定数を削除
+- [x] 不要になった`TOKYO_WARDS`定数を削除
+- [x] 正規表現ベースの処理を削除
 
 ## 修正対象ファイル
 - `processors/gb_registration.py`
