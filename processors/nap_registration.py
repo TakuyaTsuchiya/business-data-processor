@@ -656,10 +656,12 @@ class DataMapper:
         if "連保人1住所２" in excel_df.columns:
             output_df["保証人１住所2"] = excel_df["連保人1住所２"]
 
-        # 保証人住所3 = 連保人1住所３ + 連保人住所アパート等（該当列がある場合）
-        addr3 = excel_df["連保人1住所３"].fillna("") if "連保人1住所３" in excel_df.columns else ""
-        apt = excel_df["連保人住所アパート等"].fillna("") if "連保人住所アパート等" in excel_df.columns else ""
-        output_df["保証人１住所3"] = addr3 + apt
+        # 保証人住所3 = 連保人1住所３ + 全角空白 + 連保人1住所アパート等
+        addr3 = excel_df["連保人1住所３"].fillna("") if "連保人1住所３" in excel_df.columns else pd.Series([""] * len(excel_df))
+        apt = excel_df["連保人1住所アパート等"].fillna("") if "連保人1住所アパート等" in excel_df.columns else pd.Series([""] * len(excel_df))
+        # 両方に値がある場合のみ全角空白を挿入、片方が空なら余計な空白を入れない
+        combined = (addr3.astype(str) + "　" + apt.astype(str))
+        output_df["保証人１住所3"] = combined.str.replace(r'^　+|　+$', '', regex=True)
         if "連保人1電話" in excel_df.columns:
             output_df["保証人１TEL自宅"] = excel_df["連保人1電話"].apply(format_phone)
         if "連保人1携帯番号" in excel_df.columns:

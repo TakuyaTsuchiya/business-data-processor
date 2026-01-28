@@ -421,6 +421,7 @@ class TestDataMapper:
             "連保人1住所１": ["東京都立川市"],
             "連保人1住所２": ["曙町1-1-1"],
             "連保人1住所３": ["マンションA"],
+            "連保人1住所アパート等": ["201号室"],
             "連保人1電話": ["042-111-2222"],
             "連保人1携帯番号": ["080-1111-2222"],
             "緊急連絡人氏名": ["佐藤次郎"],
@@ -599,9 +600,65 @@ class TestDataMapper:
         assert output_df["保証人１郵便番号"].iloc[0] == "200-0001"
         assert output_df["保証人１住所1"].iloc[0] == "東京都立川市"
         assert output_df["保証人１住所2"].iloc[0] == "曙町1-1-1"
-        assert output_df["保証人１住所3"].iloc[0] == "マンションA"
+        assert output_df["保証人１住所3"].iloc[0] == "マンションA　201号室"  # 全角空白で結合
         assert output_df["保証人１TEL自宅"].iloc[0] == "042-111-2222"
         assert output_df["保証人１TEL携帯"].iloc[0] == "080-1111-2222"
+
+    def test_map_guarantor_address3_with_fullwidth_space(self, data_mapper):
+        """保証人１住所3: 住所３とアパート等の間に全角空白が入ることを確認"""
+        excel_df = pd.DataFrame({
+            "連保人1氏名": ["山田花子"],
+            "連保人1住所３": ["マンションA"],
+            "連保人1住所アパート等": ["201号室"],
+        })
+
+        output_df = data_mapper.create_output_dataframe(excel_df)
+        data_mapper.map_guarantor_info(output_df, excel_df)
+
+        # 住所３とアパート等の間に全角空白
+        assert output_df["保証人１住所3"].iloc[0] == "マンションA　201号室"
+
+    def test_map_guarantor_address3_only_addr3(self, data_mapper):
+        """保証人１住所3: 住所３のみの場合（アパート等が空）"""
+        excel_df = pd.DataFrame({
+            "連保人1氏名": ["山田花子"],
+            "連保人1住所３": ["マンションA"],
+            "連保人1住所アパート等": [""],
+        })
+
+        output_df = data_mapper.create_output_dataframe(excel_df)
+        data_mapper.map_guarantor_info(output_df, excel_df)
+
+        # アパート等が空なら末尾に余計な空白が入らない
+        assert output_df["保証人１住所3"].iloc[0] == "マンションA"
+
+    def test_map_guarantor_address3_only_apt(self, data_mapper):
+        """保証人１住所3: アパート等のみの場合（住所３が空）"""
+        excel_df = pd.DataFrame({
+            "連保人1氏名": ["山田花子"],
+            "連保人1住所３": [""],
+            "連保人1住所アパート等": ["201号室"],
+        })
+
+        output_df = data_mapper.create_output_dataframe(excel_df)
+        data_mapper.map_guarantor_info(output_df, excel_df)
+
+        # 住所３が空なら先頭に余計な空白が入らない
+        assert output_df["保証人１住所3"].iloc[0] == "201号室"
+
+    def test_map_guarantor_address3_both_empty(self, data_mapper):
+        """保証人１住所3: 両方空の場合"""
+        excel_df = pd.DataFrame({
+            "連保人1氏名": ["山田花子"],
+            "連保人1住所３": [""],
+            "連保人1住所アパート等": [""],
+        })
+
+        output_df = data_mapper.create_output_dataframe(excel_df)
+        data_mapper.map_guarantor_info(output_df, excel_df)
+
+        # 両方空なら空文字列
+        assert output_df["保証人１住所3"].iloc[0] == ""
 
     def test_map_emergency_contact_info(self, data_mapper, sample_excel_df):
         """緊急連絡先情報マッピングテスト"""
