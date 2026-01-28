@@ -461,7 +461,63 @@ class TestDataMapper:
         assert output_df["契約者現住所郵便番号"].iloc[0] == "100-0001"
         assert output_df["契約者現住所1"].iloc[0] == "東京都千代田区"
         assert output_df["契約者現住所2"].iloc[0] == "丸の内1-1"
-        assert output_df["契約者現住所3"].iloc[0] == "丸ビル203号室"  # 結合
+        assert output_df["契約者現住所3"].iloc[0] == "丸ビル　203号室"  # 全角空白で結合
+
+    def test_map_contractor_address3_with_fullwidth_space(self, data_mapper):
+        """契約者現住所3: 番地とアパート等の間に全角空白が入ることを確認"""
+        excel_df = pd.DataFrame({
+            "承認番号": ["NAP001"],
+            "契約者１住所３": ["神谷町20-2"],
+            "契約者住所アパート等": ["エステ横浜神奈川町106号室"],
+        })
+
+        output_df = data_mapper.create_output_dataframe(excel_df)
+        data_mapper.map_contractor_info(output_df, excel_df)
+
+        # 番地とアパート等の間に全角空白
+        assert output_df["契約者現住所3"].iloc[0] == "神谷町20-2　エステ横浜神奈川町106号室"
+
+    def test_map_contractor_address3_only_addr3(self, data_mapper):
+        """契約者現住所3: 番地のみの場合（アパート等が空）"""
+        excel_df = pd.DataFrame({
+            "承認番号": ["NAP001"],
+            "契約者１住所３": ["神谷町20-2"],
+            "契約者住所アパート等": [""],
+        })
+
+        output_df = data_mapper.create_output_dataframe(excel_df)
+        data_mapper.map_contractor_info(output_df, excel_df)
+
+        # アパート等が空なら末尾に余計な空白が入らない
+        assert output_df["契約者現住所3"].iloc[0] == "神谷町20-2"
+
+    def test_map_contractor_address3_only_apt(self, data_mapper):
+        """契約者現住所3: アパート等のみの場合（番地が空）"""
+        excel_df = pd.DataFrame({
+            "承認番号": ["NAP001"],
+            "契約者１住所３": [""],
+            "契約者住所アパート等": ["エステ横浜神奈川町106号室"],
+        })
+
+        output_df = data_mapper.create_output_dataframe(excel_df)
+        data_mapper.map_contractor_info(output_df, excel_df)
+
+        # 番地が空なら先頭に余計な空白が入らない
+        assert output_df["契約者現住所3"].iloc[0] == "エステ横浜神奈川町106号室"
+
+    def test_map_contractor_address3_both_empty(self, data_mapper):
+        """契約者現住所3: 両方空の場合"""
+        excel_df = pd.DataFrame({
+            "承認番号": ["NAP001"],
+            "契約者１住所３": [""],
+            "契約者住所アパート等": [""],
+        })
+
+        output_df = data_mapper.create_output_dataframe(excel_df)
+        data_mapper.map_contractor_info(output_df, excel_df)
+
+        # 両方空なら空文字列
+        assert output_df["契約者現住所3"].iloc[0] == ""
 
     def test_map_contractor_info_phone_fallback(self, data_mapper):
         """契約者情報マッピングテスト（携帯1が空白で電話のみの場合）"""
