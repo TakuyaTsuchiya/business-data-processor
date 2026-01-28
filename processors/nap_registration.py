@@ -585,11 +585,10 @@ class DataMapper:
         if "物件住所２" in excel_df.columns:
             output_df["物件住所2"] = excel_df["物件住所２"]
 
-        # 物件住所3 = 物件住所３ + 物件名 + 部屋番号
-        addr3 = excel_df["物件住所３"].fillna("") if "物件住所３" in excel_df.columns else ""
-        prop_name = excel_df["物件名"].fillna("") if "物件名" in excel_df.columns else ""
-        room = excel_df["部屋番号"].fillna("") if "部屋番号" in excel_df.columns else ""
-        output_df["物件住所3"] = addr3 + prop_name + room
+        # 物件住所3 = 物件住所３のみ（番地まで）
+        # 物件名・部屋番号は別列（物件名、部屋番号）に出力されるため含めない
+        if "物件住所３" in excel_df.columns:
+            output_df["物件住所3"] = excel_df["物件住所３"].fillna("")
 
         # 賃料関連
         if "賃料" in excel_df.columns:

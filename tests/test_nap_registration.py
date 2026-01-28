@@ -549,7 +549,7 @@ class TestDataMapper:
         assert output_df["物件住所郵便番号"].iloc[0] == "200-0001"
         assert output_df["物件住所1"].iloc[0] == "神奈川県横浜市"
         assert output_df["物件住所2"].iloc[0] == "みなとみらい1-1"
-        assert output_df["物件住所3"].iloc[0] == "タワー101テストマンション101"  # 結合
+        assert output_df["物件住所3"].iloc[0] == "タワー101"  # 番地のみ（物件名・部屋番号は含まない）
         assert output_df["月額賃料"].iloc[0] == "85000"  # 賃料列を使用
         assert output_df["退去手続き（実費）"].iloc[0] == "85000"
         assert output_df["管理費"].iloc[0] == "10000"
@@ -558,6 +558,34 @@ class TestDataMapper:
         assert output_df["その他費用1"].iloc[0] == "2000"
         assert output_df["管理会社"].iloc[0] == "株式会社テスト不動産"
         assert output_df["回収口座番号"].iloc[0] == "4389306"
+
+    def test_map_property_address3_only_addr(self, data_mapper):
+        """物件住所3: 番地のみが出力されることを確認（物件名・部屋番号は含まない）"""
+        excel_df = pd.DataFrame({
+            "物件住所３": ["栄町20-2"],
+            "物件名": ["ユナイト横浜アルボラン"],
+            "部屋番号": ["106号室"],
+        })
+
+        output_df = data_mapper.create_output_dataframe(excel_df)
+        data_mapper.map_property_info(output_df, excel_df)
+
+        # 物件住所3は番地のみ（物件名・部屋番号は含まない）
+        assert output_df["物件住所3"].iloc[0] == "栄町20-2"
+
+    def test_map_property_address3_empty(self, data_mapper):
+        """物件住所3: 物件住所３が空の場合"""
+        excel_df = pd.DataFrame({
+            "物件住所３": [""],
+            "物件名": ["ユナイト横浜アルボラン"],
+            "部屋番号": ["106号室"],
+        })
+
+        output_df = data_mapper.create_output_dataframe(excel_df)
+        data_mapper.map_property_info(output_df, excel_df)
+
+        # 物件住所３が空なら空文字列
+        assert output_df["物件住所3"].iloc[0] == ""
 
     def test_map_guarantor_info(self, data_mapper, sample_excel_df):
         """保証人情報マッピングテスト"""
