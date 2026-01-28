@@ -430,7 +430,8 @@ class TestDataMapper:
             "緊急連絡人郵便番号": ["300-0001"],
             "緊急連絡人住所１": ["茨城県土浦市"],
             "緊急連絡人住所２": ["中央1-1-1"],
-            "緊急連絡人住所３": [""],
+            "緊急連絡人住所３": ["マンションB"],
+            "緊急連絡人住所アパート等": ["301号室"],
             "緊急連絡人電話": ["029-111-2222"],
             "緊急連絡人携帯１": ["070-1111-2222"]
         })
@@ -671,8 +672,65 @@ class TestDataMapper:
         assert output_df["緊急連絡人１郵便番号"].iloc[0] == "300-0001"
         assert output_df["緊急連絡人１現住所1"].iloc[0] == "茨城県土浦市"
         assert output_df["緊急連絡人１現住所2"].iloc[0] == "中央1-1-1"
+        assert output_df["緊急連絡人１現住所3"].iloc[0] == "マンションB　301号室"  # 全角空白で結合
         assert output_df["緊急連絡人１TEL自宅"].iloc[0] == "029-111-2222"
         assert output_df["緊急連絡人１TEL携帯"].iloc[0] == "070-1111-2222"
+
+    def test_map_emergency_contact_address3_with_fullwidth_space(self, data_mapper):
+        """緊急連絡人１現住所3: 住所３とアパート等の間に全角空白が入ることを確認"""
+        excel_df = pd.DataFrame({
+            "緊急連絡人氏名": ["佐藤次郎"],
+            "緊急連絡人住所３": ["マンションB"],
+            "緊急連絡人住所アパート等": ["301号室"],
+        })
+
+        output_df = data_mapper.create_output_dataframe(excel_df)
+        data_mapper.map_emergency_contact_info(output_df, excel_df)
+
+        # 住所３とアパート等の間に全角空白
+        assert output_df["緊急連絡人１現住所3"].iloc[0] == "マンションB　301号室"
+
+    def test_map_emergency_contact_address3_only_addr3(self, data_mapper):
+        """緊急連絡人１現住所3: 住所３のみの場合（アパート等が空）"""
+        excel_df = pd.DataFrame({
+            "緊急連絡人氏名": ["佐藤次郎"],
+            "緊急連絡人住所３": ["マンションB"],
+            "緊急連絡人住所アパート等": [""],
+        })
+
+        output_df = data_mapper.create_output_dataframe(excel_df)
+        data_mapper.map_emergency_contact_info(output_df, excel_df)
+
+        # アパート等が空なら末尾に余計な空白が入らない
+        assert output_df["緊急連絡人１現住所3"].iloc[0] == "マンションB"
+
+    def test_map_emergency_contact_address3_only_apt(self, data_mapper):
+        """緊急連絡人１現住所3: アパート等のみの場合（住所３が空）"""
+        excel_df = pd.DataFrame({
+            "緊急連絡人氏名": ["佐藤次郎"],
+            "緊急連絡人住所３": [""],
+            "緊急連絡人住所アパート等": ["301号室"],
+        })
+
+        output_df = data_mapper.create_output_dataframe(excel_df)
+        data_mapper.map_emergency_contact_info(output_df, excel_df)
+
+        # 住所３が空なら先頭に余計な空白が入らない
+        assert output_df["緊急連絡人１現住所3"].iloc[0] == "301号室"
+
+    def test_map_emergency_contact_address3_both_empty(self, data_mapper):
+        """緊急連絡人１現住所3: 両方空の場合"""
+        excel_df = pd.DataFrame({
+            "緊急連絡人氏名": ["佐藤次郎"],
+            "緊急連絡人住所３": [""],
+            "緊急連絡人住所アパート等": [""],
+        })
+
+        output_df = data_mapper.create_output_dataframe(excel_df)
+        data_mapper.map_emergency_contact_info(output_df, excel_df)
+
+        # 両方空なら空文字列
+        assert output_df["緊急連絡人１現住所3"].iloc[0] == ""
 
     def test_apply_fixed_values(self, data_mapper, sample_excel_df):
         """固定値適用テスト"""

@@ -698,8 +698,12 @@ class DataMapper:
             output_df["緊急連絡人１現住所1"] = excel_df["緊急連絡人住所１"]
         if "緊急連絡人住所２" in excel_df.columns:
             output_df["緊急連絡人１現住所2"] = excel_df["緊急連絡人住所２"]
-        if "緊急連絡人住所３" in excel_df.columns:
-            output_df["緊急連絡人１現住所3"] = excel_df["緊急連絡人住所３"]
+        # 緊急連絡人１現住所3 = 緊急連絡人住所３ + 全角空白 + 緊急連絡人住所アパート等
+        addr3 = excel_df["緊急連絡人住所３"].fillna("") if "緊急連絡人住所３" in excel_df.columns else pd.Series([""] * len(excel_df))
+        apt = excel_df["緊急連絡人住所アパート等"].fillna("") if "緊急連絡人住所アパート等" in excel_df.columns else pd.Series([""] * len(excel_df))
+        # 両方に値がある場合のみ全角空白を挿入、片方が空なら余計な空白を入れない
+        combined = (addr3.astype(str) + "　" + apt.astype(str))
+        output_df["緊急連絡人１現住所3"] = combined.str.replace(r'^　+|　+$', '', regex=True)
         if "緊急連絡人電話" in excel_df.columns:
             output_df["緊急連絡人１TEL自宅"] = excel_df["緊急連絡人電話"].apply(format_phone)
         if "緊急連絡人携帯１" in excel_df.columns:
