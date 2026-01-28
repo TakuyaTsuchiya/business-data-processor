@@ -546,10 +546,12 @@ class DataMapper:
         if "契約者１住所２" in excel_df.columns:
             output_df["契約者現住所2"] = excel_df["契約者１住所２"]
 
-        # 契約者現住所3 = 契約者１住所３ + 契約者住所アパート等
-        addr3 = excel_df["契約者１住所３"].fillna("") if "契約者１住所３" in excel_df.columns else ""
-        apt = excel_df["契約者住所アパート等"].fillna("") if "契約者住所アパート等" in excel_df.columns else ""
-        output_df["契約者現住所3"] = addr3 + apt
+        # 契約者現住所3 = 契約者１住所３ + 全角空白 + 契約者住所アパート等
+        addr3 = excel_df["契約者１住所３"].fillna("") if "契約者１住所３" in excel_df.columns else pd.Series([""] * len(excel_df))
+        apt = excel_df["契約者住所アパート等"].fillna("") if "契約者住所アパート等" in excel_df.columns else pd.Series([""] * len(excel_df))
+        # 両方に値がある場合のみ全角空白を挿入、片方が空なら余計な空白を入れない
+        combined = (addr3.astype(str) + "　" + apt.astype(str))
+        output_df["契約者現住所3"] = combined.str.replace(r'^　+|　+$', '', regex=True)
 
         # 勤務先情報
         if "契約者勤務先名" in excel_df.columns:
