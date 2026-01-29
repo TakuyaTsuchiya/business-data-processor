@@ -225,7 +225,38 @@ class DataConverter:
         if not text:
             return ""
         return unicodedata.normalize('NFKC', text)
-    
+
+    def is_alphabet_only(self, text: str) -> bool:
+        """文字列がアルファベット（全角・半角）のみで構成されているか判定
+
+        Args:
+            text: 判定対象の文字列
+
+        Returns:
+            bool: アルファベットのみの場合True、それ以外はFalse
+        """
+        if not text:
+            return False
+        # NFKCで正規化後、アルファベットのみかチェック
+        normalized = unicodedata.normalize('NFKC', text)
+        return normalized.isalpha() and normalized.isascii()
+
+    def convert_fullwidth_alpha_to_halfwidth_upper(self, text: str) -> str:
+        """全角アルファベットを半角大文字に変換
+
+        例: ＶＵＨＡＩＮＩＮＨ → VUHAININH
+
+        Args:
+            text: 変換対象の文字列
+
+        Returns:
+            str: 半角大文字に変換された文字列
+        """
+        if not text:
+            return ""
+        normalized = unicodedata.normalize('NFKC', text)
+        return normalized.upper()
+
     def convert_date_format(self, date_str: str) -> str:
         """日付フォーマット変換 YYYYMMDD → YYYY/M/D"""
         if pd.isna(date_str) or str(date_str).strip() == "":
@@ -340,10 +371,13 @@ class PlazaProcessor:
                 # A列：引継番号 ← D列「会員番号」
                 output_row["引継番号"] = self.converter.safe_str_convert(row[cols[3]])
                 
-                # B列：契約者氏名 ← G列「氏名（漢字）」（スペース削除）
-                output_row["契約者氏名"] = self.converter.remove_all_spaces(
+                # B列：契約者氏名 ← G列「氏名（漢字）」（スペース削除、アルファベットのみなら半角大文字に変換）
+                contractor_name = self.converter.remove_all_spaces(
                     self.converter.safe_str_convert(row[cols[6]])
                 )
+                if self.converter.is_alphabet_only(contractor_name):
+                    contractor_name = self.converter.convert_fullwidth_alpha_to_halfwidth_upper(contractor_name)
+                output_row["契約者氏名"] = contractor_name
                 
                 # C列：契約者カナ ← H列「フリガナ」（スペース削除、半角→全角カナ変換）
                 kana = self.converter.safe_str_convert(row[cols[7]])
@@ -382,9 +416,10 @@ class PlazaProcessor:
                 room = self.converter.safe_str_convert(row[cols[4]])      # E列「号室」
                 output_row["契約者現住所3"] = f"{remaining}　{building}　{room}".strip()
             
-                # K列：引継情報（処理日付 + "プラザ一括登録"）
+                # K列：引継情報（処理日付 + "プラザ一括登録" + メールアドレス）
                 today = datetime.now().strftime("%Y/%-m/%-d")
-                output_row["引継情報"] = f"{today}プラザ一括登録"
+                email = self.converter.safe_str_convert(row[cols[13]])  # N列「メール」
+                output_row["引継情報"] = f"{today}　プラザ一括登録　●メールアドレス：{email}"
             
                 # L列：物件名 ← L列「物件名」
                 output_row["物件名"] = building
@@ -504,10 +539,13 @@ class PlazaProcessor:
                     output_row[col] = ""
             
                 # 保証人１情報
-                # BF列：保証人１氏名 ← AG列「連帯保証人　名（漢字）」（スペース削除）
-                output_row["保証人１氏名"] = self.converter.remove_all_spaces(
+                # BF列：保証人１氏名 ← AG列「連帯保証人　名（漢字）」（スペース削除、アルファベットのみなら半角大文字に変換）
+                guarantor_name = self.converter.remove_all_spaces(
                     self.converter.safe_str_convert(row[cols[32]])
                 )
+                if self.converter.is_alphabet_only(guarantor_name):
+                    guarantor_name = self.converter.convert_fullwidth_alpha_to_halfwidth_upper(guarantor_name)
+                output_row["保証人１氏名"] = guarantor_name
 
                 # BG列：保証人１カナ ← AH列「連帯保証人　フリガナ」（スペース削除、半角→全角カナ変換）
                 guarantor_kana = self.converter.safe_str_convert(row[cols[33]])
@@ -533,10 +571,13 @@ class PlazaProcessor:
                     output_row[col] = ""
             
                 # 緊急連絡人１情報
-                # BZ列：緊急連絡人１氏名 ← AK列「緊急連絡人　氏名（漢字）」（スペース削除）
-                output_row["緊急連絡人１氏名"] = self.converter.remove_all_spaces(
+                # BZ列：緊急連絡人１氏名 ← AK列「緊急連絡人　氏名（漢字）」（スペース削除、アルファベットのみなら半角大文字に変換）
+                emergency_name = self.converter.remove_all_spaces(
                     self.converter.safe_str_convert(row[cols[36]])
                 )
+                if self.converter.is_alphabet_only(emergency_name):
+                    emergency_name = self.converter.convert_fullwidth_alpha_to_halfwidth_upper(emergency_name)
+                output_row["緊急連絡人１氏名"] = emergency_name
 
                 # CA列：緊急連絡人１カナ ← AL列「緊急連絡人　フリガナ」（スペース削除、半角→全角カナ変換）
                 emergency_kana = self.converter.safe_str_convert(row[cols[37]])
