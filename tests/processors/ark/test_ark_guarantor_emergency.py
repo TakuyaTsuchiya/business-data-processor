@@ -210,10 +210,8 @@ class TestGetColumnValue:
             "名前2": "旧形式の名前",
         })
 
-        # get_column_valueが実装されたら有効化
-        # value = converter.get_column_value(row, "氏名2", "名前2")
-        # assert value == "新形式の名前"
-        pass
+        value = converter.get_column_value(row, "氏名2", "名前2")
+        assert value == "新形式の名前"
 
     def test_fallback_to_old_format(self, converter):
         """新形式が空の場合、旧形式にフォールバック"""
@@ -222,10 +220,25 @@ class TestGetColumnValue:
             "名前2": "旧形式の名前",
         })
 
-        # get_column_valueが実装されたら有効化
-        # value = converter.get_column_value(row, "氏名2", "名前2")
-        # assert value == "旧形式の名前"
-        pass
+        value = converter.get_column_value(row, "氏名2", "名前2")
+        assert value == "旧形式の名前"
+
+    def test_all_empty_returns_empty_string(self, converter):
+        """全ての候補が空の場合、空文字列を返す"""
+        row = pd.Series({
+            "氏名2": "",
+            "名前2": "",
+        })
+
+        value = converter.get_column_value(row, "氏名2", "名前2")
+        assert value == ""
+
+    def test_missing_key_returns_empty_string(self, converter):
+        """キーが存在しない場合、空文字列を返す"""
+        row = pd.Series({})
+
+        value = converter.get_column_value(row, "氏名2", "名前2")
+        assert value == ""
 
 
 if __name__ == "__main__":
