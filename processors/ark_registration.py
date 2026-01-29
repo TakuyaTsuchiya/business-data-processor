@@ -317,7 +317,23 @@ class DataConverter:
         if pd.isna(value):
             return ""
         return str(value).strip()
-    
+
+    def get_column_value(self, row: pd.Series, *keys: str) -> str:
+        """複数の列名候補から値を取得（新旧両形式対応）
+
+        Args:
+            row: データ行
+            *keys: 列名候補（優先順）
+
+        Returns:
+            最初に見つかった非空の値、なければ空文字列
+        """
+        for key in keys:
+            value = self.safe_str_convert(row.get(key, ""))
+            if value:
+                return value
+        return ""
+
     def is_corporate(self, name: str) -> bool:
         """法人判定（契約者氏名から判定）"""
         if not name:
@@ -554,38 +570,47 @@ class DataConverter:
         return f"●20日～25日頃に督促手数料2,750円or2,970円が加算されることあり。案内注意！！　●入居日：{formatted_date}"
     
     def process_guarantor_emergency(self, row: pd.Series) -> Dict[str, Dict[str, str]]:
-        """保証人・緊急連絡人判定（シンプル版：名前2のみ処理）"""
+        """保証人・緊急連絡人判定（新旧両形式対応、名前3フォールバック付き）
+
+        処理順序:
+        1. 名前2（新形式: 氏名2、旧形式: 名前2）を処理
+        2. 名前2が空の場合のみ、名前3をフォールバックとして処理
+
+        確定仕様:
+        - 名前2と名前3の両方に値がある場合 → 名前2のみ出力、名前3は無視
+        """
         result = {
             "guarantor1": {},
             "emergency1": {}
         }
-        
-        # 名前2の処理（種別／続柄２で判定）
-        relationship_type2 = self.safe_str_convert(row.get("種別／続柄２", ""))
-        print(f"DEBUG: process_guarantor_emergency開始")
-        print(f"DEBUG: 種別／続柄２の値: '{relationship_type2}'")
-        
+
+        # 名前2の処理（新旧両形式対応）
+        # 列名候補: 新形式「種別／続柄2」（半角）、旧形式「種別／続柄２」（全角）
+        relationship_type2 = self.get_column_value(row, "種別／続柄2", "種別／続柄２")
+
         if relationship_type2:
-            name2 = self.remove_all_spaces(self.safe_str_convert(row.get("名前2", "")))
-            print(f"DEBUG: 名前2の値: '{name2}'")
-            
-            # 名前2がある場合のみ処理
+            # 列名候補: 新形式「氏名2」、旧形式「名前2」
+            name2 = self.remove_all_spaces(self.get_column_value(row, "氏名2", "名前2"))
+
             if name2:
-                name2_kana = self.remove_all_spaces(self.hankaku_to_zenkaku(self.safe_str_convert(row.get("名前2（カナ）", ""))))
-                
+                # 列名候補: 新形式「氏名2(カナ)」（半角括弧）、旧形式「名前2（カナ）」（全角括弧）
+                name2_kana = self.remove_all_spaces(
+                    self.hankaku_to_zenkaku(self.get_column_value(row, "氏名2(カナ)", "名前2（カナ）"))
+                )
+
                 phone_result2 = self.process_phone_numbers(
                     row.get("自宅TEL2", ""),
                     row.get("携帯TEL2", "")
                 )
-                
+
                 address2 = self.safe_str_convert(row.get("自宅住所2", ""))
                 addr_parts2 = self.split_address(address2)
-                
+
                 common_data2 = {
                     "氏名": name2,
                     "カナ": name2_kana,
                     "生年月日": self.validate_birth_date(self.safe_str_convert(row.get("生年月日2", "")), name2),
-                    "続柄": "他",  # 固定値
+                    "続柄": "他",
                     "自宅TEL": phone_result2["home"],
                     "携帯TEL": phone_result2["mobile"],
                     "郵便番号": addr_parts2.get("postal_code", ""),
@@ -593,13 +618,55 @@ class DataConverter:
                     "住所2": addr_parts2.get("city", ""),
                     "住所3": addr_parts2.get("remaining", "")
                 }
-                
-                # 判定処理
+
                 if "保証人" in relationship_type2:
                     result["guarantor1"] = common_data2
                 elif "緊急連絡先" in relationship_type2:
                     result["emergency1"] = common_data2
-        
+
+                # 名前2が処理された場合は名前3をスキップ
+                return result
+
+        # 名前3のフォールバック処理（名前2が空の場合のみ）
+        # 列名候補: 新形式「種別/続柄3」（半角スラッシュ）、旧形式「種別／続柄３」（全角スラッシュ・全角数字）
+        relationship_type3 = self.get_column_value(row, "種別/続柄3", "種別／続柄３")
+
+        if relationship_type3:
+            # 列名候補: 新形式「氏名3」、旧形式「名前3」
+            name3 = self.remove_all_spaces(self.get_column_value(row, "氏名3", "名前3"))
+
+            if name3:
+                # 列名候補: 新形式「氏名3(カナ)」（半角括弧）、旧形式「名前3（カナ）」（全角括弧）
+                name3_kana = self.remove_all_spaces(
+                    self.hankaku_to_zenkaku(self.get_column_value(row, "氏名3(カナ)", "名前3（カナ）"))
+                )
+
+                phone_result3 = self.process_phone_numbers(
+                    row.get("自宅TEL3", ""),
+                    row.get("携帯TEL3", "")
+                )
+
+                address3 = self.safe_str_convert(row.get("自宅住所3", ""))
+                addr_parts3 = self.split_address(address3)
+
+                common_data3 = {
+                    "氏名": name3,
+                    "カナ": name3_kana,
+                    "生年月日": self.validate_birth_date(self.safe_str_convert(row.get("生年月日3", "")), name3),
+                    "続柄": "他",
+                    "自宅TEL": phone_result3["home"],
+                    "携帯TEL": phone_result3["mobile"],
+                    "郵便番号": addr_parts3.get("postal_code", ""),
+                    "住所1": addr_parts3.get("prefecture", ""),
+                    "住所2": addr_parts3.get("city", ""),
+                    "住所3": addr_parts3.get("remaining", "")
+                }
+
+                if "保証人" in relationship_type3:
+                    result["guarantor1"] = common_data3
+                elif "緊急連絡先" in relationship_type3:
+                    result["emergency1"] = common_data3
+
         return result
     
     def convert_new_contracts(self, new_contracts_df: pd.DataFrame, region_code: int = 1) -> pd.DataFrame:
