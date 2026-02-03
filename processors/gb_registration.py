@@ -25,7 +25,7 @@ class GBConfig:
     """ガレージバンク新規登録の設定"""
 
     # Excel読み込み設定
-    EXCEL_SKIPROWS = 1  # zokuseiシートの1行目はヘッダー
+    EXCEL_SKIPROWS = 0  # ヘッダー行をスキップしない
     EXCEL_SHEET_NAME = "zokusei"
 
     # 出力列（111列）
