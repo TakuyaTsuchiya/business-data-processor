@@ -28,61 +28,136 @@ from .common.address_splitter import AddressSplitter
 
 class ArkConfig:
     """アーク新規登録設定・定数管理クラス"""
-    
+
     OUTPUT_FILE_PREFIX = "アーク新規登録"
-    
+
     # 【最重要】正確な111列テンプレートヘッダー（絶対変更禁止）
     OUTPUT_COLUMNS = [
-        "引継番号", "契約者氏名", "契約者カナ", "契約者生年月日",
-        "契約者TEL自宅", "契約者TEL携帯", "契約者現住所郵便番号",
-        "契約者現住所1", "契約者現住所2", "契約者現住所3",
-        "引継情報", "物件名", "部屋番号",
-        "物件住所郵便番号", "物件住所1", "物件住所2", "物件住所3",
-        "入居ステータス", "滞納ステータス", "受託状況",
-        "月額賃料", "管理費", "共益費", "水道代", "駐車場代",
-        "その他費用1", "その他費用2", "敷金", "礼金",
-        "回収口座金融機関CD", "回収口座金融機関名", "回収口座支店CD", "回収口座支店名",
-        "回収口座種類", "回収口座番号", "回収口座名義",
-        "契約種類", "管理受託日", "契約確認日",
-        "退去済手数料", "入居中滞納手数料", "入居中正常手数料",
-        "管理前滞納額", "更新契約手数料", "退去手続き（実費）",
-        "初回振替月", "保証開始日", "クライアントCD", "パートナーCD",
-        "契約者勤務先名", "契約者勤務先カナ", "契約者勤務先TEL", "勤務先業種",
-        "契約者勤務先郵便番号", "契約者勤務先住所1", "契約者勤務先住所2", "契約者勤務先住所3",
-        "保証人１氏名", "保証人１カナ", "保証人１契約者との関係", "保証人１生年月日",
-        "保証人１郵便番号", "保証人１住所1", "保証人１住所2", "保証人１住所3",
-        "保証人１TEL自宅", "保証人１TEL携帯",
-        "保証人２氏名", "保証人２カナ", "保証人２契約者との関係", "保証人２生年月日",
-        "保証人２郵便番号", "保証人２住所1", "保証人２住所2", "保証人２住所3",
-        "保証人２TEL自宅", "保証人２TEL携帯",
-        "緊急連絡人１氏名", "緊急連絡人１カナ", "緊急連絡人１契約者との関係",
-        "緊急連絡人１郵便番号", "緊急連絡人１現住所1", "緊急連絡人１現住所2", "緊急連絡人１現住所3",
-        "緊急連絡人１TEL自宅", "緊急連絡人１TEL携帯",
-        "緊急連絡人２氏名", "緊急連絡人２カナ", "緊急連絡人２契約者との関係",
-        "緊急連絡人２郵便番号", "緊急連絡人２現住所1", "緊急連絡人２現住所2", "緊急連絡人２現住所3",
-        "緊急連絡人２TEL自宅", "緊急連絡人２TEL携帯",
-        "保証入金日", "保証入金者",
-        "引落銀行CD", "引落銀行名", "引落支店CD", "引落支店名",
-        "引落預金種別", "引落口座番号", "引落口座名義",
-        "解約日", "管理会社", "委託先法人ID",
-        "", "", "",  # 108-110番目: 空列
-        "登録フラグ"  # 111番目
+        "引継番号",
+        "契約者氏名",
+        "契約者カナ",
+        "契約者生年月日",
+        "契約者TEL自宅",
+        "契約者TEL携帯",
+        "契約者現住所郵便番号",
+        "契約者現住所1",
+        "契約者現住所2",
+        "契約者現住所3",
+        "引継情報",
+        "物件名",
+        "部屋番号",
+        "物件住所郵便番号",
+        "物件住所1",
+        "物件住所2",
+        "物件住所3",
+        "入居ステータス",
+        "滞納ステータス",
+        "受託状況",
+        "月額賃料",
+        "管理費",
+        "共益費",
+        "水道代",
+        "駐車場代",
+        "その他費用1",
+        "その他費用2",
+        "敷金",
+        "礼金",
+        "回収口座金融機関CD",
+        "回収口座金融機関名",
+        "回収口座支店CD",
+        "回収口座支店名",
+        "回収口座種類",
+        "回収口座番号",
+        "回収口座名義",
+        "契約種類",
+        "管理受託日",
+        "契約確認日",
+        "退去済手数料",
+        "入居中滞納手数料",
+        "入居中正常手数料",
+        "管理前滞納額",
+        "更新契約手数料",
+        "退去手続き（実費）",
+        "初回振替月",
+        "保証開始日",
+        "クライアントCD",
+        "パートナーCD",
+        "契約者勤務先名",
+        "契約者勤務先カナ",
+        "契約者勤務先TEL",
+        "勤務先業種",
+        "契約者勤務先郵便番号",
+        "契約者勤務先住所1",
+        "契約者勤務先住所2",
+        "契約者勤務先住所3",
+        "保証人１氏名",
+        "保証人１カナ",
+        "保証人１契約者との関係",
+        "保証人１生年月日",
+        "保証人１郵便番号",
+        "保証人１住所1",
+        "保証人１住所2",
+        "保証人１住所3",
+        "保証人１TEL自宅",
+        "保証人１TEL携帯",
+        "保証人２氏名",
+        "保証人２カナ",
+        "保証人２契約者との関係",
+        "保証人２生年月日",
+        "保証人２郵便番号",
+        "保証人２住所1",
+        "保証人２住所2",
+        "保証人２住所3",
+        "保証人２TEL自宅",
+        "保証人２TEL携帯",
+        "緊急連絡人１氏名",
+        "緊急連絡人１カナ",
+        "緊急連絡人１契約者との関係",
+        "緊急連絡人１郵便番号",
+        "緊急連絡人１現住所1",
+        "緊急連絡人１現住所2",
+        "緊急連絡人１現住所3",
+        "緊急連絡人１TEL自宅",
+        "緊急連絡人１TEL携帯",
+        "緊急連絡人２氏名",
+        "緊急連絡人２カナ",
+        "緊急連絡人２契約者との関係",
+        "緊急連絡人２郵便番号",
+        "緊急連絡人２現住所1",
+        "緊急連絡人２現住所2",
+        "緊急連絡人２現住所3",
+        "緊急連絡人２TEL自宅",
+        "緊急連絡人２TEL携帯",
+        "保証入金日",
+        "保証入金者",
+        "引落銀行CD",
+        "引落銀行名",
+        "引落支店CD",
+        "引落支店名",
+        "引落預金種別",
+        "引落口座番号",
+        "引落口座名義",
+        "解約日",
+        "管理会社",
+        "委託先法人ID",
+        "",
+        "",
+        "",  # 108-110番目: 空列
+        "登録フラグ",  # 111番目
     ]
-    
+
     # 固定値設定（地域別処理は関数内で実行）
     FIXED_VALUES = {
         # ステータス関連
         "入居ステータス": "入居中",
-        "滞納ステータス": "未精算", 
+        "滞納ステータス": "未精算",
         "受託状況": "契約中",
         "契約種類": "レントワン",
-        
         # 回収口座関連
         "回収口座金融機関CD": "310",
         "回収口座金融機関名": "GMOあおぞらネット銀行",
         "回収口座種類": "普通",
         "回収口座名義": "アーク株式会社",
-        
         # その他固定値
         "クライアントCD": "10",
         "水道代": "0",
@@ -90,51 +165,105 @@ class ArkConfig:
         "退去済手数料": "0",
         "入居中滞納手数料": "0",
         "入居中正常手数料": "0",
-        
         # 空白項目
         "契約者生年月日": "",
         "管理費": "",  # 仕様書通り空白
-        "契約確認日": "", 
+        "契約確認日": "",
         "保証開始日": "",
-        "パートナーCD": "", 
-        "引落預金種別": "", 
+        "パートナーCD": "",
+        "引落預金種別": "",
         "登録フラグ": "",
         "管理会社": "",
         # "委託先法人ID": "", # FIXED_VALUESから削除（重複回避のため個別設定）
-        
         # 勤務先情報（基本空白、一部入力データから取得）
-        "契約者勤務先カナ": "", 
+        "契約者勤務先カナ": "",
         "勤務先業種": "",
-        "契約者勤務先郵便番号": "", 
-        "契約者勤務先住所1": "", 
-        "契約者勤務先住所2": "", 
+        "契約者勤務先郵便番号": "",
+        "契約者勤務先住所1": "",
+        "契約者勤務先住所2": "",
         "契約者勤務先住所3": "",
-        
         # 保証人2情報（全て空白）
-        "保証人２氏名": "", "保証人２カナ": "", "保証人２契約者との関係": "", "保証人２生年月日": "",
-        "保証人２郵便番号": "", "保証人２住所1": "", "保証人２住所2": "", "保証人２住所3": "",
-        "保証人２TEL自宅": "", "保証人２TEL携帯": "",
-        
+        "保証人２氏名": "",
+        "保証人２カナ": "",
+        "保証人２契約者との関係": "",
+        "保証人２生年月日": "",
+        "保証人２郵便番号": "",
+        "保証人２住所1": "",
+        "保証人２住所2": "",
+        "保証人２住所3": "",
+        "保証人２TEL自宅": "",
+        "保証人２TEL携帯": "",
         # 緊急連絡人2情報（全て空白）
-        "緊急連絡人２氏名": "", "緊急連絡人２カナ": "", "緊急連絡人２契約者との関係": "",
-        "緊急連絡人２郵便番号": "", "緊急連絡人２現住所1": "", "緊急連絡人２現住所2": "", "緊急連絡人２現住所3": "",
-        "緊急連絡人２TEL自宅": "", "緊急連絡人２TEL携帯": "",
-        
+        "緊急連絡人２氏名": "",
+        "緊急連絡人２カナ": "",
+        "緊急連絡人２契約者との関係": "",
+        "緊急連絡人２郵便番号": "",
+        "緊急連絡人２現住所1": "",
+        "緊急連絡人２現住所2": "",
+        "緊急連絡人２現住所3": "",
+        "緊急連絡人２TEL自宅": "",
+        "緊急連絡人２TEL携帯": "",
         # 引落・その他情報（全て空白）
-        "保証入金日": "", "保証入金者": "",
-        "引落銀行CD": "", "引落銀行名": "", "引落支店CD": "", "引落支店名": "",
-        "引落口座番号": "", "引落口座名義": "", "解約日": ""
+        "保証入金日": "",
+        "保証入金者": "",
+        "引落銀行CD": "",
+        "引落銀行名": "",
+        "引落支店CD": "",
+        "引落支店名": "",
+        "引落口座番号": "",
+        "引落口座名義": "",
+        "解約日": "",
     }
-    
+
     # 47都道府県リスト
     PREFECTURES = [
-        "北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県",
-        "茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県",
-        "新潟県", "富山県", "石川県", "福井県", "山梨県", "長野県", "岐阜県",
-        "静岡県", "愛知県", "三重県", "滋賀県", "京都府", "大阪府", "兵庫県",
-        "奈良県", "和歌山県", "鳥取県", "島根県", "岡山県", "広島県", "山口県",
-        "徳島県", "香川県", "愛媛県", "高知県", "福岡県", "佐賀県", "長崎県",
-        "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県"
+        "北海道",
+        "青森県",
+        "岩手県",
+        "宮城県",
+        "秋田県",
+        "山形県",
+        "福島県",
+        "茨城県",
+        "栃木県",
+        "群馬県",
+        "埼玉県",
+        "千葉県",
+        "東京都",
+        "神奈川県",
+        "新潟県",
+        "富山県",
+        "石川県",
+        "福井県",
+        "山梨県",
+        "長野県",
+        "岐阜県",
+        "静岡県",
+        "愛知県",
+        "三重県",
+        "滋賀県",
+        "京都府",
+        "大阪府",
+        "兵庫県",
+        "奈良県",
+        "和歌山県",
+        "鳥取県",
+        "島根県",
+        "岡山県",
+        "広島県",
+        "山口県",
+        "徳島県",
+        "香川県",
+        "愛媛県",
+        "高知県",
+        "福岡県",
+        "佐賀県",
+        "長崎県",
+        "熊本県",
+        "大分県",
+        "宮崎県",
+        "鹿児島県",
+        "沖縄県",
     ]
 
     # 案件取込用レポートの期待列名（列名チェック用）
@@ -181,9 +310,9 @@ class ArkConfig:
 
     # 代替列名マッピング（新形式 → 旧形式）
     COLUMN_ALTERNATIVES = {
-        "種別／続柄2": "種別／続柄２",      # 半角数字 → 全角数字
-        "氏名2": "名前2",                    # 氏名 → 名前
-        "氏名2(カナ)": "名前2（カナ）",     # 半角括弧 → 全角括弧
+        "種別／続柄2": "種別／続柄２",  # 半角数字 → 全角数字
+        "氏名2": "名前2",  # 氏名 → 名前
+        "氏名2(カナ)": "名前2（カナ）",  # 半角括弧 → 全角括弧
         "種別/続柄3": "種別／続柄３",
         "氏名3": "名前3",
         "氏名3(カナ)": "名前3（カナ）",
@@ -193,7 +322,7 @@ class ArkConfig:
 def check_expected_columns(
     df: pd.DataFrame,
     expected_columns: List[str],
-    column_alternatives: Dict[str, str] = None
+    column_alternatives: Dict[str, str] = None,
 ) -> List[str]:
     """
     期待する列名が存在するかチェックし、見つからない列の警告リストを返す
@@ -234,20 +363,27 @@ def check_expected_columns(
 
 class DataLoader:
     """CSVファイル読み込みクラス"""
-    
+
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-    
+
     def detect_encoding(self, file_content: bytes) -> str:
         """エンコーディング自動検出（文字化け解消）"""
         # chardetで検出
         result = chardet.detect(file_content[:10000])
-        detected_encoding = result['encoding']
-        confidence = result.get('confidence', 0)
-        
+        detected_encoding = result["encoding"]
+        confidence = result.get("confidence", 0)
+
         # エンコーディング候補リスト（優先順位）
-        encoding_candidates = ['cp932', 'shift_jis', 'utf-8-sig', 'utf-8', 'iso-2022-jp', 'euc-jp']
-        
+        encoding_candidates = [
+            "cp932",
+            "shift_jis",
+            "utf-8-sig",
+            "utf-8",
+            "iso-2022-jp",
+            "euc-jp",
+        ]
+
         # 信頼度が低い場合は代替エンコーディングを試す
         if confidence < 0.7:
             for encoding in encoding_candidates:
@@ -256,29 +392,41 @@ class DataLoader:
                     return encoding
                 except UnicodeDecodeError:
                     continue
-        
+
         # よくあるエンコーディングの修正
-        if detected_encoding in ['CP932', 'SHIFT_JIS', 'SHIFT-JIS']:
-            return 'cp932'
-        elif detected_encoding in ['UTF-8-SIG']:
-            return 'utf-8-sig'
+        if detected_encoding in ["CP932", "SHIFT_JIS", "SHIFT-JIS"]:
+            return "cp932"
+        elif detected_encoding in ["UTF-8-SIG"]:
+            return "utf-8-sig"
         elif detected_encoding:
             return detected_encoding
         else:
-            return 'utf-8-sig'  # UTF-8-sig優先フォールバック
-    
+            return "utf-8-sig"  # UTF-8-sig優先フォールバック
+
     def load_csv_from_bytes(self, file_content: bytes) -> pd.DataFrame:
         """バイト形式CSVファイル読み込み（エンコーディング自動対応）"""
         encoding = self.detect_encoding(file_content)
-        
+
         # 複数のエンコーディングで試行
-        encodings_to_try = [encoding, 'cp932', 'shift_jis', 'utf-8-sig', 'utf-8', 'iso-2022-jp', 'euc-jp']
-        
+        encodings_to_try = [
+            encoding,
+            "cp932",
+            "shift_jis",
+            "utf-8-sig",
+            "utf-8",
+            "iso-2022-jp",
+            "euc-jp",
+        ]
+
         for try_encoding in encodings_to_try:
             try:
-                df = pd.read_csv(io.BytesIO(file_content), encoding=try_encoding, dtype=str)
+                df = pd.read_csv(
+                    io.BytesIO(file_content), encoding=try_encoding, dtype=str
+                )
                 # デバッグ情報をログに出力（ファイル書き込みを削除）
-                self.logger.debug(f"CSV読み込み成功 - エンコーディング: {try_encoding}, 列数: {len(df.columns)}, 行数: {len(df)}")
+                self.logger.debug(
+                    f"CSV読み込み成功 - エンコーディング: {try_encoding}, 列数: {len(df.columns)}, 行数: {len(df)}"
+                )
                 return df
             except UnicodeDecodeError:
                 continue
@@ -286,126 +434,146 @@ class DataLoader:
                 if try_encoding == encodings_to_try[-1]:
                     raise ValueError(f"CSVファイルの読み込みに失敗: {str(e)}")
                 continue
-        
+
         raise ValueError("対応するエンコーディングが見つかりませんでした")
-    
+
     def load_ark_report_data(self, file_content: bytes) -> pd.DataFrame:
         """案件取込用レポート読み込み"""
         df = self.load_csv_from_bytes(file_content)
-        
+
         # DEBUG: 列名詳細確認（ログに出力）
         debug_logs = []
         debug_logs.append("DEBUG: 案件取込用レポート列名一覧:")
         for i, col in enumerate(df.columns, 1):
             debug_logs.append(f"  {i:2d}: '{col}' (len: {len(str(col))})")
-        
+
         # 重要列の存在確認
-        target_columns = ['名前2', '名前2（カナ）', '種別／続柄２', '生年月日2', '自宅住所2', '自宅TEL2', '携帯TEL2']
+        target_columns = [
+            "名前2",
+            "名前2（カナ）",
+            "種別／続柄２",
+            "生年月日2",
+            "自宅住所2",
+            "自宅TEL2",
+            "携帯TEL2",
+        ]
         debug_logs.append("DEBUG: 重要列の存在確認:")
         for col in target_columns:
             exists = col in df.columns
             debug_logs.append(f"  '{col}': {exists}")
-        
+
         # 1行目データ確認（名前2関連のみ）
         if len(df) > 0:
             first_row = df.iloc[0]
             debug_logs.append("DEBUG: 1行目の名前2関連データ:")
-            for col in ['名前2', '名前2（カナ）', '種別／続柄２']:
-                value = first_row.get(col, 'NOT_FOUND')
+            for col in ["名前2", "名前2（カナ）", "種別／続柄２"]:
+                value = first_row.get(col, "NOT_FOUND")
                 debug_logs.append(f"  '{col}': '{value}'")
-        
+
         # デバッグログ出力（ファイル書き込みとprint削除）
         if self.logger.isEnabledFor(logging.DEBUG):
-            self.logger.debug('\n'.join(debug_logs))
-        
+            self.logger.debug("\n".join(debug_logs))
+
         # 必須カラム確認
         required_columns = ["契約番号", "契約元帳: 主契約者"]
         missing_columns = [col for col in required_columns if col not in df.columns]
-        
+
         if missing_columns:
             raise ValueError(f"案件取込用レポートに必須カラムが不足: {missing_columns}")
-        
+
         return df
-    
+
     def load_contract_list(self, file_content: bytes) -> pd.DataFrame:
         """ContractList読み込み"""
         df = self.load_csv_from_bytes(file_content)
-        
+
         if "引継番号" not in df.columns:
             raise ValueError("ContractListに'引継番号'カラムが見つかりません")
-        
+
         # 重複除去
-        df = df.drop_duplicates(subset=["引継番号"], keep='first')
+        df = df.drop_duplicates(subset=["引継番号"], keep="first")
         return df
 
 
 class DuplicateChecker:
     """重複チェッククラス"""
-    
+
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-    
-    def find_new_contracts(self, report_df: pd.DataFrame, contract_df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, Dict[str, int], List[str]]:
+
+    def find_new_contracts(
+        self, report_df: pd.DataFrame, contract_df: pd.DataFrame
+    ) -> Tuple[pd.DataFrame, pd.DataFrame, Dict[str, int], List[str]]:
         """新規契約の特定（重複チェック）"""
         logs = []
-        
+
         # 初期件数ログ
         logs.append(DetailedLogger.log_initial_load(len(report_df)))
-        
+
         # キー項目を文字列に変換・正規化
         report_df = report_df.copy()
         report_df["契約番号"] = report_df["契約番号"].astype(str).str.strip()
-        
+
         contract_df = contract_df.copy()
         contract_df["引継番号"] = contract_df["引継番号"].astype(str).str.strip()
-        
+
         # 案件取込用レポートの契約番号を引継番号として使用
         report_df["引継番号_temp"] = report_df["契約番号"]
-        
+
         # 既存契約番号セット作成
         existing_contract_numbers = set(contract_df["引継番号"].tolist())
-        
+
         # 新規・既存を分離
-        new_contracts = report_df[~report_df["引継番号_temp"].isin(existing_contract_numbers)].copy()
-        existing_contracts = report_df[report_df["引継番号_temp"].isin(existing_contract_numbers)].copy()
-        
+        new_contracts = report_df[
+            ~report_df["引継番号_temp"].isin(existing_contract_numbers)
+        ].copy()
+        existing_contracts = report_df[
+            report_df["引継番号_temp"].isin(existing_contract_numbers)
+        ].copy()
+
         # 重複チェックの詳細ログ
-        logs.append(DetailedLogger.log_filter_result(
-            len(report_df), len(new_contracts), '重複（既存契約）'
-        ))
-        
+        logs.append(
+            DetailedLogger.log_filter_result(
+                len(report_df), len(new_contracts), "重複（既存契約）"
+            )
+        )
+
         # 既存契約の詳細（契約番号の列インデックスを使用）
         if len(existing_contracts) > 0:
             contract_no_col = report_df.columns.get_loc("契約番号")
             detail_log = DetailedLogger.log_exclusion_details(
-                existing_contracts, contract_no_col, '既存契約番号', 'id'
+                existing_contracts, contract_no_col, "既存契約番号", "id"
             )
             if detail_log:
                 logs.append(detail_log)
-        
+
         # 一時的な列を削除
-        new_contracts = new_contracts.drop("引継番号_temp", axis=1, errors='ignore')
-        existing_contracts = existing_contracts.drop("引継番号_temp", axis=1, errors='ignore')
-        
+        new_contracts = new_contracts.drop("引継番号_temp", axis=1, errors="ignore")
+        existing_contracts = existing_contracts.drop(
+            "引継番号_temp", axis=1, errors="ignore"
+        )
+
         # 統計情報
         stats = {
-            'total_reports': len(report_df),
-            'new_contracts': len(new_contracts),
-            'existing_contracts': len(existing_contracts),
-            'new_percentage': (len(new_contracts) / len(report_df) * 100) if len(report_df) > 0 else 0
+            "total_reports": len(report_df),
+            "new_contracts": len(new_contracts),
+            "existing_contracts": len(existing_contracts),
+            "new_percentage": (len(new_contracts) / len(report_df) * 100)
+            if len(report_df) > 0
+            else 0,
         }
-        
+
         return new_contracts, existing_contracts, stats, logs
 
 
 class DataConverter:
     """データ変換クラス"""
-    
+
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         self.prefectures = ArkConfig.PREFECTURES
         self.address_splitter = AddressSplitter()
-    
+
     def safe_str_convert(self, value) -> str:
         """安全な文字列変換"""
         if pd.isna(value):
@@ -432,51 +600,64 @@ class DataConverter:
         """法人判定（契約者氏名から判定）"""
         if not name:
             return False
-            
+
         # 法人を示すキーワード
         corporate_keywords = [
-            '株式会社', '有限会社', '合同会社', '合資会社', '合名会社',
-            'カブシキガイシャ', 'ユウゲンガイシャ', 'ゴウドウガイシャ',
-            'カブシキガイシヤ', 'ユウゲンガイシヤ',  # 拗音なし表記
-            '(株)', '（株）', '(有)', '（有）',
-            'LLC', 'Corp', 'Inc', 'Ltd'
+            "株式会社",
+            "有限会社",
+            "合同会社",
+            "合資会社",
+            "合名会社",
+            "カブシキガイシャ",
+            "ユウゲンガイシャ",
+            "ゴウドウガイシャ",
+            "カブシキガイシヤ",
+            "ユウゲンガイシヤ",  # 拗音なし表記
+            "(株)",
+            "（株）",
+            "(有)",
+            "（有）",
+            "LLC",
+            "Corp",
+            "Inc",
+            "Ltd",
         ]
-        
+
         # いずれかのキーワードが含まれていれば法人
         return any(keyword in name for keyword in corporate_keywords)
-    
+
     def validate_birth_date(self, date_str: str, contractor_name: str = "") -> str:
         """生年月日の妥当性チェック
-        
+
         Args:
             date_str: 生年月日文字列
             contractor_name: 契約者氏名（法人判定用）
-            
+
         Returns:
             妥当な場合は元の値、不正な場合は空文字
         """
         if not date_str or pd.isna(date_str):
             return ""
-            
+
         date_str = str(date_str).strip()
-        
+
         # 法人の場合は生年月日を空にする
         if contractor_name and self.is_corporate(contractor_name):
             self.logger.debug(f"法人契約のため生年月日を除外: {contractor_name}")
             return ""
-        
+
         try:
             # 様々な日付フォーマットに対応
             date_formats = [
-                '%Y/%m/%d',      # 1878/11/11
-                '%Y-%m-%d',      # 1947-05-08
-                '%Y年%m月%d日',   # 1878年11月11日
-                '%Y.%m.%d',      # 1878.11.11
+                "%Y/%m/%d",  # 1878/11/11
+                "%Y-%m-%d",  # 1947-05-08
+                "%Y年%m月%d日",  # 1878年11月11日
+                "%Y.%m.%d",  # 1878.11.11
             ]
-            
+
             # 時刻付きの場合は除去
-            date_str = date_str.split()[0] if ' ' in date_str else date_str
-            
+            date_str = date_str.split()[0] if " " in date_str else date_str
+
             parsed_date = None
             for fmt in date_formats:
                 try:
@@ -484,73 +665,69 @@ class DataConverter:
                     break
                 except ValueError:
                     continue
-                    
+
             if not parsed_date:
                 self.logger.debug(f"日付パースエラー: {date_str}")
                 return ""
-            
+
             # 1900年以前は無効
             if parsed_date.year < 1900:
                 self.logger.debug(f"1900年以前の生年月日を除外: {date_str}")
                 return ""
-                
+
             # 未来の日付は無効
             if parsed_date > datetime.now():
                 self.logger.debug(f"未来の生年月日を除外: {date_str}")
                 return ""
-                
+
             # 妥当な日付なので元の形式で返す
             return date_str
-            
+
         except Exception as e:
             self.logger.debug(f"生年月日検証エラー: {date_str} - {e}")
             return ""
-    
+
     def remove_all_spaces(self, text: str) -> str:
         """全てのスペースを除去"""
         if not text:
             return ""
         return text.replace(" ", "").replace("　", "")
-    
-    
+
     def normalize_phone_number(self, value: str) -> str:
         """電話番号の正規化"""
         if pd.isna(value) or str(value).strip() == "":
             return ""
-        
+
         phone = str(value).strip()
-        
+
         # 全角数字を半角に変換
-        phone = unicodedata.normalize('NFKC', phone)
-        
+        phone = unicodedata.normalize("NFKC", phone)
+
         # 記号を統一
         phone = phone.replace("－", "-").replace("ー", "-").replace("‐", "-")
         phone = phone.replace("（", "(").replace("）", ")")
-        
+
         # 不要な文字を除去
         phone = re.sub(r"[^\d\-\(\)]", "", phone)
-        
+
         return phone
-    
+
     def hankaku_to_zenkaku(self, text: str) -> str:
         """半角カナを全角カナに変換"""
         if not text:
             return ""
-        return unicodedata.normalize('NFKC', text)
-    
+        return unicodedata.normalize("NFKC", text)
+
     def extract_postal_code(self, address: str) -> Tuple[str, str]:
         """住所から郵便番号を抽出"""
         if pd.isna(address) or str(address).strip() == "":
             return "", address
-        
+
         addr = str(address).strip()
-        
+
         # 郵便番号パターン（〒マーク有無、ハイフン有無に対応）
-        postal_patterns = [
-            r'〒?\s*(\d{3})-?(\d{4})',
-            r'〒?\s*(\d{7})'
-        ]
-        
+        postal_patterns = [r"〒?\s*(\d{3})-?(\d{4})", r"〒?\s*(\d{7})"]
+
         for pattern in postal_patterns:
             match = re.search(pattern, addr)
             if match:
@@ -560,71 +737,74 @@ class DataConverter:
                     postal = match.group(1)
                     if len(postal) == 7:
                         postal = f"{postal[:3]}-{postal[3:]}"
-                
+
                 # 郵便番号部分を削除
-                addr = re.sub(pattern, '', addr).strip()
+                addr = re.sub(pattern, "", addr).strip()
                 return postal, addr
-        
+
         return "", addr
-    
+
     def split_address(self, address: str) -> Dict[str, str]:
         """住所を郵便番号、都道府県、市区町村、残り住所に分割（辞書方式）"""
         if pd.isna(address) or str(address).strip() == "":
             return {"postal_code": "", "prefecture": "", "city": "", "remaining": ""}
-        
+
         # 新しい辞書ベースの分割処理を使用
         return self.address_splitter.split_address(str(address))
-    
+
     def extract_room_from_property_name(self, property_name: str) -> Tuple[str, str]:
         """物件名から部屋番号を抽出"""
         if pd.isna(property_name) or str(property_name).strip() == "":
             return "", ""
-        
+
         prop_name = str(property_name).strip()
-        
+
         # 部屋番号パターンを検索（例：101号室、201号）
-        room_patterns = [
-            r'(\d+)号室?',
-            r'([A-Z]?\d+)号',
-            r'(\d{3,4})$'
-        ]
-        
+        room_patterns = [r"(\d+)号室?", r"([A-Z]?\d+)号", r"(\d{3,4})$"]
+
         for pattern in room_patterns:
             match = re.search(pattern, prop_name)
             if match:
                 room_num = match.group(1)
-                clean_prop_name = re.sub(pattern, '', prop_name).strip()
+                clean_prop_name = re.sub(pattern, "", prop_name).strip()
                 return clean_prop_name, room_num
-        
+
         return prop_name, ""
-    
+
     def normalize_room_number(self, value: str) -> str:
         """部屋番号の正規化（小数点除去）"""
         if pd.isna(value) or str(value).strip() == "":
             return ""
-        
+
         room = str(value).strip()
         try:
             # 小数点がある場合は整数部分のみ取得
-            if '.' in room:
+            if "." in room:
                 room = str(int(float(room)))
         except:
             pass
-        
+
         return room
-    
+
     def process_phone_numbers(self, home_tel: str, mobile_tel: str) -> Dict[str, str]:
         """電話番号処理（自宅TELのみの場合は携帯TELに移動）"""
         home = self.normalize_phone_number(home_tel)
         mobile = self.normalize_phone_number(mobile_tel)
-        
+
         # 自宅TELのみの場合、携帯TELに移動
         if home and not mobile:
             return {"home": "", "mobile": home}
-        
+
         return {"home": home, "mobile": mobile}
-    
-    def calculate_exit_procedure_fee(self, rent: str, management_fee: str, parking_fee: str, other_fee: str, region_code: int = 1) -> int:
+
+    def calculate_exit_procedure_fee(
+        self,
+        rent: str,
+        management_fee: str,
+        parking_fee: str,
+        other_fee: str,
+        region_code: int = 1,
+    ) -> int:
         """退去手続き費用計算
 
         計算対象: 月額賃料 + 管理費 + 駐車場代 + その他料金
@@ -645,7 +825,7 @@ class DataConverter:
             for fee in [rent, management_fee, parking_fee, other_fee]:
                 if pd.notna(fee) and str(fee).strip():
                     # カンマを除去して数値変換
-                    clean_fee = str(fee).replace(',', '').replace('￥', '').strip()
+                    clean_fee = str(fee).replace(",", "").replace("￥", "").strip()
                     if clean_fee.isdigit():
                         total += int(clean_fee)
 
@@ -653,29 +833,34 @@ class DataConverter:
             return min(max(total, min_fee), 100000)
         except:
             return min_fee
-    
+
     def generate_takeover_info(self, move_in_date: str) -> str:
         """引継情報を生成"""
         if pd.isna(move_in_date) or str(move_in_date).strip() == "":
             formatted_date = ""
         else:
             formatted_date = str(move_in_date).strip()
-        
+
         return f"●20日～25日頃に督促手数料2,750円or2,970円が加算されることあり。案内注意！！　●入居日：{formatted_date}"
-    
+
     def process_guarantor_emergency(self, row: pd.Series) -> Dict[str, Dict[str, str]]:
-        """保証人・緊急連絡人判定（新旧両形式対応、名前3フォールバック付き）
+        """保証人・緊急連絡人判定（新旧両形式対応、名前2・名前3両方出力）
 
         処理順序:
         1. 名前2（新形式: 氏名2、旧形式: 名前2）を処理
-        2. 名前2が空の場合のみ、名前3をフォールバックとして処理
+        2. 名前3（新形式: 氏名3、旧形式: 名前3）を処理
 
         確定仕様:
-        - 名前2と名前3の両方に値がある場合 → 名前2のみ出力、名前3は無視
+        - 名前2と名前3の両方を処理し、種別に応じて振り分ける
+        - 保証人 → 保証人1 → 保証人2（1が埋まっていれば2へ）
+        - 緊急連絡先 → 緊急連絡人1 → 緊急連絡人2（1が埋まっていれば2へ）
+        - 保証人と緊急連絡人がごっちゃにならない
         """
         result = {
             "guarantor1": {},
-            "emergency1": {}
+            "guarantor2": {},
+            "emergency1": {},
+            "emergency2": {},
         }
 
         # 名前2の処理（新旧両形式対応）
@@ -689,12 +874,13 @@ class DataConverter:
             if name2:
                 # 列名候補: 新形式「氏名2(カナ)」（半角括弧）、旧形式「名前2（カナ）」（全角括弧）
                 name2_kana = self.remove_all_spaces(
-                    self.hankaku_to_zenkaku(self.get_column_value(row, "氏名2(カナ)", "名前2（カナ）"))
+                    self.hankaku_to_zenkaku(
+                        self.get_column_value(row, "氏名2(カナ)", "名前2（カナ）")
+                    )
                 )
 
                 phone_result2 = self.process_phone_numbers(
-                    row.get("自宅TEL2", ""),
-                    row.get("携帯TEL2", "")
+                    row.get("自宅TEL2", ""), row.get("携帯TEL2", "")
                 )
 
                 address2 = self.safe_str_convert(row.get("自宅住所2", ""))
@@ -703,14 +889,16 @@ class DataConverter:
                 common_data2 = {
                     "氏名": name2,
                     "カナ": name2_kana,
-                    "生年月日": self.validate_birth_date(self.safe_str_convert(row.get("生年月日2", "")), name2),
+                    "生年月日": self.validate_birth_date(
+                        self.safe_str_convert(row.get("生年月日2", "")), name2
+                    ),
                     "続柄": "他",
                     "自宅TEL": phone_result2["home"],
                     "携帯TEL": phone_result2["mobile"],
                     "郵便番号": addr_parts2.get("postal_code", ""),
                     "住所1": addr_parts2.get("prefecture", ""),
                     "住所2": addr_parts2.get("city", ""),
-                    "住所3": addr_parts2.get("remaining", "")
+                    "住所3": addr_parts2.get("remaining", ""),
                 }
 
                 if "保証人" in relationship_type2:
@@ -718,10 +906,7 @@ class DataConverter:
                 elif "緊急連絡先" in relationship_type2:
                     result["emergency1"] = common_data2
 
-                # 名前2が処理された場合は名前3をスキップ
-                return result
-
-        # 名前3のフォールバック処理（名前2が空の場合のみ）
+        # 名前3の処理（名前2の結果に関係なく実行）
         # 列名候補: 新形式「種別/続柄3」（半角スラッシュ）、旧形式「種別／続柄３」（全角スラッシュ・全角数字）
         relationship_type3 = self.get_column_value(row, "種別/続柄3", "種別／続柄３")
 
@@ -732,12 +917,13 @@ class DataConverter:
             if name3:
                 # 列名候補: 新形式「氏名3(カナ)」（半角括弧）、旧形式「名前3（カナ）」（全角括弧）
                 name3_kana = self.remove_all_spaces(
-                    self.hankaku_to_zenkaku(self.get_column_value(row, "氏名3(カナ)", "名前3（カナ）"))
+                    self.hankaku_to_zenkaku(
+                        self.get_column_value(row, "氏名3(カナ)", "名前3（カナ）")
+                    )
                 )
 
                 phone_result3 = self.process_phone_numbers(
-                    row.get("自宅TEL3", ""),
-                    row.get("携帯TEL3", "")
+                    row.get("自宅TEL3", ""), row.get("携帯TEL3", "")
                 )
 
                 address3 = self.safe_str_convert(row.get("自宅住所3", ""))
@@ -746,60 +932,81 @@ class DataConverter:
                 common_data3 = {
                     "氏名": name3,
                     "カナ": name3_kana,
-                    "生年月日": self.validate_birth_date(self.safe_str_convert(row.get("生年月日3", "")), name3),
+                    "生年月日": self.validate_birth_date(
+                        self.safe_str_convert(row.get("生年月日3", "")), name3
+                    ),
                     "続柄": "他",
                     "自宅TEL": phone_result3["home"],
                     "携帯TEL": phone_result3["mobile"],
                     "郵便番号": addr_parts3.get("postal_code", ""),
                     "住所1": addr_parts3.get("prefecture", ""),
                     "住所2": addr_parts3.get("city", ""),
-                    "住所3": addr_parts3.get("remaining", "")
+                    "住所3": addr_parts3.get("remaining", ""),
                 }
 
                 if "保証人" in relationship_type3:
-                    result["guarantor1"] = common_data3
+                    # 保証人1が埋まっていれば保証人2へ、空いていれば保証人1へ
+                    if result["guarantor1"]:
+                        result["guarantor2"] = common_data3
+                    else:
+                        result["guarantor1"] = common_data3
                 elif "緊急連絡先" in relationship_type3:
-                    result["emergency1"] = common_data3
+                    # 緊急連絡人1が埋まっていれば緊急連絡人2へ、空いていれば緊急連絡人1へ
+                    if result["emergency1"]:
+                        result["emergency2"] = common_data3
+                    else:
+                        result["emergency1"] = common_data3
 
         return result
-    
-    def convert_new_contracts(self, new_contracts_df: pd.DataFrame, region_code: int = 1) -> pd.DataFrame:
+
+    def convert_new_contracts(
+        self, new_contracts_df: pd.DataFrame, region_code: int = 1
+    ) -> pd.DataFrame:
         """新規契約データを111列テンプレートに変換
-        
+
         Args:
             new_contracts_df: 新規契約データ
             region_code: 地域コード（1:東京, 2:大阪, 3:北海道, 4:北関東）
         """
         output_data = []
-        
+
         for _, row in new_contracts_df.iterrows():
             converted_row = {}
-            
+
             # 1. 基本情報
             converted_row["引継番号"] = self.safe_str_convert(row.get("契約番号", ""))
-            converted_row["契約者氏名"] = self.remove_all_spaces(self.safe_str_convert(row.get("契約元帳: 主契約者", "")))
-            converted_row["契約者カナ"] = self.remove_all_spaces(self.hankaku_to_zenkaku(self.safe_str_convert(row.get("主契約者（カナ）", ""))))
-            
+            converted_row["契約者氏名"] = self.remove_all_spaces(
+                self.safe_str_convert(row.get("契約元帳: 主契約者", ""))
+            )
+            converted_row["契約者カナ"] = self.remove_all_spaces(
+                self.hankaku_to_zenkaku(
+                    self.safe_str_convert(row.get("主契約者（カナ）", ""))
+                )
+            )
+
             # 生年月日の妥当性チェック（法人判定付き）
             birth_date = self.safe_str_convert(row.get("生年月日1", ""))
-            converted_row["契約者生年月日"] = self.validate_birth_date(birth_date, converted_row["契約者氏名"])
-            
+            converted_row["契約者生年月日"] = self.validate_birth_date(
+                birth_date, converted_row["契約者氏名"]
+            )
+
             # 2. 電話番号処理
             phone_result = self.process_phone_numbers(
-                row.get("自宅TEL1", ""),
-                row.get("携帯TEL1", "")
+                row.get("自宅TEL1", ""), row.get("携帯TEL1", "")
             )
             converted_row["契約者TEL自宅"] = phone_result["home"]
             converted_row["契約者TEL携帯"] = phone_result["mobile"]
-            
+
             # 3. 住所分割処理（契約者現住所は物件住所から取得）
-            address_parts = self.split_address(self.safe_str_convert(row.get("物件住所", "")))
-            
+            address_parts = self.split_address(
+                self.safe_str_convert(row.get("物件住所", ""))
+            )
+
             # 契約者現住所
             converted_row["契約者現住所郵便番号"] = address_parts.get("postal_code", "")
             converted_row["契約者現住所1"] = address_parts["prefecture"]
             converted_row["契約者現住所2"] = address_parts["city"]
-            
+
             # 契約者現住所3: 町村以下　全角スペース　物件名　全角スペース　部屋番号
             property_name = self.safe_str_convert(row.get("物件名", ""))
             room_number = self.safe_str_convert(row.get("部屋番号", ""))
@@ -810,18 +1017,22 @@ class DataConverter:
                 address3_parts.append(property_name)
             if room_number:
                 address3_parts.append(room_number)
-            converted_row["契約者現住所3"] = "　".join(address3_parts)  # 全角スペース結合
-            
+            converted_row["契約者現住所3"] = "　".join(
+                address3_parts
+            )  # 全角スペース結合
+
             # 4. 物件情報
-            clean_prop_name, room_num = self.extract_room_from_property_name(property_name)
+            clean_prop_name, room_num = self.extract_room_from_property_name(
+                property_name
+            )
             converted_row["物件名"] = clean_prop_name
-            
+
             # 部屋番号（物件名から抽出、または既存の部屋番号列）
             if room_num:
                 converted_row["部屋番号"] = self.normalize_room_number(room_num)
             else:
                 converted_row["部屋番号"] = self.normalize_room_number(room_number)
-            
+
             # 物件住所（物件住所から取得）
             property_address = self.safe_str_convert(row.get("物件住所", ""))
             prop_addr_parts = self.split_address(property_address)
@@ -829,60 +1040,82 @@ class DataConverter:
             converted_row["物件住所1"] = prop_addr_parts["prefecture"]
             converted_row["物件住所2"] = prop_addr_parts["city"]
             converted_row["物件住所3"] = prop_addr_parts["remaining"]
-            
+
             # 5. 引継情報生成
             move_in_date = self.safe_str_convert(row.get("入居日", ""))
             converted_row["引継情報"] = self.generate_takeover_info(move_in_date)
-            
+
             # 6. 金額情報
-            rent = self.safe_str_convert(row.get("賃料", "0")).replace(',', '')
-            management_fee = self.safe_str_convert(row.get("管理共益費", "0")).replace(',', '')
-            parking_fee = self.safe_str_convert(row.get("駐車場料金", "0")).replace(',', '')
-            
+            rent = self.safe_str_convert(row.get("賃料", "0")).replace(",", "")
+            management_fee = self.safe_str_convert(row.get("管理共益費", "0")).replace(
+                ",", ""
+            )
+            parking_fee = self.safe_str_convert(row.get("駐車場料金", "0")).replace(
+                ",", ""
+            )
+
             converted_row["月額賃料"] = rent
             converted_row["共益費"] = management_fee  # 管理共益費を共益費欄に設定
             converted_row["駐車場代"] = parking_fee
-            converted_row["その他費用1"] = self.safe_str_convert(row.get("その他料金", "0"))
-            converted_row["その他費用2"] = self.safe_str_convert(row.get("決済サービス料", "0"))
+            converted_row["その他費用1"] = self.safe_str_convert(
+                row.get("その他料金", "0")
+            )
+            converted_row["その他費用2"] = self.safe_str_convert(
+                row.get("決済サービス料", "0")
+            )
             converted_row["敷金"] = self.safe_str_convert(row.get("敷金", "0"))
             converted_row["礼金"] = self.safe_str_convert(row.get("礼金", "0"))
-            
+
             # 7. 退去手続き費用計算（その他料金を含む）
             other_fee = self.safe_str_convert(row.get("その他料金", "0"))
-            exit_fee = self.calculate_exit_procedure_fee(rent, management_fee, parking_fee, other_fee, region_code)
+            exit_fee = self.calculate_exit_procedure_fee(
+                rent, management_fee, parking_fee, other_fee, region_code
+            )
             converted_row["退去手続き（実費）"] = str(exit_fee)
-            
+
             # 8. その他情報
-            converted_row["管理前滞納額"] = self.safe_str_convert(row.get("未収金額合計", "0"))
-            converted_row["契約者勤務先名"] = self.safe_str_convert(row.get("勤務先1", ""))
-            converted_row["契約者勤務先TEL"] = self.safe_str_convert(row.get("勤務先TEL1", ""))
-            
+            converted_row["管理前滞納額"] = self.safe_str_convert(
+                row.get("未収金額合計", "0")
+            )
+            converted_row["契約者勤務先名"] = self.safe_str_convert(
+                row.get("勤務先1", "")
+            )
+            converted_row["契約者勤務先TEL"] = self.safe_str_convert(
+                row.get("勤務先TEL1", "")
+            )
+
             # 9. 回収口座情報（バーチャル口座情報を含む）
-            converted_row["回収口座支店名"] = self.safe_str_convert(row.get("バーチャル口座(支店)", ""))
-            converted_row["回収口座番号"] = self.safe_str_convert(row.get("バーチャル口座(口座番号)", ""))
+            converted_row["回収口座支店名"] = self.safe_str_convert(
+                row.get("バーチャル口座(支店)", "")
+            )
+            converted_row["回収口座番号"] = self.safe_str_convert(
+                row.get("バーチャル口座(口座番号)", "")
+            )
             converted_row["回収口座支店CD"] = ""  # 空
-            
+
             # 10. 日付情報
             today = datetime.now().strftime("%Y/%m/%d")
             converted_row["管理受託日"] = today
-            
+
             # 11. 保証人・緊急連絡人判定
             contact_info = self.process_guarantor_emergency(row)
-            
+
             # 保証人１の設定
             if contact_info["guarantor1"]:
                 g1 = contact_info["guarantor1"]
                 converted_row["保証人１氏名"] = g1.get("氏名", "")
                 converted_row["保証人１カナ"] = g1.get("カナ", "")
                 converted_row["保証人１契約者との関係"] = g1.get("続柄", "")
-                converted_row["保証人１生年月日"] = self.validate_birth_date(g1.get("生年月日", ""), g1.get("氏名", ""))
+                converted_row["保証人１生年月日"] = self.validate_birth_date(
+                    g1.get("生年月日", ""), g1.get("氏名", "")
+                )
                 converted_row["保証人１TEL自宅"] = g1.get("自宅TEL", "")
                 converted_row["保証人１TEL携帯"] = g1.get("携帯TEL", "")
                 converted_row["保証人１郵便番号"] = g1.get("郵便番号", "")
                 converted_row["保証人１住所1"] = g1.get("住所1", "")
                 converted_row["保証人１住所2"] = g1.get("住所2", "")
                 converted_row["保証人１住所3"] = g1.get("住所3", "")
-            
+
             # 緊急連絡人１の設定
             if contact_info["emergency1"]:
                 e1 = contact_info["emergency1"]
@@ -895,33 +1128,62 @@ class DataConverter:
                 converted_row["緊急連絡人１現住所3"] = e1.get("住所3", "")
                 converted_row["緊急連絡人１TEL自宅"] = e1.get("自宅TEL", "")
                 converted_row["緊急連絡人１TEL携帯"] = e1.get("携帯TEL", "")
-            
+
+            # 保証人２の設定
+            if contact_info["guarantor2"]:
+                g2 = contact_info["guarantor2"]
+                converted_row["保証人２氏名"] = g2.get("氏名", "")
+                converted_row["保証人２カナ"] = g2.get("カナ", "")
+                converted_row["保証人２契約者との関係"] = g2.get("続柄", "")
+                converted_row["保証人２生年月日"] = self.validate_birth_date(
+                    g2.get("生年月日", ""), g2.get("氏名", "")
+                )
+                converted_row["保証人２TEL自宅"] = g2.get("自宅TEL", "")
+                converted_row["保証人２TEL携帯"] = g2.get("携帯TEL", "")
+                converted_row["保証人２郵便番号"] = g2.get("郵便番号", "")
+                converted_row["保証人２住所1"] = g2.get("住所1", "")
+                converted_row["保証人２住所2"] = g2.get("住所2", "")
+                converted_row["保証人２住所3"] = g2.get("住所3", "")
+
+            # 緊急連絡人２の設定
+            if contact_info["emergency2"]:
+                e2 = contact_info["emergency2"]
+                converted_row["緊急連絡人２氏名"] = e2.get("氏名", "")
+                converted_row["緊急連絡人２カナ"] = e2.get("カナ", "")
+                converted_row["緊急連絡人２契約者との関係"] = e2.get("続柄", "")
+                converted_row["緊急連絡人２郵便番号"] = e2.get("郵便番号", "")
+                converted_row["緊急連絡人２現住所1"] = e2.get("住所1", "")
+                converted_row["緊急連絡人２現住所2"] = e2.get("住所2", "")
+                converted_row["緊急連絡人２現住所3"] = e2.get("住所3", "")
+                converted_row["緊急連絡人２TEL自宅"] = e2.get("自宅TEL", "")
+                converted_row["緊急連絡人２TEL携帯"] = e2.get("携帯TEL", "")
+
             # 12. 地域別・個別設定（FIXED_VALUES処理前に実行して重複回避）
             # 更新契約手数料を地域別に設定
             converted_row["更新契約手数料"] = str(region_code)
-            
+
             # 管理会社設定（アーク元データのH列「8. 取引先」をマッピング）
             # H列は8番目（0ベースで7番目）の列「取引先」
             management_company = self.safe_str_convert(row.get("取引先", ""))
             converted_row["管理会社"] = management_company
-            
+
             # 委託先法人ID設定（固定値"5"）- ARK・CAPCO共通仕様
             converted_row["委託先法人ID"] = "5"
-            
+
             # 13. 固定値設定（重複回避で安全処理）
             for key, value in ArkConfig.FIXED_VALUES.items():
                 # 既に設定済みのデータは上書きしない（地域別設定・個別設定を優先）
                 if key not in converted_row or converted_row[key] == "":
                     converted_row[key] = value
-            
+
             output_data.append(converted_row)
-        
+
         # 111列の正確な順序でDataFrame構築（空列対応）
         # 空列用の一意な仮名前を使用してから最後にリネーム
         temp_columns = []
         temp_data = {}
         empty_col_counter = 1
-        
+
         for i, col in enumerate(ArkConfig.OUTPUT_COLUMNS):
             if col == "":  # 空列の場合
                 temp_col_name = f"__EMPTY_COL_{empty_col_counter}__"
@@ -931,55 +1193,57 @@ class DataConverter:
             else:
                 temp_columns.append(col)
                 temp_data[col] = [row.get(col, "") for row in output_data]
-        
+
         # DataFrameを一度に構築（空列対応で重複チェックを無効化）
         final_df = pd.DataFrame(temp_data)
-        
+
         # 列順を正しく設定し、空列の仮名前を元の空文字列に戻す
         final_df = final_df.reindex(columns=temp_columns)
         final_df.columns = ArkConfig.OUTPUT_COLUMNS
-        
+
         return final_df
 
 
-def process_ark_data(report_content: bytes, contract_content: bytes, region_code: int = 1) -> Tuple[pd.DataFrame, List[str], str]:
+def process_ark_data(
+    report_content: bytes, contract_content: bytes, region_code: int = 1
+) -> Tuple[pd.DataFrame, List[str], str]:
     """
     アーク新規登録データ処理メイン関数
-    
+
     Args:
         report_content: 案件取込用レポート.csvの内容
         contract_content: ContractList_*.csvの内容
         region_code: 地域コード（1:東京, 2:大阪, 3:北海道, 4:北関東）
-        
+
     Returns:
         tuple: (変換済みDF, 処理ログ, 出力ファイル名)
     """
     # ログ設定
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
     logger = logging.getLogger(__name__)
-    
+
     try:
         logs = []
         start_time = datetime.now()
-        
+
         logs.append("=== アーク新規登録処理開始 ===")
         logger.info("アーク新規登録処理開始")
-        
+
         # 1. データ読み込み
         data_loader = DataLoader()
         report_df = data_loader.load_ark_report_data(report_content)
         contract_df = data_loader.load_contract_list(contract_content)
-        
-        logs.append(f"ファイル読み込み完了: 案件取込用レポート{len(report_df)}件, ContractList{len(contract_df)}件")
+
+        logs.append(
+            f"ファイル読み込み完了: 案件取込用レポート{len(report_df)}件, ContractList{len(contract_df)}件"
+        )
 
         # 1.5 列名チェック（警告のみ、処理は続行）
         column_warnings = check_expected_columns(
-            report_df,
-            ArkConfig.EXPECTED_REPORT_COLUMNS,
-            ArkConfig.COLUMN_ALTERNATIVES
+            report_df, ArkConfig.EXPECTED_REPORT_COLUMNS, ArkConfig.COLUMN_ALTERNATIVES
         )
         if column_warnings:
             logs.append("列名チェック警告:")
@@ -988,35 +1252,39 @@ def process_ark_data(report_content: bytes, contract_content: bytes, region_code
 
         # 2. 重複チェック（新規案件抽出）
         duplicate_checker = DuplicateChecker()
-        new_contracts, existing_contracts, match_stats, detail_logs = duplicate_checker.find_new_contracts(report_df, contract_df)
-        
-        logs.append(f"重複チェック結果: 新規{match_stats['new_contracts']}件, 既存{match_stats['existing_contracts']}件")
+        new_contracts, existing_contracts, match_stats, detail_logs = (
+            duplicate_checker.find_new_contracts(report_df, contract_df)
+        )
+
+        logs.append(
+            f"重複チェック結果: 新規{match_stats['new_contracts']}件, 既存{match_stats['existing_contracts']}件"
+        )
         logs.extend(detail_logs)
-        
+
         if len(new_contracts) == 0:
             logs.append("⚠️ 新規案件が見つかりませんでした")
             return pd.DataFrame(), logs, "no_new_contracts.csv"
-        
+
         # 3. データ変換（111列テンプレート準拠）
         data_converter = DataConverter()
         output_df = data_converter.convert_new_contracts(new_contracts, region_code)
-        
+
         logs.append(f"データ変換完了: {len(output_df)}件 → 111列テンプレート形式")
         logs.append(DetailedLogger.log_final_result(len(output_df)))
-        
+
         # 4. 出力ファイル名生成
         today_str = datetime.now().strftime("%m%d")
         output_filename = f"{today_str}{ArkConfig.OUTPUT_FILE_PREFIX}.csv"
-        
+
         # 5. 処理完了
         end_time = datetime.now()
         processing_time = (end_time - start_time).total_seconds()
-        
+
         logs.append(f"=== 処理完了: {output_filename} ({processing_time:.2f}秒) ===")
         logger.info(f"アーク処理完了: {len(output_df)}件出力")
-        
+
         return output_df, logs, output_filename
-        
+
     except FileNotFoundError as e:
         error_msg = f"ファイルが見つかりません: {str(e)}"
         logger.error(error_msg)
@@ -1031,53 +1299,65 @@ def process_ark_data(report_content: bytes, contract_content: bytes, region_code
         return pd.DataFrame(), [error_msg], "error.csv"
 
 
-def process_arktrust_data(report_content: bytes, contract_content: bytes) -> Tuple[pd.DataFrame, List[str], str]:
+def process_arktrust_data(
+    report_content: bytes, contract_content: bytes
+) -> Tuple[pd.DataFrame, List[str], str]:
     """
     アークトラスト新規登録データ処理（東京専用）
     通常のアーク処理に加えて、固定値を設定
-    
+
     Args:
         report_content: 案件取込用レポート.csvの内容
         contract_content: ContractList_*.csvの内容
-        
+
     Returns:
         tuple: (変換済みDF, 処理ログ, 出力ファイル名)
     """
     # 通常のアーク処理を実行（region_code=1）
-    result_df, logs, _ = process_ark_data(report_content, contract_content, region_code=1)
-    
+    result_df, logs, _ = process_ark_data(
+        report_content, contract_content, region_code=1
+    )
+
     # アークトラスト固有の固定値を設定
     if not result_df.empty:
-        result_df['回収口座金融機関CD'] = '9'
-        result_df['回収口座金融機関名'] = '三井住友銀行'
-        result_df['回収口座支店名'] = '日本橋東支店'
-        result_df['回収口座番号'] = '7834255'
-        result_df['回収口座名義'] = 'アークトラスト株式会社'
-        result_df['更新契約手数料'] = '1'
-        result_df['クライアントCD'] = '40'
-        
+        result_df["回収口座金融機関CD"] = "9"
+        result_df["回収口座金融機関名"] = "三井住友銀行"
+        result_df["回収口座支店名"] = "日本橋東支店"
+        result_df["回収口座番号"] = "7834255"
+        result_df["回収口座名義"] = "アークトラスト株式会社"
+        result_df["更新契約手数料"] = "1"
+        result_df["クライアントCD"] = "40"
+
         # 引継情報をアークトラスト用に更新（入居日情報のみ）
-        if '引継情報' in result_df.columns:
-            result_df['引継情報'] = result_df['引継情報'].apply(
-                lambda x: x.split('●入居日：')[-1] if '●入居日：' in str(x) else ''
-            ).apply(
-                lambda x: f'●入居日：{x}' if x else '●入居日：'
+        if "引継情報" in result_df.columns:
+            result_df["引継情報"] = (
+                result_df["引継情報"]
+                .apply(
+                    lambda x: x.split("●入居日：")[-1] if "●入居日：" in str(x) else ""
+                )
+                .apply(lambda x: f"●入居日：{x}" if x else "●入居日：")
             )
             logs.append("引継情報をアークトラスト用に更新（入居日のみ）")
-        
+
         # 契約者カナの半角→全角変換とスペース除去
-        if '契約者カナ' in result_df.columns:
-            result_df['契約者カナ'] = result_df['契約者カナ'].apply(
-                lambda x: unicodedata.normalize('NFKC', str(x)).replace(' ', '').replace('　', '') if pd.notna(x) else x
+        if "契約者カナ" in result_df.columns:
+            result_df["契約者カナ"] = result_df["契約者カナ"].apply(
+                lambda x: unicodedata.normalize("NFKC", str(x))
+                .replace(" ", "")
+                .replace("　", "")
+                if pd.notna(x)
+                else x
             )
             logs.append("契約者カナの半角→全角変換とスペース除去を実行")
-        
-        logs.append("アークトラスト固定値を設定: 回収口座情報・更新契約手数料・クライアントCD・引継情報")
-    
+
+        logs.append(
+            "アークトラスト固定値を設定: 回収口座情報・更新契約手数料・クライアントCD・引継情報"
+        )
+
     # 出力ファイル名
     timestamp = datetime.now().strftime("%m%d")
     filename = f"{timestamp}アークトラスト_新規登録_東京.csv"
-    
+
     return result_df, logs, filename
 
 
@@ -1086,14 +1366,14 @@ def get_sample_template() -> pd.DataFrame:
     # 空列対応: 一意な仮名前を使用してから最後にリネーム
     temp_columns = []
     empty_col_counter = 1
-    
+
     for col in ArkConfig.OUTPUT_COLUMNS:
         if col == "":
             temp_columns.append(f"__EMPTY_COL_{empty_col_counter}__")
             empty_col_counter += 1
         else:
             temp_columns.append(col)
-    
+
     df = pd.DataFrame(columns=temp_columns)
     df.columns = ArkConfig.OUTPUT_COLUMNS
     return df
