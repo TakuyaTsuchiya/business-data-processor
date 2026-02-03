@@ -137,6 +137,100 @@ class ArkConfig:
         "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県"
     ]
 
+    # 案件取込用レポートの期待列名（列名チェック用）
+    EXPECTED_REPORT_COLUMNS = [
+        # 必須列（既存チェック対象）
+        "契約番号",
+        "契約元帳: 主契約者",
+        # 基本情報
+        "主契約者（カナ）",
+        "生年月日1",
+        "自宅TEL1",
+        "携帯TEL1",
+        # 物件情報
+        "物件住所",
+        "物件名",
+        "部屋番号",
+        # 金額情報
+        "賃料",
+        "管理共益費",
+        "駐車場料金",
+        "その他料金",
+        "決済サービス料",
+        "敷金",
+        "礼金",
+        "未収金額合計",
+        # 勤務先
+        "勤務先1",
+        "勤務先TEL1",
+        # 口座情報
+        "バーチャル口座(支店)",
+        "バーチャル口座(口座番号)",
+        # その他
+        "取引先",
+        "入居日",
+        # 保証人・緊急連絡人（名前2）
+        "種別／続柄2",
+        "氏名2",
+        "氏名2(カナ)",
+        "生年月日2",
+        "自宅住所2",
+        "自宅TEL2",
+        "携帯TEL2",
+    ]
+
+    # 代替列名マッピング（新形式 → 旧形式）
+    COLUMN_ALTERNATIVES = {
+        "種別／続柄2": "種別／続柄２",      # 半角数字 → 全角数字
+        "氏名2": "名前2",                    # 氏名 → 名前
+        "氏名2(カナ)": "名前2（カナ）",     # 半角括弧 → 全角括弧
+        "種別/続柄3": "種別／続柄３",
+        "氏名3": "名前3",
+        "氏名3(カナ)": "名前3（カナ）",
+    }
+
+
+def check_expected_columns(
+    df: pd.DataFrame,
+    expected_columns: List[str],
+    column_alternatives: Dict[str, str] = None
+) -> List[str]:
+    """
+    期待する列名が存在するかチェックし、見つからない列の警告リストを返す
+
+    Args:
+        df: 入力DataFrame
+        expected_columns: 期待する列名のリスト
+        column_alternatives: 代替列名の辞書 {"新形式": "旧形式"}
+
+    Returns:
+        警告メッセージのリスト（全て存在すれば空リスト）
+
+    Example:
+        >>> df = pd.DataFrame(columns=["契約番号", "名前2"])
+        >>> warnings = check_expected_columns(df, ["契約番号", "氏名2"], {"氏名2": "名前2"})
+        >>> warnings
+        []  # 代替列名「名前2」が存在するので警告なし
+    """
+    warnings = []
+
+    for col in expected_columns:
+        if col in df.columns:
+            # 列が存在する
+            continue
+
+        # 代替列名をチェック
+        if column_alternatives:
+            alt_col = column_alternatives.get(col)
+            if alt_col and alt_col in df.columns:
+                # 代替列名が存在するのでOK
+                continue
+
+        # 列が見つからない
+        warnings.append(f"「{col}」列が見つかりません")
+
+    return warnings
+
 
 class DataLoader:
     """CSVファイル読み込みクラス"""
@@ -880,7 +974,18 @@ def process_ark_data(report_content: bytes, contract_content: bytes, region_code
         contract_df = data_loader.load_contract_list(contract_content)
         
         logs.append(f"ファイル読み込み完了: 案件取込用レポート{len(report_df)}件, ContractList{len(contract_df)}件")
-        
+
+        # 1.5 列名チェック（警告のみ、処理は続行）
+        column_warnings = check_expected_columns(
+            report_df,
+            ArkConfig.EXPECTED_REPORT_COLUMNS,
+            ArkConfig.COLUMN_ALTERNATIVES
+        )
+        if column_warnings:
+            logs.append("列名チェック警告:")
+            for warning in column_warnings:
+                logs.append(f"  - {warning}")
+
         # 2. 重複チェック（新規案件抽出）
         duplicate_checker = DuplicateChecker()
         new_contracts, existing_contracts, match_stats, detail_logs = duplicate_checker.find_new_contracts(report_df, contract_df)
