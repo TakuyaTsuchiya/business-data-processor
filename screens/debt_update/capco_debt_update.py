@@ -95,7 +95,7 @@ def show_capco_debt_update():
                     st.warning("⚠️ 更新が必要なデータが存在しませんでした。")
                     st.info("""
                     以下の条件を確認してください：
-                    - クライアントCDが1または4のデータが存在するか
+                    - クライアントCDが1、4、または9306のデータが存在するか
                     - 新旧の残債額に差分があるデータが存在するか
                     - ファイルのヘッダー形式が正しいか
                     """)
@@ -109,7 +109,7 @@ def show_capco_debt_update():
     st.markdown('<div class="filter-condition">', unsafe_allow_html=True)
     st.markdown("• データ抽出 → csv_arrear_*.csvから契約Noと滞納額合計")
     st.markdown("• データ統合 → ContractListから管理番号・引継番号・滞納残債・クライアントCD")
-    st.markdown("• クライアントCD → 1,4のみ抽出")
+    st.markdown("• クライアントCD → 1,4,9306のみ抽出")
     st.markdown("• 残債差分 → 新旧の差分がある場合のみ更新対象")
     st.markdown("• マッチング → 管理番号での照合処理")
     st.markdown('</div>', unsafe_allow_html=True)
