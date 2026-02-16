@@ -38,7 +38,7 @@ def apply_faith_contract_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[s
     
     📋 フィルタリング条件:
     - 委託先法人ID: 1,2,3,4,7のみ（フェイス管理案件）
-    - 入金予定日: 前日以前またはNaN（当日は除外）
+    - 入金予定日: 当日以前またはNaN
     - 入金予定金額: 2,3,5を除外（手数料関連）
     - 回収ランク: 死亡決定、破産決定、弁護士介入を除外
     - TEL携帯: 空でない値のみ（契約者電話番号必須）
@@ -65,12 +65,12 @@ def apply_faith_contract_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[s
     df = df[df["委託先法人ID"].isin(CLIENT_IDS['faith_contract'])]
     logs.append(DetailedLogger.log_filter_result(before_filter, len(df), "委託先法人ID"))
     
-    # 2. 入金予定日のフィルタリング（前日以前またはNaN、当日は除外）
+    # 2. 入金予定日のフィルタリング（当日以前またはNaN）
     today = pd.Timestamp.now().normalize()
     df["入金予定日"] = pd.to_datetime(df["入金予定日"], errors='coerce')
     before_filter = len(df)
     # 除外されるデータの詳細を記録
-    excluded_data = df[~(df["入金予定日"].isna() | (df["入金予定日"] < today))]
+    excluded_data = df[~(df["入金予定日"].isna() | (df["入金予定日"] <= today))]
     detail_log = DetailedLogger.log_exclusion_details(
         excluded_data,
         df.columns.get_loc("入金予定日"),
@@ -80,7 +80,7 @@ def apply_faith_contract_filters(df: pd.DataFrame) -> Tuple[pd.DataFrame, List[s
     if detail_log:
         logs.append(detail_log)
     
-    df = df[df["入金予定日"].isna() | (df["入金予定日"] < today)]
+    df = df[df["入金予定日"].isna() | (df["入金予定日"] <= today)]
     logs.append(DetailedLogger.log_filter_result(before_filter, len(df), "入金予定日"))
     
     # 3. 入金予定金額のフィルタリング（2,3,5を除外）
