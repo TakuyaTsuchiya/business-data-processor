@@ -575,6 +575,70 @@ class TestNameConversion:
         assert output_df.iloc[0]["緊急連絡人１氏名"] == "TRAN"
 
 
+class TestPlazaSplitAddressMuraCity:
+    """プラザ新規登録: 市名に「村」を含む住所の分割テスト（バグ修正対象）"""
+
+    def test_higashimurayama(self):
+        """東村山市: 市名に「村」を含む"""
+        from processors.plaza_registration import DataConverter
+
+        converter = DataConverter()
+        result = converter.split_address("東京都東村山市恩多町5-25-2")
+        assert result["prefecture"] == "東京都"
+        assert result["city"] == "東村山市"
+        assert result["remaining"] == "恩多町5-25-2"
+
+    def test_musashimurayama(self):
+        """武蔵村山市: 市名に「村」を含む"""
+        from processors.plaza_registration import DataConverter
+
+        converter = DataConverter()
+        result = converter.split_address("東京都武蔵村山市学園3-38-1")
+        assert result["prefecture"] == "東京都"
+        assert result["city"] == "武蔵村山市"
+        assert result["remaining"] == "学園3-38-1"
+
+    def test_hamura(self):
+        """羽村市: 市名に「村」を含む"""
+        from processors.plaza_registration import DataConverter
+
+        converter = DataConverter()
+        result = converter.split_address("東京都羽村市羽西1-10-10")
+        assert result["prefecture"] == "東京都"
+        assert result["city"] == "羽村市"
+        assert result["remaining"] == "羽西1-10-10"
+
+    def test_sagamihara_midori(self):
+        """相模原市緑区: 政令指定都市"""
+        from processors.plaza_registration import DataConverter
+
+        converter = DataConverter()
+        result = converter.split_address("神奈川県相模原市緑区町屋3-2-2")
+        assert result["prefecture"] == "神奈川県"
+        assert result["city"] == "相模原市緑区"
+        assert result["remaining"] == "町屋3-2-2"
+
+    def test_normal_city(self):
+        """通常の市: 厚木市"""
+        from processors.plaza_registration import DataConverter
+
+        converter = DataConverter()
+        result = converter.split_address("神奈川県厚木市飯山2240-1")
+        assert result["prefecture"] == "神奈川県"
+        assert result["city"] == "厚木市"
+        assert result["remaining"] == "飯山2240-1"
+
+    def test_empty_address(self):
+        """空住所"""
+        from processors.plaza_registration import DataConverter
+
+        converter = DataConverter()
+        result = converter.split_address("")
+        assert result["prefecture"] == ""
+        assert result["city"] == ""
+        assert result["remaining"] == ""
+
+
 class TestNormalizeKanjiVariants:
     """normalize_kanji_variantsメソッドのテスト
 
