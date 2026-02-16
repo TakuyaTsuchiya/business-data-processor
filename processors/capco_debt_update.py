@@ -197,13 +197,13 @@ def extract_contract_data(df: pd.DataFrame) -> pd.DataFrame:
         raise
 
 def filter_client_cd(df: pd.DataFrame) -> pd.DataFrame:
-    """クライアントCDが1または4のデータのみを抽出"""
+    """クライアントCDが1、4、または9306のデータのみを抽出"""
     try:
         # クライアントCDを数値型に変換
         df['クライアントCD'] = pd.to_numeric(df['クライアントCD'], errors='coerce')
-        
-        # クライアントCDが1または4のデータのみを抽出
-        filtered_df = df[df['クライアントCD'].isin([1, 4])].copy()
+
+        # クライアントCDが1、4、または9306のデータのみを抽出
+        filtered_df = df[df['クライアントCD'].isin([1, 4, 9306])].copy()
         
         logger.info(f"クライアントCDフィルタリング: {len(df)} -> {len(filtered_df)} 件")
         logger.info(f"除外されたデータ: {len(df) - len(filtered_df)} 件")
@@ -467,7 +467,7 @@ def process_capco_debt_update(arrear_file_content: bytes, contract_file_content:
                 logs.append(detail_log)
         
         if len(contract_filtered) == 0:
-            logger.warning("クライアントCD=1,4のデータが存在しません")
+            logger.warning("クライアントCD=1,4,9306のデータが存在しません")
             empty_df = pd.DataFrame(columns=OUTPUT_HEADERS)
             timestamp = datetime.now().strftime("%m%d")
             output_filename = f"{timestamp}カプコ残債の更新.csv"
