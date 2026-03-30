@@ -407,14 +407,14 @@ class DuplicateChecker:
 
     def check_duplicates(
         self,
-        excel_df: pd.DataFrame,
+        input_df: pd.DataFrame,
         contract_df: pd.DataFrame
     ) -> Tuple[pd.DataFrame, pd.DataFrame, Dict, List[str]]:
         """
         重複チェック実行
 
         Args:
-            excel_df: Excel入力データ
+            input_df: 入力データ
             contract_df: ContractList（フィルタ済み）
 
         Returns:
@@ -427,31 +427,31 @@ class DuplicateChecker:
 
         # 承認番号列の確認
         approval_col = "承認番号"
-        if approval_col not in excel_df.columns:
-            raise ValueError(f"Excel入力データに「{approval_col}」列が存在しません")
+        if approval_col not in input_df.columns:
+            raise ValueError(f"入力データに「{approval_col}」列が存在しません")
 
         # 引継番号列の確認
         if "引継番号" not in contract_df.columns:
             raise ValueError("ContractListに「引継番号」列が存在しません")
 
         # 承認番号を文字列に変換（float対策）
-        excel_df[approval_col] = excel_df[approval_col].astype(str).str.replace('.0', '', regex=False)
+        input_df[approval_col] = input_df[approval_col].astype(str).str.replace('.0', '', regex=False)
         contract_df["引継番号"] = contract_df["引継番号"].astype(str)
 
         # 既存の引継番号セット
         existing_ids = set(contract_df["引継番号"])
 
         # 新規・既存に分離
-        new_mask = ~excel_df[approval_col].isin(existing_ids)
-        new_data = excel_df[new_mask].copy()
-        existing_data = excel_df[~new_mask].copy()
+        new_mask = ~input_df[approval_col].isin(existing_ids)
+        new_data = input_df[new_mask].copy()
+        existing_data = input_df[~new_mask].copy()
 
         # 統計情報
         stats = {
-            "total": len(excel_df),
+            "total": len(input_df),
             "new_records": len(new_data),
             "existing_records": len(existing_data),
-            "new_percentage": (len(new_data) / len(excel_df) * 100) if len(excel_df) > 0 else 0
+            "new_percentage": (len(new_data) / len(input_df) * 100) if len(input_df) > 0 else 0
         }
 
         logs.append(f"Excel総数: {stats['total']}件")
@@ -472,242 +472,242 @@ class DataMapper:
 
     def create_output_dataframe(
         self,
-        excel_df: pd.DataFrame
+        input_df: pd.DataFrame
     ) -> pd.DataFrame:
         """
         111列の出力DataFrameを作成
 
         Args:
-            excel_df: 入力DataFrame
+            input_df: 入力DataFrame
 
         Returns:
             111列のDataFrame
         """
         # 111列の空DataFrameを作成
-        output_df = pd.DataFrame("", index=range(len(excel_df)), columns=self.config.OUTPUT_COLUMNS)
+        output_df = pd.DataFrame("", index=range(len(input_df)), columns=self.config.OUTPUT_COLUMNS)
         return output_df
 
     def map_contractor_info(
         self,
         output_df: pd.DataFrame,
-        excel_df: pd.DataFrame
+        input_df: pd.DataFrame
     ) -> None:
         """
         契約者情報をマッピング（in-place）
 
         Args:
             output_df: 出力DataFrame（in-place更新）
-            excel_df: 入力Excel DataFrame
+            input_df: 入力DataFrame
         """
         # 引継番号（承認番号の下6桁）
-        if "承認番号" in excel_df.columns:
+        if "承認番号" in input_df.columns:
             # 承認番号を文字列化し、.0を除去後、下6桁を抽出
-            approval_numbers = excel_df["承認番号"].astype(str).str.replace('.0', '', regex=False)
+            approval_numbers = input_df["承認番号"].astype(str).str.replace('.0', '', regex=False)
             output_df["引継番号"] = approval_numbers.str[-6:]
 
         # 契約者氏名・カナ
-        if "契約者氏名" in excel_df.columns:
-            output_df["契約者氏名"] = excel_df["契約者氏名"]
-        if "契約者氏名かな" in excel_df.columns:
+        if "契約者氏名" in input_df.columns:
+            output_df["契約者氏名"] = input_df["契約者氏名"]
+        if "契約者氏名かな" in input_df.columns:
             # ひらがなをカタカナに変換
-            kana = excel_df["契約者氏名かな"].fillna("")
+            kana = input_df["契約者氏名かな"].fillna("")
             output_df["契約者カナ"] = kana.str.translate(
                 str.maketrans("ぁあぃいぅうぇえぉおかがきぎくぐけげこごさざしじすずせぜそぞただちぢっつづてでとどなにぬねのはばぱひびぴふぶぷへべぺほぼぽまみむめもゃやゅゆょよらりるれろゎわゐゑをんゔゕゖ",
                              "ァアィイゥウェエォオカガキギクグケゲコゴサザシジスズセゼソゾタダチヂッツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモャヤュユョヨラリルレロヮワヰヱヲンヴヵヶ")
             )
 
         # 契約者生年月日
-        if "契約者生年月日" in excel_df.columns:
-            output_df["契約者生年月日"] = excel_df["契約者生年月日"]
+        if "契約者生年月日" in input_df.columns:
+            output_df["契約者生年月日"] = input_df["契約者生年月日"]
 
         # 電話番号
         # ルール: 携帯1がある → TEL携帯=携帯1、TEL自宅=電話
         #        携帯1が空白で電話がある → TEL携帯=電話、TEL自宅=空白（同じ番号を2箇所に入れない）
-        if "契約者携帯1" in excel_df.columns and "契約者電話" in excel_df.columns:
-            mobile = excel_df["契約者携帯1"].fillna("").astype(str).apply(format_phone)
-            phone = excel_df["契約者電話"].fillna("").astype(str).apply(format_phone)
+        if "契約者携帯1" in input_df.columns and "契約者電話" in input_df.columns:
+            mobile = input_df["契約者携帯1"].fillna("").astype(str).apply(format_phone)
+            phone = input_df["契約者電話"].fillna("").astype(str).apply(format_phone)
             # 携帯1を優先、空白なら電話を使用
             output_df["契約者TEL携帯"] = mobile.where(mobile != "", phone)
             # 携帯1がある行のみ、自宅に電話番号を入れる（携帯1が空白の行は自宅も空白）
             output_df["契約者TEL自宅"] = phone.where(mobile != "", "")
-        elif "契約者携帯1" in excel_df.columns:
-            output_df["契約者TEL携帯"] = excel_df["契約者携帯1"].apply(format_phone)
-            if "契約者電話" in excel_df.columns:
-                output_df["契約者TEL自宅"] = excel_df["契約者電話"].apply(format_phone)
-        elif "契約者電話" in excel_df.columns:
+        elif "契約者携帯1" in input_df.columns:
+            output_df["契約者TEL携帯"] = input_df["契約者携帯1"].apply(format_phone)
+            if "契約者電話" in input_df.columns:
+                output_df["契約者TEL自宅"] = input_df["契約者電話"].apply(format_phone)
+        elif "契約者電話" in input_df.columns:
             # 携帯1列がない場合は電話を携帯に使用、自宅は空白
-            output_df["契約者TEL携帯"] = excel_df["契約者電話"].apply(format_phone)
+            output_df["契約者TEL携帯"] = input_df["契約者電話"].apply(format_phone)
 
         # 現住所
-        if "契約者郵便番号" in excel_df.columns:
-            output_df["契約者現住所郵便番号"] = excel_df["契約者郵便番号"].apply(format_zipcode)
-        if "契約者１住所１" in excel_df.columns:
-            output_df["契約者現住所1"] = excel_df["契約者１住所１"]
-        if "契約者１住所２" in excel_df.columns:
-            output_df["契約者現住所2"] = excel_df["契約者１住所２"]
+        if "契約者郵便番号" in input_df.columns:
+            output_df["契約者現住所郵便番号"] = input_df["契約者郵便番号"].apply(format_zipcode)
+        if "契約者１住所１" in input_df.columns:
+            output_df["契約者現住所1"] = input_df["契約者１住所１"]
+        if "契約者１住所２" in input_df.columns:
+            output_df["契約者現住所2"] = input_df["契約者１住所２"]
 
         # 契約者現住所3 = 契約者１住所３ + 全角空白 + 契約者住所アパート等
-        addr3 = excel_df["契約者１住所３"].fillna("") if "契約者１住所３" in excel_df.columns else pd.Series([""] * len(excel_df))
-        apt = excel_df["契約者住所アパート等"].fillna("") if "契約者住所アパート等" in excel_df.columns else pd.Series([""] * len(excel_df))
+        addr3 = input_df["契約者１住所３"].fillna("") if "契約者１住所３" in input_df.columns else pd.Series([""] * len(input_df))
+        apt = input_df["契約者住所アパート等"].fillna("") if "契約者住所アパート等" in input_df.columns else pd.Series([""] * len(input_df))
         # 両方に値がある場合のみ全角空白を挿入、片方が空なら余計な空白を入れない
         combined = (addr3.astype(str) + "　" + apt.astype(str))
         output_df["契約者現住所3"] = combined.str.replace(r'^　+|　+$', '', regex=True)
 
         # 勤務先情報
-        if "契約者勤務先名" in excel_df.columns:
-            output_df["契約者勤務先名"] = excel_df["契約者勤務先名"]
-        if "契約者勤務先電話" in excel_df.columns:
-            output_df["契約者勤務先TEL"] = excel_df["契約者勤務先電話"].apply(format_phone)
+        if "契約者勤務先名" in input_df.columns:
+            output_df["契約者勤務先名"] = input_df["契約者勤務先名"]
+        if "契約者勤務先電話" in input_df.columns:
+            output_df["契約者勤務先TEL"] = input_df["契約者勤務先電話"].apply(format_phone)
 
     def map_property_info(
         self,
         output_df: pd.DataFrame,
-        excel_df: pd.DataFrame
+        input_df: pd.DataFrame
     ) -> None:
         """
         物件情報をマッピング（in-place）
 
         Args:
             output_df: 出力DataFrame（in-place更新）
-            excel_df: 入力Excel DataFrame
+            input_df: 入力DataFrame
         """
         # 物件名・部屋番号
-        if "物件名" in excel_df.columns:
-            output_df["物件名"] = excel_df["物件名"]
-        if "部屋番号" in excel_df.columns:
-            output_df["部屋番号"] = excel_df["部屋番号"]
+        if "物件名" in input_df.columns:
+            output_df["物件名"] = input_df["物件名"]
+        if "部屋番号" in input_df.columns:
+            output_df["部屋番号"] = input_df["部屋番号"]
 
         # 物件住所
-        if "物件郵便番号" in excel_df.columns:
-            output_df["物件住所郵便番号"] = excel_df["物件郵便番号"].apply(format_zipcode)
-        if "物件住所１" in excel_df.columns:
-            output_df["物件住所1"] = excel_df["物件住所１"]
-        if "物件住所２" in excel_df.columns:
-            output_df["物件住所2"] = excel_df["物件住所２"]
+        if "物件郵便番号" in input_df.columns:
+            output_df["物件住所郵便番号"] = input_df["物件郵便番号"].apply(format_zipcode)
+        if "物件住所１" in input_df.columns:
+            output_df["物件住所1"] = input_df["物件住所１"]
+        if "物件住所２" in input_df.columns:
+            output_df["物件住所2"] = input_df["物件住所２"]
 
         # 物件住所3 = 物件住所３のみ（番地まで）
         # 物件名・部屋番号は別列（物件名、部屋番号）に出力されるため含めない
-        if "物件住所３" in excel_df.columns:
-            output_df["物件住所3"] = excel_df["物件住所３"].fillna("")
+        if "物件住所３" in input_df.columns:
+            output_df["物件住所3"] = input_df["物件住所３"].fillna("")
 
         # 賃料関連
-        if "賃料" in excel_df.columns:
-            output_df["月額賃料"] = excel_df["賃料"]
+        if "賃料" in input_df.columns:
+            output_df["月額賃料"] = input_df["賃料"]
             # 退去手続き（実費）にも「賃料」列を使用
-            output_df["退去手続き（実費）"] = excel_df["賃料"]
-        if "管理費公益費" in excel_df.columns:
-            output_df["管理費"] = excel_df["管理費公益費"]
-        if "水道代" in excel_df.columns:
-            output_df["水道代"] = excel_df["水道代"]
-        if "駐車場" in excel_df.columns:
-            output_df["駐車場代"] = excel_df["駐車場"]
-        if "その他費用" in excel_df.columns:
-            output_df["その他費用1"] = excel_df["その他費用"]
+            output_df["退去手続き（実費）"] = input_df["賃料"]
+        if "管理費公益費" in input_df.columns:
+            output_df["管理費"] = input_df["管理費公益費"]
+        if "水道代" in input_df.columns:
+            output_df["水道代"] = input_df["水道代"]
+        if "駐車場" in input_df.columns:
+            output_df["駐車場代"] = input_df["駐車場"]
+        if "その他費用" in input_df.columns:
+            output_df["その他費用1"] = input_df["その他費用"]
 
         # 管理会社
-        if "加盟店: 加盟店名" in excel_df.columns:
-            output_df["管理会社"] = excel_df["加盟店: 加盟店名"]
+        if "加盟店: 加盟店名" in input_df.columns:
+            output_df["管理会社"] = input_df["加盟店: 加盟店名"]
 
         # 回収口座番号
-        if "バーチャル口座: 名称" in excel_df.columns:
-            output_df["回収口座番号"] = excel_df["バーチャル口座: 名称"]
+        if "バーチャル口座: 名称" in input_df.columns:
+            output_df["回収口座番号"] = input_df["バーチャル口座: 名称"]
 
         # 引継情報（●入居日 + 日割家賃発生日）
-        if "日割家賃発生日" in excel_df.columns:
+        if "日割家賃発生日" in input_df.columns:
             # 日付フォーマットを変換: 2024/03/15 → 2024/3/15
-            dates = pd.to_datetime(excel_df["日割家賃発生日"], errors='coerce')
+            dates = pd.to_datetime(input_df["日割家賃発生日"], errors='coerce')
             formatted_dates = dates.dt.strftime('%Y/%-m/%-d')  # ゼロ埋めなし
             output_df["引継情報"] = "●入居日" + formatted_dates.fillna("")
 
     def map_guarantor_info(
         self,
         output_df: pd.DataFrame,
-        excel_df: pd.DataFrame
+        input_df: pd.DataFrame
     ) -> None:
         """
         保証人情報をマッピング（in-place）
 
         Args:
             output_df: 出力DataFrame（in-place更新）
-            excel_df: 入力Excel DataFrame
+            input_df: 入力DataFrame
 
         Note:
             入力の「連帯保証人」を出力の「保証人１」にマッピング
         """
         # 連帯保証人 → 保証人１
-        if "連保人1氏名" in excel_df.columns:
-            output_df["保証人１氏名"] = excel_df["連保人1氏名"]
+        if "連保人1氏名" in input_df.columns:
+            output_df["保証人１氏名"] = input_df["連保人1氏名"]
             # 氏名に値がある場合は関係を「他」に設定
-            name = excel_df["連保人1氏名"].fillna("")
+            name = input_df["連保人1氏名"].fillna("")
             output_df["保証人１契約者との関係"] = name.apply(lambda x: "他" if x != "" else "")
-        if "連保人1氏名かな" in excel_df.columns:
+        if "連保人1氏名かな" in input_df.columns:
             # ひらがなをカタカナに変換
-            kana = excel_df["連保人1氏名かな"].fillna("")
+            kana = input_df["連保人1氏名かな"].fillna("")
             output_df["保証人１カナ"] = kana.str.translate(
                 str.maketrans("ぁあぃいぅうぇえぉおかがきぎくぐけげこごさざしじすずせぜそぞただちぢっつづてでとどなにぬねのはばぱひびぴふぶぷへべぺほぼぽまみむめもゃやゅゆょよらりるれろゎわゐゑをんゔゕゖ",
                              "ァアィイゥウェエォオカガキギクグケゲコゴサザシジスズセゼソゾタダチヂッツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモャヤュユョヨラリルレロヮワヰヱヲンヴヵヶ")
             )
-        if "連保人1生年月日" in excel_df.columns:
-            output_df["保証人１生年月日"] = excel_df["連保人1生年月日"]
-        if "連保人1郵便番号" in excel_df.columns:
-            output_df["保証人１郵便番号"] = excel_df["連保人1郵便番号"].apply(format_zipcode)
-        if "連保人1住所１" in excel_df.columns:
-            output_df["保証人１住所1"] = excel_df["連保人1住所１"]
-        if "連保人1住所２" in excel_df.columns:
-            output_df["保証人１住所2"] = excel_df["連保人1住所２"]
+        if "連保人1生年月日" in input_df.columns:
+            output_df["保証人１生年月日"] = input_df["連保人1生年月日"]
+        if "連保人1郵便番号" in input_df.columns:
+            output_df["保証人１郵便番号"] = input_df["連保人1郵便番号"].apply(format_zipcode)
+        if "連保人1住所１" in input_df.columns:
+            output_df["保証人１住所1"] = input_df["連保人1住所１"]
+        if "連保人1住所２" in input_df.columns:
+            output_df["保証人１住所2"] = input_df["連保人1住所２"]
 
         # 保証人住所3 = 連保人1住所３ + 全角空白 + 連保人1住所アパート等
-        addr3 = excel_df["連保人1住所３"].fillna("") if "連保人1住所３" in excel_df.columns else pd.Series([""] * len(excel_df))
-        apt = excel_df["連保人1住所アパート等"].fillna("") if "連保人1住所アパート等" in excel_df.columns else pd.Series([""] * len(excel_df))
+        addr3 = input_df["連保人1住所３"].fillna("") if "連保人1住所３" in input_df.columns else pd.Series([""] * len(input_df))
+        apt = input_df["連保人1住所アパート等"].fillna("") if "連保人1住所アパート等" in input_df.columns else pd.Series([""] * len(input_df))
         # 両方に値がある場合のみ全角空白を挿入、片方が空なら余計な空白を入れない
         combined = (addr3.astype(str) + "　" + apt.astype(str))
         output_df["保証人１住所3"] = combined.str.replace(r'^　+|　+$', '', regex=True)
-        if "連保人1電話" in excel_df.columns:
-            output_df["保証人１TEL自宅"] = excel_df["連保人1電話"].apply(format_phone)
-        if "連保人1携帯番号" in excel_df.columns:
-            output_df["保証人１TEL携帯"] = excel_df["連保人1携帯番号"].apply(format_phone)
+        if "連保人1電話" in input_df.columns:
+            output_df["保証人１TEL自宅"] = input_df["連保人1電話"].apply(format_phone)
+        if "連保人1携帯番号" in input_df.columns:
+            output_df["保証人１TEL携帯"] = input_df["連保人1携帯番号"].apply(format_phone)
 
     def map_emergency_contact_info(
         self,
         output_df: pd.DataFrame,
-        excel_df: pd.DataFrame
+        input_df: pd.DataFrame
     ) -> None:
         """
         緊急連絡人情報をマッピング（in-place）
 
         Args:
             output_df: 出力DataFrame（in-place更新）
-            excel_df: 入力Excel DataFrame
+            input_df: 入力DataFrame
         """
         # 緊急連絡人１
-        if "緊急連絡人氏名" in excel_df.columns:
-            output_df["緊急連絡人１氏名"] = excel_df["緊急連絡人氏名"]
+        if "緊急連絡人氏名" in input_df.columns:
+            output_df["緊急連絡人１氏名"] = input_df["緊急連絡人氏名"]
             # 氏名に値がある場合は関係を「他」に設定
-            name = excel_df["緊急連絡人氏名"].fillna("")
+            name = input_df["緊急連絡人氏名"].fillna("")
             output_df["緊急連絡人１契約者との関係"] = name.apply(lambda x: "他" if x != "" else "")
-        if "緊急連絡人氏名かな" in excel_df.columns:
+        if "緊急連絡人氏名かな" in input_df.columns:
             # ひらがなをカタカナに変換
-            kana = excel_df["緊急連絡人氏名かな"].fillna("")
+            kana = input_df["緊急連絡人氏名かな"].fillna("")
             output_df["緊急連絡人１カナ"] = kana.str.translate(
                 str.maketrans("ぁあぃいぅうぇえぉおかがきぎくぐけげこごさざしじすずせぜそぞただちぢっつづてでとどなにぬねのはばぱひびぴふぶぷへべぺほぼぽまみむめもゃやゅゆょよらりるれろゎわゐゑをんゔゕゖ",
                              "ァアィイゥウェエォオカガキギクグケゲコゴサザシジスズセゼソゾタダチヂッツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモャヤュユョヨラリルレロヮワヰヱヲンヴヵヶ")
             )
-        if "緊急連絡人郵便番号" in excel_df.columns:
-            output_df["緊急連絡人１郵便番号"] = excel_df["緊急連絡人郵便番号"].apply(format_zipcode)
-        if "緊急連絡人住所１" in excel_df.columns:
-            output_df["緊急連絡人１現住所1"] = excel_df["緊急連絡人住所１"]
-        if "緊急連絡人住所２" in excel_df.columns:
-            output_df["緊急連絡人１現住所2"] = excel_df["緊急連絡人住所２"]
+        if "緊急連絡人郵便番号" in input_df.columns:
+            output_df["緊急連絡人１郵便番号"] = input_df["緊急連絡人郵便番号"].apply(format_zipcode)
+        if "緊急連絡人住所１" in input_df.columns:
+            output_df["緊急連絡人１現住所1"] = input_df["緊急連絡人住所１"]
+        if "緊急連絡人住所２" in input_df.columns:
+            output_df["緊急連絡人１現住所2"] = input_df["緊急連絡人住所２"]
         # 緊急連絡人１現住所3 = 緊急連絡人住所３ + 全角空白 + 緊急連絡人住所アパート等
-        addr3 = excel_df["緊急連絡人住所３"].fillna("") if "緊急連絡人住所３" in excel_df.columns else pd.Series([""] * len(excel_df))
-        apt = excel_df["緊急連絡人住所アパート等"].fillna("") if "緊急連絡人住所アパート等" in excel_df.columns else pd.Series([""] * len(excel_df))
+        addr3 = input_df["緊急連絡人住所３"].fillna("") if "緊急連絡人住所３" in input_df.columns else pd.Series([""] * len(input_df))
+        apt = input_df["緊急連絡人住所アパート等"].fillna("") if "緊急連絡人住所アパート等" in input_df.columns else pd.Series([""] * len(input_df))
         # 両方に値がある場合のみ全角空白を挿入、片方が空なら余計な空白を入れない
         combined = (addr3.astype(str) + "　" + apt.astype(str))
         output_df["緊急連絡人１現住所3"] = combined.str.replace(r'^　+|　+$', '', regex=True)
-        if "緊急連絡人電話" in excel_df.columns:
-            output_df["緊急連絡人１TEL自宅"] = excel_df["緊急連絡人電話"].apply(format_phone)
-        if "緊急連絡人携帯１" in excel_df.columns:
-            output_df["緊急連絡人１TEL携帯"] = excel_df["緊急連絡人携帯１"].apply(format_phone)
+        if "緊急連絡人電話" in input_df.columns:
+            output_df["緊急連絡人１TEL自宅"] = input_df["緊急連絡人電話"].apply(format_phone)
+        if "緊急連絡人携帯１" in input_df.columns:
+            output_df["緊急連絡人１TEL携帯"] = input_df["緊急連絡人携帯１"].apply(format_phone)
 
     def apply_fixed_values(
         self,
@@ -761,11 +761,11 @@ def process_nap_data(
         raw = input_file.read() if hasattr(input_file, 'read') else input_file
 
         if raw[:2] == b'PK':
-            excel_df = file_reader.read_excel_file(raw, skiprows=config.EXCEL_SKIPROWS)
-            logs.append(f"✓ Excelファイル読み込み: {len(excel_df)}件")
+            input_df = file_reader.read_excel_file(raw, skiprows=config.EXCEL_SKIPROWS)
+            logs.append(f"✓ Excelファイル読み込み: {len(input_df)}件")
         else:
-            excel_df = file_reader.read_csv_file(raw)
-            logs.append(f"✓ CSVファイル読み込み: {len(excel_df)}件")
+            input_df = file_reader.read_csv_file(raw)
+            logs.append(f"✓ CSVファイル読み込み: {len(input_df)}件")
 
         contract_df = file_reader.read_csv_file(contract_file)
         logs.append(f"✓ ContractList読み込み: {len(contract_df)}件")
@@ -791,7 +791,7 @@ def process_nap_data(
         phase_start = time.time()
         logger.info("=== Phase 3: 重複チェック ===")
         new_data, existing_data, stats, check_logs = checker.check_duplicates(
-            excel_df,
+            input_df,
             filtered_contract_df
         )
         logs.extend(check_logs)

@@ -345,7 +345,7 @@ class TestDuplicateChecker:
         """承認番号列が存在しない場合のエラーテスト"""
         excel_df = pd.DataFrame({"契約者氏名": ["山田太郎"]})
 
-        with pytest.raises(ValueError, match="Excel入力データに「承認番号」列が存在しません"):
+        with pytest.raises(ValueError, match="入力データに「承認番号」列が存在しません"):
             duplicate_checker.check_duplicates(excel_df, sample_contract_df)
 
     def test_check_duplicates_no_handover_column(self, duplicate_checker, sample_excel_df):
