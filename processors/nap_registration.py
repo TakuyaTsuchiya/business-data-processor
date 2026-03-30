@@ -454,7 +454,7 @@ class DuplicateChecker:
             "new_percentage": (len(new_data) / len(input_df) * 100) if len(input_df) > 0 else 0
         }
 
-        logs.append(f"Excel総数: {stats['total']}件")
+        logs.append(f"入力総数: {stats['total']}件")
         logs.append(f"新規契約: {stats['new_records']}件 ({stats['new_percentage']:.1f}%)")
         logs.append(f"既存契約（重複）: {stats['existing_records']}件")
 
