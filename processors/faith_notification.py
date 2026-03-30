@@ -8,6 +8,7 @@ import numpy as np
 from datetime import datetime
 from typing import Tuple
 from processors.common.detailed_logger import DetailedLogger
+from domain.rules.business_rules import CLIENT_IDS
 
 
 def process_faith_notification(
@@ -109,9 +110,10 @@ def apply_common_filters(
     # 委託先法人ID（DO列 = 118列目）でフィルタ
     before_count = len(df)
     before_df = df.copy()
-    df = df[df.iloc[:, 118].isin([1, 2, 3, 4, 8])]
+    df = df[df.iloc[:, 118].isin(CLIENT_IDS["faith"])]
+    faith_ids_str = ",".join(str(i) for i in CLIENT_IDS["faith"])
     log = DetailedLogger.log_filter_result(
-        before_count, len(df), "委託先法人ID（1,2,3,4,8のみ）"
+        before_count, len(df), f"委託先法人ID（{faith_ids_str}のみ）"
     )
     logs.append(log)
 
