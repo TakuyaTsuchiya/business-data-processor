@@ -6,7 +6,7 @@ from processors.faith_notification import process_contractor, process_faith_noti
 from tests.processors.faith_notification.conftest import (
     COL,
     create_notification_dataframe,
-    _base_valid_row_data,
+    base_valid_row_data,
 )
 
 
@@ -38,14 +38,14 @@ class TestContractorAddressFilter:
 
     def test_complete_address_passes(self):
         """全住所フィールドが揃った行は通過する"""
-        row = _base_valid_row_data()
+        row = base_valid_row_data()
         df = create_notification_dataframe([row])
         result, _ = process_contractor(df)
         assert len(result) == 1
 
     def test_missing_postal_code_excluded(self):
         """郵便番号(col 22)が空の場合、除外される"""
-        row = _base_valid_row_data()
+        row = base_valid_row_data()
         row[COL["POSTAL_CODE"]] = ""
         df = create_notification_dataframe([row])
         result, _ = process_contractor(df)
@@ -53,7 +53,7 @@ class TestContractorAddressFilter:
 
     def test_missing_address1_excluded(self):
         """現住所1(col 23)が空の場合、除外される"""
-        row = _base_valid_row_data()
+        row = base_valid_row_data()
         row[COL["ADDRESS1"]] = ""
         df = create_notification_dataframe([row])
         result, _ = process_contractor(df)
@@ -65,7 +65,7 @@ class TestContractorOutput:
 
     def test_output_columns_correct(self):
         """出力は19列で正しい列名順序"""
-        row = _base_valid_row_data()
+        row = base_valid_row_data()
         df = create_notification_dataframe([row])
         result, _ = process_contractor(df)
         assert list(result.columns) == CONTRACTOR_COLUMNS
@@ -73,7 +73,7 @@ class TestContractorOutput:
 
     def test_output_values_mapped_correctly(self):
         """出力値が入力から正しくマッピングされている"""
-        row = _base_valid_row_data()
+        row = base_valid_row_data()
         df = create_notification_dataframe([row])
         result, _ = process_contractor(df)
         r = result.iloc[0]
@@ -103,7 +103,7 @@ class TestContractorE2E:
 
     def test_e2e_contractor_litigation_only(self):
         """process_faith_notification経由でcontractorを処理"""
-        row = _base_valid_row_data()
+        row = base_valid_row_data()
         row[COL["RESIDENCE_STATUS"]] = "入居中"
         row[COL["COLLECTION_RANK"]] = "訴訟中"
         df = create_notification_dataframe([row])

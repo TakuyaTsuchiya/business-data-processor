@@ -6,13 +6,13 @@ from processors.faith_notification import apply_occupancy_filters
 from tests.processors.faith_notification.conftest import (
     COL,
     create_notification_dataframe,
-    _base_valid_row_data,
+    base_valid_row_data,
 )
 
 
 def _make_row(occupancy, rank, mgmt_no="MGT001"):
     """入居ステータスと回収ランクを指定した行データを作成"""
-    row = _base_valid_row_data()
+    row = base_valid_row_data()
     row[COL["RESIDENCE_STATUS"]] = occupancy
     row[COL["COLLECTION_RANK"]] = rank
     row[COL["MANAGEMENT_NO"]] = mgmt_no

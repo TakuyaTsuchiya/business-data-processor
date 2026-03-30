@@ -6,7 +6,7 @@ from processors.faith_notification import process_contact, process_faith_notific
 from tests.processors.faith_notification.conftest import (
     COL,
     create_notification_dataframe,
-    _base_valid_row_data,
+    base_valid_row_data,
 )
 
 
@@ -40,7 +40,7 @@ class TestContact1:
 
     def test_contact1_complete_produces_output(self):
         """連絡人1の全フィールドが揃っている場合、番号='①'で出力される"""
-        row = _base_valid_row_data()
+        row = base_valid_row_data()
         # 連絡人2を空にする
         row[COL["CONTACT2_NAME"]] = ""
         row[COL["CONTACT2_POSTAL"]] = ""
@@ -59,7 +59,7 @@ class TestContact2:
 
     def test_contact2_complete_produces_output(self):
         """連絡人2の全フィールドが揃っている場合、番号='②'で出力される"""
-        row = _base_valid_row_data()
+        row = base_valid_row_data()
         # 連絡人1を空にする
         row[COL["CONTACT1_NAME"]] = ""
         row[COL["CONTACT1_POSTAL"]] = ""
@@ -78,7 +78,7 @@ class TestBothContacts:
 
     def test_both_contacts_concat(self):
         """連絡人1と2の両方が揃っている場合、2行の結果が返る"""
-        row = _base_valid_row_data()
+        row = base_valid_row_data()
         df = create_notification_dataframe([row])
         result, _ = process_contact(df)
         assert len(result) == 2
@@ -92,7 +92,7 @@ class TestNoContacts:
 
     def test_no_contacts_empty_df(self):
         """連絡人データがない場合、正しい列名の空DataFrameが返る"""
-        row = _base_valid_row_data()
+        row = base_valid_row_data()
         row[COL["CONTACT1_NAME"]] = ""
         row[COL["CONTACT1_POSTAL"]] = ""
         row[COL["CONTACT1_ADDR1"]] = ""
@@ -114,7 +114,7 @@ class TestContactE2E:
 
     def test_e2e_contact(self):
         """process_faith_notification経由でcontactを処理"""
-        row = _base_valid_row_data()
+        row = base_valid_row_data()
         df = create_notification_dataframe([row])
         result_df, filename, message, logs = process_faith_notification(df, "contact")
         assert len(result_df) == 2

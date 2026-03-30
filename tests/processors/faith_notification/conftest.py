@@ -3,7 +3,6 @@
 """
 
 import pandas as pd
-import pytest
 from datetime import timedelta
 
 # カラムインデックス定数
@@ -81,7 +80,7 @@ def _yesterday_str():
     return (pd.Timestamp.now().normalize() - timedelta(days=1)).strftime("%Y/%m/%d")
 
 
-def _base_valid_row_data():
+def base_valid_row_data():
     """全共通フィルタを通過し、契約者・保証人・連絡人の住所が揃った行データ"""
     yesterday = _yesterday_str()
     return {
@@ -130,15 +129,3 @@ def _base_valid_row_data():
         COL["PROPERTY_NO"]: "101",
         COL["TRUSTEE_ID"]: 1,
     }
-
-
-@pytest.fixture
-def base_valid_row():
-    """全共通フィルタを通過する基本行データのdict"""
-    return _base_valid_row_data()
-
-
-@pytest.fixture
-def valid_df():
-    """共通フィルタを通過する1行のDataFrame"""
-    return create_notification_dataframe([_base_valid_row_data()])

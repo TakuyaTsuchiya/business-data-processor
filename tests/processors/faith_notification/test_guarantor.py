@@ -6,7 +6,7 @@ from processors.faith_notification import process_guarantor, process_faith_notif
 from tests.processors.faith_notification.conftest import (
     COL,
     create_notification_dataframe,
-    _base_valid_row_data,
+    base_valid_row_data,
 )
 
 
@@ -40,7 +40,7 @@ class TestGuarantor1:
 
     def test_guarantor1_complete_produces_output(self):
         """保証人1の全フィールドが揃っている場合、番号='①'で出力される"""
-        row = _base_valid_row_data()
+        row = base_valid_row_data()
         # 保証人2を空にする
         row[COL["GUARANTOR2_NAME"]] = ""
         row[COL["GUARANTOR2_POSTAL"]] = ""
@@ -59,7 +59,7 @@ class TestGuarantor2:
 
     def test_guarantor2_complete_produces_output(self):
         """保証人2の全フィールドが揃っている場合、番号='②'で出力される"""
-        row = _base_valid_row_data()
+        row = base_valid_row_data()
         # 保証人1を空にする
         row[COL["GUARANTOR1_NAME"]] = ""
         row[COL["GUARANTOR1_POSTAL"]] = ""
@@ -78,7 +78,7 @@ class TestBothGuarantors:
 
     def test_both_guarantors_concat(self):
         """保証人1と2の両方が揃っている場合、2行の結果が返る"""
-        row = _base_valid_row_data()
+        row = base_valid_row_data()
         df = create_notification_dataframe([row])
         result, _ = process_guarantor(df)
         assert len(result) == 2
@@ -92,7 +92,7 @@ class TestNoGuarantors:
 
     def test_no_guarantors_empty_df(self):
         """保証人データがない場合、正しい列名の空DataFrameが返る"""
-        row = _base_valid_row_data()
+        row = base_valid_row_data()
         row[COL["GUARANTOR1_NAME"]] = ""
         row[COL["GUARANTOR1_POSTAL"]] = ""
         row[COL["GUARANTOR1_ADDR1"]] = ""
@@ -110,7 +110,7 @@ class TestNoGuarantors:
 
     def test_guarantor1_missing_name_excluded(self):
         """保証人1の氏名が空の場合、保証人1は除外される"""
-        row = _base_valid_row_data()
+        row = base_valid_row_data()
         row[COL["GUARANTOR1_NAME"]] = ""
         # 保証人2も空にする
         row[COL["GUARANTOR2_NAME"]] = ""
@@ -128,7 +128,7 @@ class TestGuarantorE2E:
 
     def test_e2e_guarantor(self):
         """process_faith_notification経由でguarantorを処理"""
-        row = _base_valid_row_data()
+        row = base_valid_row_data()
         df = create_notification_dataframe([row])
         result_df, filename, message, logs = process_faith_notification(df, "guarantor")
         assert len(result_df) == 2
