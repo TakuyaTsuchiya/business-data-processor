@@ -36,8 +36,8 @@ def show_nap_registration():
         ],
         process_function=process_with_message,
         file_count=2,
-        info_message="📂 必要ファイル: ミライル様Excelファイル + ContractList（2ファイル処理）",
-        file_labels=["ファイル1: XX月分依頼データ.xlsx", "ファイル2: ContractList"],
+        info_message="📂 必要ファイル: ミライル様依頼データ（Excel/CSV） + ContractList（2ファイル処理）",
+        file_labels=["ファイル1: XX月分依頼データ（xlsx/csv）", "ファイル2: ContractList"],
         title_icon="📋",
         no_data_message="✅ 処理完了: 全てのデータが既に登録済みです。新規登録対象はありません。",
         file_types=["xlsx", "csv"]

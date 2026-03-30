@@ -914,3 +914,145 @@ NAP003,3,除外対象"""
         # 管理受託日が今日の日付であること
         today = datetime.now().strftime("%Y/%m/%d")
         assert output_df["管理受託日"].iloc[0] == today
+
+
+class TestProcessNapDataCSVInput:
+    """process_nap_dataがCSV形式の依頼データを入力として受け付けるテスト"""
+
+    @pytest.fixture
+    def sample_csv_input(self):
+        """CSV形式の依頼データ（Excel入力と同等のカラム名）を作成"""
+        df = pd.DataFrame({
+            "契約管理ID": ["C-202503-00611560"],
+            "承認番号": ["250300456209"],
+            "契約者氏名": ["江藤英明"],
+            "契約者氏名かな": ["えとうひであき"],
+            "契約者生年月日": ["1995/05/08"],
+            "契約者電話": [""],
+            "契約者携帯1": ["080-1609-2787"],
+            "物件名": ["テストマンション"],
+            "部屋番号": ["201"],
+            "物件郵便番号": ["222-0012"],
+            "物件住所１": ["神奈川県"],
+            "物件住所２": ["横浜市港北区"],
+            "物件住所３": ["富士塚2-6-26"],
+            "契約者郵便番号": ["222-0012"],
+            "契約者１住所１": ["神奈川県"],
+            "契約者１住所２": ["横浜市港北区"],
+            "契約者１住所３": ["富士塚2-6-26"],
+            "契約者住所アパート等": ["テストマンション201"],
+            "賃料合計額": ["48320"],
+            "賃料": ["44000"],
+            "管理費公益費": ["3000"],
+            "水道代": ["0"],
+            "駐車場": ["0"],
+            "その他費用": ["990"],
+            "バーチャル口座: 名称": ["4318590"],
+            "日割家賃発生日": ["2025/03/28"],
+            "契約者請求可能金額": ["51400"],
+            "契約者勤務先名": ["テスト株式会社"],
+            "契約者勤務先電話": ["048-486-9200"],
+            "連保人1氏名": [""],
+            "連保人1氏名かな": [""],
+            "連帯保証人関係": [""],
+            "連保人1生年月日": [""],
+            "連保人1郵便番号": [""],
+            "連保人1住所１": [""],
+            "連保人1住所２": [""],
+            "連保人1住所３": [""],
+            "連保人1住所アパート等": [""],
+            "連保人1電話": [""],
+            "連保人1携帯番号": [""],
+            "連保人1勤務先名": [""],
+            "連保人1勤務先電話": [""],
+            "緊急連絡人氏名": ["江藤健子"],
+            "緊急連絡人氏名かな": ["えとうけんこ"],
+            "緊急連絡人関係": ["母"],
+            "緊急連絡人郵便番号": ["409-2212"],
+            "緊急連絡人住所１": ["山梨県"],
+            "緊急連絡人住所２": ["南巨摩郡南部町"],
+            "緊急連絡人住所３": ["南部8452"],
+            "緊急連絡人住所アパート等": [""],
+            "緊急連絡人電話": [""],
+            "緊急連絡人携帯１": ["090-7675-0213"],
+            "連保人2氏名": [""],
+            "連保人2氏名かな": [""],
+            "連帯保証人2関係": [""],
+            "連保人2生年月日": [""],
+            "連保人2郵便番号": [""],
+            "連保人2住所１": [""],
+            "連保人2住所２": [""],
+            "連保人2住所３": [""],
+            "連保人2住所アパート等": [""],
+            "連保人2電話": [""],
+            "連保人2携帯番号": [""],
+            "連保人2勤務先名": [""],
+            "連保人2勤務先電話": [""],
+            "加盟店: 加盟店名": ["株式会社ユナイト"],
+            "管理担当者(評価用)": ["吉谷 俊彦"],
+        })
+        csv_buffer = io.BytesIO()
+        df.to_csv(csv_buffer, index=False, encoding='cp932')
+        return csv_buffer.getvalue()
+
+    @pytest.fixture
+    def sample_contract_csv(self):
+        """ContractListのCSVデータ"""
+        csv_content = """引継番号,委託先法人ID,契約者氏名
+999999,5,別の契約者"""
+        return csv_content.encode('cp932')
+
+    def test_csv_input_produces_111_columns(self, sample_csv_input, sample_contract_csv):
+        """CSV入力から111列の出力が生成されること"""
+        output_df, logs, filename = process_nap_data(sample_csv_input, sample_contract_csv)
+
+        assert len(output_df.columns) == 111
+        assert len(output_df) == 1
+
+    def test_csv_input_correct_mapping(self, sample_csv_input, sample_contract_csv):
+        """CSV入力のマッピングがExcel入力と同等であること"""
+        output_df, logs, filename = process_nap_data(sample_csv_input, sample_contract_csv)
+
+        # 引継番号（承認番号の下6桁）
+        assert output_df["引継番号"].iloc[0] == "456209"
+        # 契約者情報
+        assert output_df["契約者氏名"].iloc[0] == "江藤英明"
+        assert output_df["契約者カナ"].iloc[0] == "エトウヒデアキ"
+        assert output_df["契約者TEL携帯"].iloc[0] == "080-1609-2787"
+        # 物件情報
+        assert output_df["物件名"].iloc[0] == "テストマンション"
+        assert output_df["月額賃料"].iloc[0] == "44000"
+        # 緊急連絡人
+        assert output_df["緊急連絡人１氏名"].iloc[0] == "江藤健子"
+        # 固定値
+        assert output_df["クライアントCD"].iloc[0] == "9268"
+        assert output_df["委託先法人ID"].iloc[0] == "5"
+        # 管理会社
+        assert output_df["管理会社"].iloc[0] == "株式会社ユナイト"
+
+    def test_csv_input_logs_csv_format(self, sample_csv_input, sample_contract_csv):
+        """CSV入力時のログにCSV読み込みが記録されること"""
+        output_df, logs, filename = process_nap_data(sample_csv_input, sample_contract_csv)
+
+        assert any("CSV" in log for log in logs)
+
+    def test_excel_input_still_works(self, sample_contract_csv):
+        """Excel入力が引き続き正しく動作すること"""
+        df_sample = pd.DataFrame({
+            "承認番号": ["NAP100"],
+            "契約者氏名": ["テスト太郎"],
+            "契約者氏名かな": ["てすとたろう"],
+        })
+        excel_buffer = io.BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+            dummy_rows = pd.DataFrame({"dummy": [f"Row {i}" for i in range(13)]})
+            dummy_rows.to_excel(writer, index=False, header=False)
+            df_sample.to_excel(writer, index=False, startrow=13)
+        excel_buffer.seek(0)
+        excel_bytes = excel_buffer.read()
+
+        output_df, logs, filename = process_nap_data(excel_bytes, sample_contract_csv)
+
+        assert len(output_df) == 1
+        assert output_df["契約者氏名"].iloc[0] == "テスト太郎"
+        assert any("Excel" in log for log in logs)

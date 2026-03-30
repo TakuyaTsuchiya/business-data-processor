@@ -757,8 +757,16 @@ def process_nap_data(
         logger.info("=== Phase 1: ファイル読み込み ===")
         file_reader = FileReader()
 
-        excel_df = file_reader.read_excel_file(excel_file, skiprows=config.EXCEL_SKIPROWS)
-        logs.append(f"✓ Excelファイル読み込み: {len(excel_df)}件")
+        # ファイル形式を自動判定（xlsx=ZIP形式はPKマジックバイトで判別）
+        raw = excel_file.read() if hasattr(excel_file, 'read') else excel_file
+        is_excel = raw[:2] == b'PK'
+
+        if is_excel:
+            excel_df = file_reader.read_excel_file(raw, skiprows=config.EXCEL_SKIPROWS)
+            logs.append(f"✓ Excelファイル読み込み: {len(excel_df)}件")
+        else:
+            excel_df = file_reader.read_csv_file(raw)
+            logs.append(f"✓ CSVファイル読み込み: {len(excel_df)}件")
 
         contract_df = file_reader.read_csv_file(contract_file)
         logs.append(f"✓ ContractList読み込み: {len(contract_df)}件")
