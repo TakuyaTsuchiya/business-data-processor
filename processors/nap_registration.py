@@ -730,14 +730,14 @@ class DataMapper:
 
 
 def process_nap_data(
-    excel_file: Union[bytes, io.BytesIO],
+    input_file: Union[bytes, io.BytesIO],
     contract_file: Union[bytes, io.BytesIO]
 ) -> Tuple[pd.DataFrame, List[str], str]:
     """
     ナップ新規登録のメイン処理関数
 
     Args:
-        excel_file: ミライル様Excelファイル
+        input_file: ミライル様依頼データ（Excel/CSV自動判定）
         contract_file: ContractList CSVファイル
 
     Returns:
@@ -757,11 +757,10 @@ def process_nap_data(
         logger.info("=== Phase 1: ファイル読み込み ===")
         file_reader = FileReader()
 
-        # ファイル形式を自動判定（xlsx=ZIP形式はPKマジックバイトで判別）
-        raw = excel_file.read() if hasattr(excel_file, 'read') else excel_file
-        is_excel = raw[:2] == b'PK'
+        # Excel/CSV両方の入力に対応するため、ZIPマジックバイト(PK)で判別
+        raw = input_file.read() if hasattr(input_file, 'read') else input_file
 
-        if is_excel:
+        if raw[:2] == b'PK':
             excel_df = file_reader.read_excel_file(raw, skiprows=config.EXCEL_SKIPROWS)
             logs.append(f"✓ Excelファイル読み込み: {len(excel_df)}件")
         else:
