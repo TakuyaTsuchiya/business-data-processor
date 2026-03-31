@@ -2,6 +2,8 @@
 process_contractor のテスト
 """
 
+import pytest
+
 from processors.faith_notification import process_contractor, process_faith_notification
 from tests.processors.faith_notification.conftest import (
     COL,
@@ -43,18 +45,14 @@ class TestContractorAddressFilter:
         result, _ = process_contractor(df)
         assert len(result) == 1
 
-    def test_missing_postal_code_excluded(self):
-        """郵便番号(col 22)が空の場合、除外される"""
+    @pytest.mark.parametrize(
+        "field",
+        ["POSTAL_CODE", "ADDRESS1", "ADDRESS2", "ADDRESS3"],
+    )
+    def test_missing_address_field_excluded(self, field):
+        """住所関連フィールドが空の場合、除外される"""
         row = base_valid_row_data()
-        row[COL["POSTAL_CODE"]] = ""
-        df = create_notification_dataframe([row])
-        result, _ = process_contractor(df)
-        assert len(result) == 0
-
-    def test_missing_address1_excluded(self):
-        """現住所1(col 23)が空の場合、除外される"""
-        row = base_valid_row_data()
-        row[COL["ADDRESS1"]] = ""
+        row[COL[field]] = ""
         df = create_notification_dataframe([row])
         result, _ = process_contractor(df)
         assert len(result) == 0
@@ -114,3 +112,26 @@ class TestContractorE2E:
         assert "契約者" in filename
         assert "訴訟中" in filename
         assert list(result_df.columns) == CONTRACTOR_COLUMNS
+
+    def test_e2e_contractor_evicted_filename(self):
+        """退去済 + evicted時のファイル名で「退去済み」に変換される"""
+        row = base_valid_row_data()
+        row[COL["RESIDENCE_STATUS"]] = "退去済"
+        row[COL["COLLECTION_RANK"]] = "通常"
+        df = create_notification_dataframe([row])
+        result_df, filename, message, logs = process_faith_notification(
+            df, "contractor", occupancy_status="退去済", filter_type="evicted"
+        )
+        assert "退去済み" in filename
+        assert "退去済】" not in filename
+
+
+class TestInvalidTargetType:
+    """不正なtarget_typeのテスト"""
+
+    def test_invalid_target_type_raises_error(self):
+        """不正なtarget_typeを渡すとエラーが発生する"""
+        row = base_valid_row_data()
+        df = create_notification_dataframe([row])
+        with pytest.raises(Exception, match="不明なターゲットタイプ"):
+            process_faith_notification(df, "invalid_type")

@@ -11,9 +11,10 @@ contract.pyの固有仕様:
 """
 
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, date
 
 from processors.faith_sms.contract import process_faith_sms_contract_data
+from processors.sms_common.utils import format_payment_deadline
 
 from tests.processors.faith_sms.conftest import (
     create_faith_sms_dataframe,
@@ -73,7 +74,7 @@ class TestFaithSmsContractIntegration:
         assert "みずほ銀行" in row["(info4)銀行口座"]
         assert "渋谷支店" in row["(info4)銀行口座"]
         assert row["(info5)メモ"] == "F001"
-        assert row["支払期限"] != ""
+        assert row["支払期限"] == format_payment_deadline(date(2025, 12, 31))
         assert pd.isna(row["保証人"]) or row["保証人"] == ""
         assert pd.isna(row["連絡人"]) or row["連絡人"] == ""
 
