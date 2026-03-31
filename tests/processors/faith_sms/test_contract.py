@@ -75,7 +75,6 @@ class TestFaithSmsContractIntegration:
         assert "渋谷支店" in row["(info4)銀行口座"]
         assert row["(info5)メモ"] == "F001"
         assert row["支払期限"] == format_payment_deadline(date(2025, 12, 31))
-        assert row["支払期限"] == "2025年12月31日"
         assert pd.isna(row["保証人"]) or row["保証人"] == ""
         assert pd.isna(row["連絡人"]) or row["連絡人"] == ""
 

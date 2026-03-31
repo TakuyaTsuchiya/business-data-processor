@@ -45,34 +45,14 @@ class TestContractorAddressFilter:
         result, _ = process_contractor(df)
         assert len(result) == 1
 
-    def test_missing_postal_code_excluded(self):
-        """郵便番号(col 22)が空の場合、除外される"""
+    @pytest.mark.parametrize(
+        "field",
+        ["POSTAL_CODE", "ADDRESS1", "ADDRESS2", "ADDRESS3"],
+    )
+    def test_missing_address_field_excluded(self, field):
+        """住所関連フィールドが空の場合、除外される"""
         row = base_valid_row_data()
-        row[COL["POSTAL_CODE"]] = ""
-        df = create_notification_dataframe([row])
-        result, _ = process_contractor(df)
-        assert len(result) == 0
-
-    def test_missing_address1_excluded(self):
-        """現住所1(col 23)が空の場合、除外される"""
-        row = base_valid_row_data()
-        row[COL["ADDRESS1"]] = ""
-        df = create_notification_dataframe([row])
-        result, _ = process_contractor(df)
-        assert len(result) == 0
-
-    def test_missing_address2_excluded(self):
-        """現住所2(col 24)が空の場合、除外される"""
-        row = base_valid_row_data()
-        row[COL["ADDRESS2"]] = ""
-        df = create_notification_dataframe([row])
-        result, _ = process_contractor(df)
-        assert len(result) == 0
-
-    def test_missing_address3_excluded(self):
-        """現住所3(col 25)が空の場合、除外される"""
-        row = base_valid_row_data()
-        row[COL["ADDRESS3"]] = ""
+        row[COL[field]] = ""
         df = create_notification_dataframe([row])
         result, _ = process_contractor(df)
         assert len(result) == 0
